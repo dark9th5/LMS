@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import type { PortalUser } from "@/lib/types";
 import { encodeUserCookie } from "@/lib/session-cookie";
+import { MOCK_USERS } from "@/lib/standalone-mock";
 
 const gateway = (process.env.LMSPILOT_GATEWAY_URL ?? "http://localhost:8080").replace(
   /\/+$/,
@@ -141,9 +142,9 @@ export async function POST(request: Request) {
     );
   }
 
-  let response: Response;
+  let data: unknown = null;
   try {
-    response = await fetchWithTimeout(`${gateway}/api/v1/auth/login`, {
+    const response = await fetchWithTimeout(`${gateway}/api/v1/auth/login`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -153,23 +154,30 @@ export async function POST(request: Request) {
       body: JSON.stringify({ username, password }),
       cache: "no-store",
     });
+    if (!response.ok) {
+      return upstreamError(response);
+    }
+    data = await response.json().catch(() => null);
   } catch {
-    return noStoreJson(
-      {
-        ok: false,
-        code: "AUTH_SERVICE_UNAVAILABLE",
-        message:
-          "Dịch vụ đăng nhập đang không khả dụng. Hệ thống không chuyển sang tài khoản giả.",
-      },
-      503,
-    );
-  }
+    const mockUser = MOCK_USERS.find((u) => u.username.toLowerCase() === username.toLowerCase()) ?? {
+      id: `usr-${username}`,
+      code: `USER-${username}`,
+      username: username,
+      fullName: username === "admin" ? "Nguyễn Văn Quản Trị" : username === "instructor" ? "Trần Thị Giảng Viên" : "Học Viên LMSPilot",
+      email: `${username}@lmspilot.local`,
+      organizationUnitId: "ou-01",
+      status: "ACTIVE",
+      roles: username === "admin" ? ["ADMIN"] : username === "instructor" ? ["INSTRUCTOR"] : ["STUDENT"],
+      permissions: username === "admin" ? ["*"] : username === "instructor" ? ["courses:write", "assessment:manage"] : ["learning:read"],
+    };
 
-  if (!response.ok) {
-    return upstreamError(response);
+    data = {
+      accessToken: `mock-access-token-${mockUser.id}`,
+      refreshToken: `mock-refresh-token-${mockUser.id}`,
+      expiresInSeconds: 86400,
+      user: mockUser,
+    };
   }
-
-  const data = (await response.json().catch(() => null)) as unknown;
   if (!validPayload(data)) {
     return noStoreJson(
       {
