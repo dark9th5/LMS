@@ -213,7 +213,11 @@ export const MOCK_EXAM: Exam = {
   opensAt: "2026-07-01T00:00:00Z",
   closesAt: "2026-12-31T23:59:59Z",
   maxAttempts: 3,
+  waitMinutesBetweenAttempts: 0,
   passingScore: 70,
+  shuffleQuestions: false,
+  shuffleAnswers: false,
+  scoreStrategy: "HIGHEST",
   status: "ACTIVE",
   version: 1,
   questions: [

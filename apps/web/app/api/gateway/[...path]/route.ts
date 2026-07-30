@@ -1,80 +1,258 @@
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
+import { encodeUserCookie } from "@/lib/session-cookie";
+import type { PortalUser } from "@/lib/types";
 import { handleMockGatewayRequest } from "@/lib/standalone-mock";
 
-const gateway = process.env.LMSPILOT_GATEWAY_URL ?? "http://localhost:8080";
-type RouteContext = { params: Promise<{ path: string[] }> };
-type TokenPayload = { accessToken: string; refreshToken: string; expiresInSeconds: number; user: unknown };
+const gateway = (process.env.LMSPILOT_GATEWAY_URL ?? "http://localhost:8080").replace(
+  /\/+$/,
+  "",
+);
 
-const refreshInFlight = new Map<string, Promise<TokenPayload | null>>();
+const upstreamTimeoutMs = positiveInteger(
+  process.env.LMSPILOT_UPSTREAM_TIMEOUT_MS,
+  15_000,
+);
+
+type RouteContext = { params: Promise<{ path: string[] }> };
+type TokenPayload = {
+  accessToken: string;
+  refreshToken: string;
+  expiresInSeconds: number;
+  user: PortalUser;
+};
+
+type RefreshResult =
+  | { kind: "ok"; session: TokenPayload }
+  | { kind: "rejected" }
+  | { kind: "unavailable" };
+
+const refreshInFlight = new Map<string, Promise<RefreshResult>>();
+
+const requestHopByHopHeaders = [
+  "connection",
+  "cookie",
+  "host",
+  "content-length",
+  "keep-alive",
+  "proxy-authenticate",
+  "proxy-authorization",
+  "te",
+  "trailer",
+  "transfer-encoding",
+  "upgrade",
+];
+
+const responseHopByHopHeaders = [
+  "connection",
+  "content-length",
+  "content-encoding",
+  "keep-alive",
+  "proxy-authenticate",
+  "proxy-authorization",
+  "set-cookie",
+  "te",
+  "trailer",
+  "transfer-encoding",
+  "upgrade",
+];
+
+function positiveInteger(value: string | undefined, fallback: number): number {
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
+}
 
 function cookieSecure(): boolean {
   return process.env.LMSPILOT_COOKIE_SECURE === "true";
 }
 
+function validTokenPayload(value: unknown): value is TokenPayload {
+  if (!value || typeof value !== "object") return false;
+  const payload = value as Partial<TokenPayload>;
+  return (
+    typeof payload.accessToken === "string" &&
+    payload.accessToken.length > 0 &&
+    typeof payload.refreshToken === "string" &&
+    payload.refreshToken.length > 0 &&
+    typeof payload.expiresInSeconds === "number" &&
+    Number.isFinite(payload.expiresInSeconds) &&
+    payload.expiresInSeconds > 0 &&
+    validUser(payload.user)
+  );
+}
+
+function validUser(value: unknown): value is PortalUser {
+  if (!value || typeof value !== "object") return false;
+  const user = value as Partial<PortalUser>;
+  return (
+    typeof user.id === "string" &&
+    typeof user.username === "string" &&
+    typeof user.fullName === "string" &&
+    Array.isArray(user.roles) &&
+    user.roles.every((role) => typeof role === "string") &&
+    Array.isArray(user.permissions) &&
+    user.permissions.every((permission) => typeof permission === "string")
+  );
+}
+
 function applySessionCookies(response: NextResponse, session: TokenPayload) {
   const secure = cookieSecure();
+
   response.cookies.set("lmspilot_access", session.accessToken, {
     httpOnly: true,
     sameSite: "lax",
     secure,
     path: "/",
-    maxAge: session.expiresInSeconds,
+    maxAge: Math.max(1, Math.floor(session.expiresInSeconds)),
   });
   response.cookies.set("lmspilot_refresh", session.refreshToken, {
     httpOnly: true,
     sameSite: "strict",
     secure,
     path: "/",
-    maxAge: 604800,
+    maxAge: 604_800,
   });
-  response.cookies.set("lmspilot_user", Buffer.from(JSON.stringify(session.user)).toString("base64url"), {
+  response.cookies.set("lmspilot_user", encodeUserCookie(session.user), {
     httpOnly: true,
     sameSite: "lax",
     secure,
     path: "/",
-    maxAge: 604800,
+    maxAge: 604_800,
   });
 }
 
 function clearSessionCookies(response: NextResponse) {
-  response.cookies.set("lmspilot_access", "", { path: "/", maxAge: 0 });
-  response.cookies.set("lmspilot_user", "", { path: "/", maxAge: 0 });
-  response.cookies.set("lmspilot_refresh", "", { path: "/", maxAge: 0 });
-  response.cookies.set("lmspilot_refresh", "", { path: "/api", maxAge: 0 });
+  const secure = cookieSecure();
+  response.cookies.set("lmspilot_access", "", {
+    httpOnly: true,
+    sameSite: "lax",
+    secure,
+    path: "/",
+    maxAge: 0,
+  });
+  response.cookies.set("lmspilot_user", "", {
+    httpOnly: true,
+    sameSite: "lax",
+    secure,
+    path: "/",
+    maxAge: 0,
+  });
+  response.cookies.set("lmspilot_refresh", "", {
+    httpOnly: true,
+    sameSite: "strict",
+    secure,
+    path: "/",
+    maxAge: 0,
+  });
+  response.cookies.set("lmspilot_refresh", "", {
+    httpOnly: true,
+    sameSite: "strict",
+    secure,
+    path: "/api",
+    maxAge: 0,
+  });
 }
 
-function refreshSession(refreshToken: string): Promise<TokenPayload | null> {
+async function fetchWithTimeout(
+  input: string | URL,
+  init: RequestInit,
+): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), upstreamTimeoutMs);
+
+  try {
+    return await fetch(input, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+function refreshSession(refreshToken: string): Promise<RefreshResult> {
   const existing = refreshInFlight.get(refreshToken);
   if (existing) return existing;
 
-  const pending = (async () => {
+  const pending = (async (): Promise<RefreshResult> => {
+    let response: Response;
     try {
-      const response = await fetch(`${gateway}/api/v1/auth/refresh`, {
+      response = await fetchWithTimeout(`${gateway}/api/v1/auth/refresh`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", "X-Correlation-ID": crypto.randomUUID() },
+        headers: {
+          "Content-Type": "application/json",
+          "X-Correlation-ID": crypto.randomUUID(),
+        },
         body: JSON.stringify({ refreshToken }),
         cache: "no-store",
       });
-      if (!response.ok) return null;
-      return (await response.json()) as TokenPayload;
     } catch {
-      return null;
+      return { kind: "unavailable" };
     }
+
+    if (!response.ok) return { kind: "rejected" };
+
+    const data = (await response.json().catch(() => null)) as unknown;
+    return validTokenPayload(data)
+      ? { kind: "ok", session: data }
+      : { kind: "rejected" };
   })();
 
   refreshInFlight.set(refreshToken, pending);
-  void pending.finally(() => setTimeout(() => refreshInFlight.delete(refreshToken), 5000));
+  void pending.finally(() => {
+    setTimeout(() => refreshInFlight.delete(refreshToken), 5_000);
+  });
   return pending;
 }
 
-async function callGateway(req: NextRequest, url: URL, token: string, body?: ArrayBuffer) {
+function validPath(path: unknown): path is string[] {
+  return (
+    Array.isArray(path) &&
+    path.length > 0 &&
+    path.every(
+      (segment) =>
+        typeof segment === "string" &&
+        segment.length > 0 &&
+        segment !== "." &&
+        segment !== ".." &&
+        !segment.includes("/") &&
+        !segment.includes("\\"),
+    )
+  );
+}
+
+function unauthorized(message = "Phiên đăng nhập đã hết hạn"): NextResponse {
+  const response = NextResponse.json(
+    { ok: false, code: "UNAUTHORIZED", message },
+    { status: 401, headers: { "Cache-Control": "no-store" } },
+  );
+  clearSessionCookies(response);
+  return response;
+}
+
+function unavailable(): NextResponse {
+  return NextResponse.json(
+    {
+      ok: false,
+      code: "GATEWAY_UNAVAILABLE",
+      message:
+        "Dịch vụ nghiệp vụ đang không khả dụng. Yêu cầu không được chuyển sang dữ liệu giả.",
+    },
+    { status: 503, headers: { "Cache-Control": "no-store" } },
+  );
+}
+
+async function callGateway(
+  req: NextRequest,
+  url: URL,
+  token: string,
+  body?: ArrayBuffer,
+): Promise<Response> {
   const headers = new Headers(req.headers);
   headers.set("Authorization", `Bearer ${token}`);
-  headers.set("X-Correlation-ID", req.headers.get("X-Correlation-ID") ?? crypto.randomUUID());
-  headers.delete("host");
-  headers.delete("cookie");
-  headers.delete("content-length");
+  headers.set(
+    "X-Correlation-ID",
+    req.headers.get("X-Correlation-ID") ?? crypto.randomUUID(),
+  );
+  requestHopByHopHeaders.forEach((name) => headers.delete(name));
+
   const init: RequestInit & { duplex?: "half" } = {
     method: req.method,
     headers,
@@ -82,63 +260,90 @@ async function callGateway(req: NextRequest, url: URL, token: string, body?: Arr
     cache: "no-store",
   };
   if (init.body) init.duplex = "half";
-  return fetch(url, init);
+
+  return fetchWithTimeout(url, init);
 }
 
 async function proxy(req: NextRequest, { params }: RouteContext) {
   const jar = await cookies();
   let access = jar.get("lmspilot_access")?.value;
   const refresh = jar.get("lmspilot_refresh")?.value;
-  let refreshed: TokenPayload | null = null;
+  let refreshedSession: TokenPayload | null = null;
 
   if (!access && refresh) {
-    refreshed = await refreshSession(refresh);
-    access = refreshed?.accessToken;
+    const refreshResult = await refreshSession(refresh);
+    if (refreshResult.kind === "unavailable") return unavailable();
+    if (refreshResult.kind === "rejected") return unauthorized();
+
+    refreshedSession = refreshResult.session;
+    access = refreshedSession.accessToken;
   }
 
-  // Allow mock access token or fallback if session cookie exists
-  if (!access && !refresh) {
-    const response = NextResponse.json({ message: "Phiên đăng nhập đã hết hạn" }, { status: 401 });
-    clearSessionCookies(response);
-    return response;
-  }
+  if (!access) return unauthorized();
 
   const { path } = await params;
-  const url = new URL(`${gateway}/${path.join("/")}`);
-  req.nextUrl.searchParams.forEach((value, key) => url.searchParams.append(key, value));
-  const body = ["GET", "HEAD"].includes(req.method) ? undefined : await req.arrayBuffer();
-  const bodyText = body ? new TextDecoder().decode(body) : undefined;
+  if (!validPath(path)) {
+    return NextResponse.json(
+      {
+        ok: false,
+        code: "INVALID_GATEWAY_PATH",
+        message: "Đường dẫn API không hợp lệ",
+      },
+      { status: 400, headers: { "Cache-Control": "no-store" } },
+    );
+  }
 
-  let upstream: Response | null = null;
+  const encodedPath = path.map((segment) => encodeURIComponent(segment)).join("/");
+  const url = new URL(encodedPath, `${gateway}/`);
+  req.nextUrl.searchParams.forEach((value, key) => {
+    url.searchParams.append(key, value);
+  });
+
+  const body = ["GET", "HEAD"].includes(req.method)
+    ? undefined
+    : await req.arrayBuffer();
+
+  let upstream: Response;
   try {
-    upstream = await callGateway(req, url, access ?? "mock-token", body);
+    upstream = await callGateway(req, url, access, body);
   } catch {
-    // Gateway is unreachable -> Return Standalone Mock Response
+    const bodyText = body ? new TextDecoder().decode(body) : undefined;
     return handleMockGatewayRequest(path, req.method, bodyText);
   }
 
-  if (upstream.status === 401 && refresh) {
-    refreshed = await refreshSession(refresh);
-    if (refreshed) {
+  if (upstream.status === 401 && refresh && !refreshedSession) {
+    const refreshResult = await refreshSession(refresh);
+    if (refreshResult.kind === "unavailable") return unavailable();
+
+    if (refreshResult.kind === "ok") {
+      refreshedSession = refreshResult.session;
       try {
-        upstream = await callGateway(req, url, refreshed.accessToken, body);
+        upstream = await callGateway(
+          req,
+          url,
+          refreshedSession.accessToken,
+          body,
+        );
       } catch {
-        return handleMockGatewayRequest(path, req.method, bodyText);
+        return unavailable();
       }
     }
   }
 
-  if (!upstream) {
-    return handleMockGatewayRequest(path, req.method, bodyText);
-  }
-
   const headers = new Headers(upstream.headers);
-  headers.delete("content-length");
-  headers.delete("content-encoding");
-  const response = new NextResponse(upstream.body, { status: upstream.status, headers });
+  responseHopByHopHeaders.forEach((name) => headers.delete(name));
+  headers.set("Cache-Control", headers.get("Cache-Control") ?? "no-store");
 
-  if (upstream.status === 401) clearSessionCookies(response);
-  else if (refreshed) applySessionCookies(response, refreshed);
+  const response = new NextResponse(upstream.body, {
+    status: upstream.status,
+    headers,
+  });
+
+  if (upstream.status === 401) {
+    clearSessionCookies(response);
+  } else if (refreshedSession) {
+    applySessionCookies(response, refreshedSession);
+  }
 
   return response;
 }

@@ -84,8 +84,9 @@ interface CourseRepository : org.springframework.data.jpa.repository.JpaReposito
           and (:status is null or c.status = :status)
           and (:categoryId is null or c.categoryId = :categoryId)
           and (:ownerId is null or c.ownerId = :ownerId or c.id in :assignedCourseIds)
+          and (:includeArchived = true or c.status <> :archivedStatus)
     """)
-    fun searchVisible(query: String?, status: CourseStatus?, categoryId: UUID?, ownerId: UUID?, assignedCourseIds: Set<UUID>, pageable: org.springframework.data.domain.Pageable): org.springframework.data.domain.Page<CourseEntity>
+    fun searchVisible(query: String?, status: CourseStatus?, categoryId: UUID?, ownerId: UUID?, assignedCourseIds: Set<UUID>, includeArchived: Boolean, archivedStatus: CourseStatus, pageable: org.springframework.data.domain.Pageable): org.springframework.data.domain.Page<CourseEntity>
 }
 
 interface LessonRepository : org.springframework.data.jpa.repository.JpaRepository<LessonEntity, UUID> {

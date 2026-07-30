@@ -103,4 +103,5 @@ interface ExamSessionRepository : org.springframework.data.jpa.repository.JpaRep
     fun countByExamIdAndUserId(examId: UUID, userId: UUID): Long
     fun findBySubmitIdempotencyKey(key: String): ExamSessionEntity?
     fun findAllByExamIdAndUserIdOrderByAttemptNoAsc(examId: UUID, userId: UUID): List<ExamSessionEntity>
+    fun existsByExamId(examId: UUID): Boolean
 }

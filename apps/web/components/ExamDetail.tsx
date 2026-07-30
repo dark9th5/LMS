@@ -10,6 +10,7 @@ import { EmptyState, ErrorState, LoadingState, Toast } from "./Feedback";
 import { Icon } from "./Icon";
 import { PageHeader } from "./PageHeader";
 import { ProgressBar } from "./ProgressBar";
+import { Modal } from "./Modal";
 import { StatusBadge } from "./StatusBadge";
 
 function secondsLeft(expiresAt: string): number {
@@ -25,6 +26,12 @@ function answerCount(answers?: Record<string, unknown> | null): number {
   if (!answers) return 0;
   return Object.values(answers).filter((answer) => Array.isArray(answer) ? answer.length > 0 : String(answer ?? "").trim().length > 0).length;
 }
+function localDateTime(value?: string | null): string {
+  if (!value) return "";
+  const date = new Date(value);
+  const offset = date.getTimezoneOffset() * 60_000;
+  return new Date(date.getTime() - offset).toISOString().slice(0, 16);
+}
 
 export function ExamDetail({ examId, user }: { examId: string; user: PortalUser }) {
   const canManage = user.permissions.includes("assessment:manage");
@@ -39,6 +46,8 @@ export function ExamDetail({ examId, user }: { examId: string; user: PortalUser 
   const [error, setError] = useState("");
   const [toast, setToast] = useState("");
   const [result, setResult] = useState<Grade | null>(null);
+  const [editOpen, setEditOpen] = useState(false);
+  const [formError, setFormError] = useState("");
   const lastSaved = useRef("");
   const autoSubmitted = useRef(false);
 
@@ -117,6 +126,54 @@ export function ExamDetail({ examId, user }: { examId: string; user: PortalUser 
     finally { setBusy(false); }
   }
 
+  async function updateExam(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!exam || !canManage) return;
+    setBusy(true); setFormError("");
+    const data = new FormData(event.currentTarget);
+    const opensAt = String(data.get("opensAt") ?? "");
+    const closesAt = String(data.get("closesAt") ?? "");
+    try {
+      await apiRequest(`/api/v1/exams/${exam.id}`, {
+        method: "PUT",
+        body: JSON.stringify({
+          title: String(data.get("title") ?? ""),
+          courseId: exam.courseId,
+          lessonId: exam.lessonId ?? null,
+          durationMinutes: Number(data.get("durationMinutes") || 30),
+          opensAt: opensAt ? new Date(opensAt).toISOString() : null,
+          closesAt: closesAt ? new Date(closesAt).toISOString() : null,
+          maxAttempts: Number(data.get("maxAttempts") || 1),
+          waitMinutesBetweenAttempts: Number(data.get("waitMinutesBetweenAttempts") || 0),
+          passingScore: Number(data.get("passingScore") || 70),
+          shuffleQuestions: data.get("shuffleQuestions") === "on",
+          shuffleAnswers: data.get("shuffleAnswers") === "on",
+          scoreStrategy: String(data.get("scoreStrategy") ?? "HIGHEST"),
+          status: String(data.get("status") ?? "DRAFT"),
+          questions: exam.questions.map((item, index) => ({ questionId: item.id, points: item.points, sortOrder: index + 1 })),
+        }),
+      });
+      setEditOpen(false);
+      setToast("Đã lưu cấu hình bài kiểm tra.");
+      await load();
+    } catch (caught) {
+      setFormError(caught instanceof Error ? caught.message : "Không thể cập nhật bài kiểm tra");
+    } finally { setBusy(false); }
+  }
+
+  async function archiveExam() {
+    if (!exam || !canManage) return;
+    if (!window.confirm("Xóa bài kiểm tra khỏi danh sách? Hệ thống sẽ lưu trữ đề và giữ nguyên mọi lượt làm, đáp án và điểm đã phát sinh.")) return;
+    setBusy(true);
+    try {
+      await apiRequest(`/api/v1/exams/${exam.id}`, { method: "DELETE" });
+      window.location.assign("/exams");
+    } catch (caught) {
+      setToast(caught instanceof Error ? caught.message : "Không thể lưu trữ bài kiểm tra");
+      setBusy(false);
+    }
+  }
+
   useEffect(() => {
     if (!session || session.status !== "IN_PROGRESS") return;
     const timer = window.setInterval(() => { if (!busy && JSON.stringify(answers) !== lastSaved.current) void save(false); }, 20000);
@@ -134,24 +191,38 @@ export function ExamDetail({ examId, user }: { examId: string; user: PortalUser 
   if (!exam) return <EmptyState title="Không tìm thấy bài kiểm tra" description="Bài kiểm tra có thể đã bị đóng hoặc không thuộc phạm vi của bạn."/>;
 
   if (canManage) return <>
-    <PageHeader backHref="/exams" eyebrow="CẤU HÌNH BÀI KIỂM TRA" title={exam.title} description={course?.name ?? "Bài kiểm tra chưa gắn thông tin khóa học"} actions={<StatusBadge value={exam.status}/>}/>
+    <PageHeader backHref="/exams" eyebrow="CẤU HÌNH BÀI KIỂM TRA" title={exam.title} description={course?.name ?? "Bài kiểm tra chưa gắn thông tin khóa học"} actions={<><StatusBadge value={exam.status}/><button className="button secondary" onClick={() => { setFormError(""); setEditOpen(true); }}><Icon name="edit"/>Chỉnh sửa</button><button className="button danger" disabled={busy} onClick={() => void archiveExam()}><Icon name="trash"/>Xóa</button></>}/>
     <section className="detail-grid">
       <article className="section-card">
-        <div className="section-title"><div><h2>Nội dung đề thi</h2><p>Phiên bản {exam.version} · {(exam.questions ?? []).length} câu hỏi</p></div></div>
+        <div className="section-title"><div><h2>Nội dung đề thi</h2><p>Phiên bản {exam.version} · {(exam.questions ?? []).length} câu hỏi · đề giữ bản chụp độc lập với ngân hàng câu hỏi</p></div></div>
         <div className="question-list">{(exam.questions ?? []).map((item, index) => <article className="question-preview" key={item.id}><span className="question-number">{index + 1}</span><div><div className="question-heading"><strong>{item.prompt}</strong><span>{item.points} điểm</span></div><p>{(item.type ?? "").replaceAll("_", " ")} · {(item.options ?? []).length ? `${(item.options ?? []).length} phương án` : "Câu trả lời tự do"}</p>{(item.options ?? []).length > 0 && <ol>{(item.options ?? []).map((option) => <li key={option}>{option}</li>)}</ol>}</div></article>)}</div>
       </article>
       <aside className="settings-panel">
         <h2>Thiết lập</h2>
         <dl className="summary-list"><div><dt>Trạng thái</dt><dd><StatusBadge value={exam.status}/></dd></div><div><dt>Thời lượng</dt><dd>{formatDuration(exam.durationMinutes)}</dd></div><div><dt>Số lần làm</dt><dd>{exam.maxAttempts}</dd></div><div><dt>Điểm đạt</dt><dd>{exam.passingScore}%</dd></div><div><dt>Thời gian mở</dt><dd>{formatDate(exam.opensAt, true)}</dd></div><div><dt>Thời gian đóng</dt><dd>{formatDate(exam.closesAt, true)}</dd></div></dl>
+        <button className="button primary full" onClick={() => setEditOpen(true)}><Icon name="edit"/>Sửa cấu hình</button>
         {course && <Link className="button secondary full" href={`/courses/${course.id}`}><Icon name="book"/>Mở khóa học</Link>}
+        <div className="form-alert info"><Icon name="warning"/>Khi đã có lượt làm, cấu trúc đề được khóa. Hãy lưu trữ đề cũ và tạo đề mới nếu cần thay đổi.</div>
       </aside>
     </section>
+    <Modal open={editOpen} onClose={() => !busy && setEditOpen(false)} title="Chỉnh sửa bài kiểm tra" description="Có thể sửa khi đề chưa phát sinh lượt làm. Mọi thay đổi được lưu trực tiếp trong Assessment Service.">
+      <form className="form-stack" onSubmit={updateExam}>
+        <label>Tên bài kiểm tra <b>*</b><input name="title" required defaultValue={exam.title}/></label>
+        <div className="form-grid four"><label>Thời lượng<input name="durationMinutes" type="number" min="1" max="480" defaultValue={exam.durationMinutes}/></label><label>Số lần làm<input name="maxAttempts" type="number" min="1" max="20" defaultValue={exam.maxAttempts}/></label><label>Điểm đạt<input name="passingScore" type="number" min="0" max="100" defaultValue={exam.passingScore}/></label><label>Trạng thái<select name="status" defaultValue={exam.status}><option value="DRAFT">Bản nháp</option><option value="ACTIVE">Hoạt động</option><option value="INACTIVE">Tạm đóng</option></select></label></div>
+        <div className="form-grid two"><label>Mở từ<input name="opensAt" type="datetime-local" defaultValue={localDateTime(exam.opensAt)}/></label><label>Đóng lúc<input name="closesAt" type="datetime-local" defaultValue={localDateTime(exam.closesAt)}/></label></div>
+        <div className="form-grid two"><label>Chờ giữa các lần làm<input name="waitMinutesBetweenAttempts" type="number" min="0" defaultValue={exam.waitMinutesBetweenAttempts}/></label><label>Cách lấy điểm<select name="scoreStrategy" defaultValue={exam.scoreStrategy}><option value="HIGHEST">Cao nhất</option><option value="LATEST">Lần gần nhất</option><option value="AVERAGE">Trung bình</option></select></label></div>
+        <div className="check-group"><label className="check-row"><input type="checkbox" name="shuffleQuestions" defaultChecked={exam.shuffleQuestions}/><span><strong>Trộn câu hỏi</strong></span></label><label className="check-row"><input type="checkbox" name="shuffleAnswers" defaultChecked={exam.shuffleAnswers}/><span><strong>Trộn phương án</strong></span></label></div>
+        {formError && <div className="form-alert error"><Icon name="warning"/>{formError}</div>}
+        <div className="modal-actions"><button type="button" className="button secondary" onClick={() => setEditOpen(false)}>Hủy</button><button className="button primary" disabled={busy}>{busy ? "Đang lưu..." : "Lưu thay đổi"}</button></div>
+      </form>
+    </Modal>
+    {toast && <Toast message={toast} onClose={() => setToast("")}/>}
   </>;
 
   if (session?.status === "SUBMITTED") return <>
     <PageHeader backHref="/exams" eyebrow="ĐÃ NỘP BÀI" title={exam.title} description={`Lần thi ${session.attemptNo} đã được ghi nhận lúc ${formatDate(session.submittedAt, true)}.`}/>
     <section className="result-panel"><span className="result-icon"><Icon name="check" size={34}/></span><h2>Nộp bài thành công</h2>{result ? <><strong className="result-score">{Math.round(result.percentage)}%</strong><StatusBadge value={result.status}/><p>{result.status === "PENDING_MANUAL" ? "Bài có câu tự luận và đang chờ giảng viên chấm." : result.passed ? "Bạn đã đạt yêu cầu bài kiểm tra." : "Kết quả chưa đạt mức yêu cầu."}</p></> : <p>Hệ thống đang xử lý kết quả. Bạn có thể quay lại trang bài kiểm tra để xem sau.</p>}<Link className="button primary" href="/exams">Về danh sách bài kiểm tra</Link></section>
-    {toast && <Toast message={toast} onClose={() => setToast("")}/>} 
+    {toast && <Toast message={toast} onClose={() => setToast("")}/>}
   </>;
 
   if (!session) return <>
@@ -167,7 +238,7 @@ export function ExamDetail({ examId, user }: { examId: string; user: PortalUser 
       <main className="exam-question-panel">{question && <QuestionEditor question={question} value={answers[question.id]} onChange={(value) => setAnswer(question.id, value)} index={current}/>}<footer className="exam-actions"><button className="button secondary" disabled={current === 0} onClick={() => { void save(false); setCurrent((value) => Math.max(0, value - 1)); }}><Icon name="back"/>Câu trước</button><div><button className="button secondary" disabled={busy} onClick={() => void save()}><Icon name="save"/>Lưu bài</button>{current < (questions ?? []).length - 1 ? <button className="button primary" onClick={() => { void save(false); setCurrent((value) => Math.min((questions ?? []).length - 1, value + 1)); }}>Câu tiếp theo<Icon name="arrow"/></button> : <button className="button primary" disabled={busy} onClick={() => void submitExam(false)}>Nộp bài<Icon name="check"/></button>}</div></footer></main>
     </div>
     {error && <div className="floating-error"><Icon name="warning"/>{error}<button onClick={() => setError("")}><Icon name="close"/></button></div>}
-    {toast && <Toast message={toast} onClose={() => setToast("")}/>} 
+    {toast && <Toast message={toast} onClose={() => setToast("")}/>}
   </div>;
 }
 

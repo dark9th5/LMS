@@ -74,7 +74,9 @@ class RepositoryContractTests(unittest.TestCase):
         login_api = (ROOT / "apps/web/app/api/auth/login/route.ts").read_text(encoding="utf-8")
         login_form = (ROOT / "apps/web/app/login/LoginForm.tsx").read_text(encoding="utf-8")
         dashboard = (ROOT / "apps/web/app/(portal)/dashboard/page.tsx").read_text(encoding="utf-8")
-        self.assertIn("user: payload.user", login_api)
+        self.assertIn("user: data.user", login_api)
+        self.assertIn("encodeUserCookie(data.user)", login_api)
+        self.assertNotIn("MOCK_USERS", login_api)
         self.assertIn('path: "/"', login_api)
         self.assertIn("landingForRoles(data.user.roles)", login_form)
         self.assertIn("window.location.replace", login_form)
@@ -121,6 +123,41 @@ class RepositoryContractTests(unittest.TestCase):
         self.assertIn("c.id in :assignedCourseIds", domain)
         self.assertIn('course.ownerId === user.id', detail)
         self.assertIn("disabled={!canEdit}", detail)
+
+    def test_course_and_assessment_crud_contracts_are_complete(self) -> None:
+        course_api = (ROOT / "backend/services/course-service/src/main/kotlin/com/lmspilot/course/api/CourseApi.kt").read_text(encoding="utf-8")
+        assessment_api = (ROOT / "backend/services/assessment-service/src/main/kotlin/com/lmspilot/assessment/api/AssessmentApi.kt").read_text(encoding="utf-8")
+        course_ui = (ROOT / "apps/web/components/CourseDetail.tsx").read_text(encoding="utf-8")
+        exams_ui = (ROOT / "apps/web/components/ExamsPage.tsx").read_text(encoding="utf-8")
+        exam_detail = (ROOT / "apps/web/components/ExamDetail.tsx").read_text(encoding="utf-8")
+        self.assertIn('@DeleteMapping("/{courseId}/lessons/{lessonId}")', course_api)
+        self.assertIn('@DeleteMapping("/{id}")', course_api)
+        self.assertIn('method: "DELETE"', course_ui)
+        self.assertIn("fun updateExam", assessment_api)
+        self.assertIn("fun archiveExam", assessment_api)
+        self.assertIn("fun archiveQuestion", assessment_api)
+        self.assertIn('/api/v1/questions/${question.id}', exams_ui)
+        self.assertIn('/api/v1/exams/${exam.id}', exam_detail)
+
+    def test_demo_course_has_real_multimedia_assets_and_exam(self) -> None:
+        course_seed = (ROOT / "backend/services/course-service/src/main/kotlin/com/lmspilot/course/config/DevelopmentSeed.kt").read_text(encoding="utf-8")
+        assessment_seed = (ROOT / "backend/services/assessment-service/src/main/kotlin/com/lmspilot/assessment/config/DevelopmentSeed.kt").read_text(encoding="utf-8")
+        file_seed = (ROOT / "backend/services/file-storage-service/src/main/kotlin/com/lmspilot/filestorage/config/DevelopmentSeed.kt").read_text(encoding="utf-8")
+        models = (ROOT / "apps/web/lib/models.ts").read_text(encoding="utf-8")
+        for marker in ("Bài 0 - Làm quen với LMSPilot", "LessonType.VIDEO", "LessonType.PDF", "LessonType.DOCX", "LessonType.EXAM"):
+            self.assertIn(marker, course_seed)
+        self.assertIn("Bài 0 - Kiểm tra làm quen LMSPilot", assessment_seed)
+        self.assertGreaterEqual(assessment_seed.count("SampleQuestion("), 5)
+        self.assertIn("ClassPathResource", file_seed)
+        self.assertIn('"DOCX"', models)
+        for name in (
+            "LMSPilot_Gioi_thieu_Bai_0.mp4",
+            "LMSPilot_Huong_dan_nhanh_hoc_vien.pdf",
+            "LMSPilot_Checklist_giang_vien.docx",
+        ):
+            asset = ROOT / "backend/services/file-storage-service/src/main/resources/demo" / name
+            self.assertTrue(asset.is_file(), name)
+            self.assertGreater(asset.stat().st_size, 1000, name)
 
     def test_idempotency_helpers_are_imported_where_used(self) -> None:
         for path in (ROOT / "apps/web").rglob("*.tsx"):

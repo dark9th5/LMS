@@ -34,7 +34,7 @@ data class QuestionRequest(
     val tags: Set<String> = emptySet(),
     @field:DecimalMin("0.0", inclusive = false) val defaultPoints: Double = 1.0,
 )
-data class QuestionResponse(val id: UUID, val type: QuestionType, val prompt: String, val options: List<String>, val explanation: String?, val difficulty: Int, val tags: Set<String>, val defaultPoints: Double, val status: QuestionStatus, val version: Int)
+data class QuestionResponse(val id: UUID, val type: QuestionType, val prompt: String, val options: List<String>, val correctAnswers: List<String>, val explanation: String?, val difficulty: Int, val tags: Set<String>, val defaultPoints: Double, val status: QuestionStatus, val version: Int)
 data class ExamQuestionInput(val questionId: UUID, @field:DecimalMin("0.0", inclusive=false) val points: Double, @field:Min(0) val sortOrder: Int)
 data class ExamRequest(
     @field:NotBlank val title: String, val courseId: UUID, val lessonId: UUID? = null,
@@ -49,7 +49,24 @@ data class ExamRequest(
     val questions: List<ExamQuestionInput>,
 )
 data class ExamQuestionView(val id: UUID, val type: QuestionType, val prompt: String, val options: List<String>, val points: Double, val sortOrder: Int)
-data class ExamResponse(val id: UUID, val title: String, val courseId: UUID?, val durationMinutes: Int, val opensAt: Instant?, val closesAt: Instant?, val maxAttempts: Int, val passingScore: Double, val status: ExamStatus, val version: Int, val questions: List<ExamQuestionView>)
+data class ExamResponse(
+    val id: UUID,
+    val title: String,
+    val courseId: UUID?,
+    val lessonId: UUID?,
+    val durationMinutes: Int,
+    val opensAt: Instant?,
+    val closesAt: Instant?,
+    val maxAttempts: Int,
+    val waitMinutesBetweenAttempts: Int,
+    val passingScore: Double,
+    val shuffleQuestions: Boolean,
+    val shuffleAnswers: Boolean,
+    val scoreStrategy: ScoreStrategy,
+    val status: ExamStatus,
+    val version: Int,
+    val questions: List<ExamQuestionView>,
+)
 data class StartSessionRequest(val examId: UUID)
 data class SaveAnswersRequest(val answers: Map<String, JsonNode>)
 data class SessionResponse(val id: UUID, val examId: UUID, val attemptNo: Int, val status: ExamSessionStatus, val startedAt: Instant, val expiresAt: Instant, val submittedAt: Instant?, val answers: Map<String, JsonNode>, val questions: List<ExamQuestionView>)
@@ -92,6 +109,8 @@ class AssessmentManagementService(
 ) {
     @Transactional(readOnly = true)
     fun listQuestions() = (if (isAdmin()) questions.findAll() else questions.findAllByOwnerIdOrderByUpdatedAtDesc(CurrentUser.id()))
+        .filter { it.status != QuestionStatus.ARCHIVED }
+        .sortedByDescending { it.updatedAt }
         .map { it.response(mapper) }
 
     @Transactional
@@ -106,6 +125,7 @@ class AssessmentManagementService(
         validateQuestion(input)
         val entity = questions.findById(id).orElseThrow { ApiException(HttpStatus.NOT_FOUND, "QUESTION_NOT_FOUND", "Không tìm thấy câu hỏi") }
         requireOwner(entity.ownerId, "Không thể sửa câu hỏi ngoài phạm vi")
+        if (entity.status == QuestionStatus.ARCHIVED) throw ApiException(HttpStatus.CONFLICT, "QUESTION_ARCHIVED", "Không thể sửa câu hỏi đã lưu trữ")
         entity.type = input.type; entity.prompt = input.prompt.trim(); entity.optionsJson = mapper.writeValueAsString(input.options); entity.correctAnswersJson = mapper.writeValueAsString(input.correctAnswers)
         entity.explanation = input.explanation; entity.difficulty = input.difficulty; entity.tagsCsv = input.tags.joinToString(","); entity.defaultPoints = input.defaultPoints
         entity.questionVersion += 1; entity.updatedAt = Instant.now()
@@ -113,19 +133,63 @@ class AssessmentManagementService(
     }
 
     @Transactional
+    fun archiveQuestion(id: UUID) {
+        val entity = questions.findById(id).orElseThrow { ApiException(HttpStatus.NOT_FOUND, "QUESTION_NOT_FOUND", "Không tìm thấy câu hỏi") }
+        requireOwner(entity.ownerId, "Không thể lưu trữ câu hỏi ngoài phạm vi")
+        entity.status = QuestionStatus.ARCHIVED
+        entity.updatedAt = Instant.now()
+    }
+
+    @Transactional
     fun createExam(input: ExamRequest): ExamResponse {
-        if (input.closesAt != null && input.opensAt != null && !input.closesAt.isAfter(input.opensAt)) throw ApiException(HttpStatus.BAD_REQUEST, "INVALID_EXAM_WINDOW", "Thời gian đóng phải sau thời gian mở")
-        if (input.questions.isEmpty()) throw ApiException(HttpStatus.BAD_REQUEST, "EXAM_EMPTY", "Bài kiểm tra phải có câu hỏi")
+        validateExam(input)
         val exam = exams.save(ExamEntity(title = input.title.trim(), courseId = input.courseId, lessonId = input.lessonId, durationMinutes = input.durationMinutes, opensAt = input.opensAt, closesAt = input.closesAt, maxAttempts = input.maxAttempts, waitMinutesBetweenAttempts = input.waitMinutesBetweenAttempts, passingScore = input.passingScore, shuffleQuestions = input.shuffleQuestions, shuffleAnswers = input.shuffleAnswers, scoreStrategy = input.scoreStrategy, status = input.status, ownerId = CurrentUser.id()))
         saveExamQuestions(exam.id, input.questions)
         return examResponse(exam)
     }
 
+    @Transactional
+    fun updateExam(id: UUID, input: ExamRequest): ExamResponse {
+        validateExam(input)
+        val exam = exams.findById(id).orElseThrow { examNotFound() }
+        requireOwner(exam.ownerId, "Bài kiểm tra ngoài phạm vi quản lý")
+        if (exam.status == ExamStatus.ARCHIVED) throw ApiException(HttpStatus.CONFLICT, "EXAM_ARCHIVED", "Không thể sửa bài kiểm tra đã lưu trữ")
+        if (sessions.existsByExamId(id)) throw ApiException(HttpStatus.CONFLICT, "EXAM_HAS_ATTEMPTS", "Bài kiểm tra đã có lượt làm. Hãy tạo bài kiểm tra mới để thay đổi cấu trúc đề.")
+
+        exam.title = input.title.trim()
+        exam.courseId = input.courseId
+        exam.lessonId = input.lessonId
+        exam.durationMinutes = input.durationMinutes
+        exam.opensAt = input.opensAt
+        exam.closesAt = input.closesAt
+        exam.maxAttempts = input.maxAttempts
+        exam.waitMinutesBetweenAttempts = input.waitMinutesBetweenAttempts
+        exam.passingScore = input.passingScore
+        exam.shuffleQuestions = input.shuffleQuestions
+        exam.shuffleAnswers = input.shuffleAnswers
+        exam.scoreStrategy = input.scoreStrategy
+        exam.status = input.status
+        exam.examVersion += 1
+        exam.updatedAt = Instant.now()
+        examQuestions.deleteAllByExamId(id)
+        examQuestions.flush()
+        saveExamQuestions(id, input.questions)
+        return examResponse(exam)
+    }
+
+    @Transactional
+    fun archiveExam(id: UUID) {
+        val exam = exams.findById(id).orElseThrow { examNotFound() }
+        requireOwner(exam.ownerId, "Bài kiểm tra ngoài phạm vi quản lý")
+        exam.status = ExamStatus.ARCHIVED
+        exam.updatedAt = Instant.now()
+    }
+
     @Transactional(readOnly = true)
     fun listExams(): List<ExamResponse> {
         val source = when {
-            CurrentUser.authorities().contains(Permissions.ASSESSMENT_MANAGE) && isAdmin() -> exams.findAll()
-            CurrentUser.authorities().contains(Permissions.ASSESSMENT_MANAGE) -> exams.findAllByOwnerIdOrderByUpdatedAtDesc(CurrentUser.id())
+            CurrentUser.authorities().contains(Permissions.ASSESSMENT_MANAGE) && isAdmin() -> exams.findAll().filter { it.status != ExamStatus.ARCHIVED }.sortedByDescending { it.updatedAt }
+            CurrentUser.authorities().contains(Permissions.ASSESSMENT_MANAGE) -> exams.findAllByOwnerIdOrderByUpdatedAtDesc(CurrentUser.id()).filter { it.status != ExamStatus.ARCHIVED }
             else -> {
                 val activeCourses = enrollmentCourses.activeCourseIds(CurrentUser.id())
                 exams.findAllByStatusOrderByUpdatedAtDesc(ExamStatus.ACTIVE).filter { it.courseId?.let(activeCourses::contains) == true }
@@ -222,7 +286,18 @@ class AssessmentManagementService(
         inputs.forEach { item ->
             val q = questions.findById(item.questionId).orElseThrow { ApiException(HttpStatus.BAD_REQUEST, "QUESTION_NOT_FOUND", "Câu hỏi ${item.questionId} không tồn tại") }
             requireOwner(q.ownerId, "Không thể dùng câu hỏi ngoài phạm vi")
+            if (q.status == QuestionStatus.ARCHIVED) throw ApiException(HttpStatus.CONFLICT, "QUESTION_ARCHIVED", "Không thể dùng câu hỏi đã lưu trữ")
             examQuestions.save(ExamQuestionEntity(examId = examId, questionId = q.id, questionVersion = q.questionVersion, type = q.type, promptSnapshot = q.prompt, optionsSnapshotJson = q.optionsJson, correctAnswersSnapshotJson = q.correctAnswersJson, points = item.points, sortOrder = item.sortOrder))
+        }
+    }
+
+    private fun validateExam(input: ExamRequest) {
+        if (input.closesAt != null && input.opensAt != null && !input.closesAt.isAfter(input.opensAt)) {
+            throw ApiException(HttpStatus.BAD_REQUEST, "INVALID_EXAM_WINDOW", "Thời gian đóng phải sau thời gian mở")
+        }
+        if (input.questions.isEmpty()) throw ApiException(HttpStatus.BAD_REQUEST, "EXAM_EMPTY", "Bài kiểm tra phải có câu hỏi")
+        if (input.questions.map { it.questionId }.toSet().size != input.questions.size) {
+            throw ApiException(HttpStatus.BAD_REQUEST, "DUPLICATE_EXAM_QUESTION", "Một câu hỏi không thể xuất hiện hai lần trong cùng bài kiểm tra")
         }
     }
 
@@ -231,7 +306,12 @@ class AssessmentManagementService(
         if (input.type in setOf(QuestionType.SINGLE_CHOICE, QuestionType.MULTIPLE_CHOICE) && input.options.size < 2) throw ApiException(HttpStatus.BAD_REQUEST, "OPTIONS_REQUIRED", "Câu lựa chọn phải có ít nhất hai phương án")
     }
 
-    private fun examResponse(exam: ExamEntity): ExamResponse = ExamResponse(exam.id, exam.title, exam.courseId, exam.durationMinutes, exam.opensAt, exam.closesAt, exam.maxAttempts, exam.passingScore, exam.status, exam.examVersion, examQuestions.findAllByExamIdOrderBySortOrderAsc(exam.id).map { it.view(mapper) })
+    private fun examResponse(exam: ExamEntity): ExamResponse = ExamResponse(
+        exam.id, exam.title, exam.courseId, exam.lessonId, exam.durationMinutes, exam.opensAt, exam.closesAt,
+        exam.maxAttempts, exam.waitMinutesBetweenAttempts, exam.passingScore, exam.shuffleQuestions,
+        exam.shuffleAnswers, exam.scoreStrategy, exam.status, exam.examVersion,
+        examQuestions.findAllByExamIdOrderBySortOrderAsc(exam.id).map { it.view(mapper) },
+    )
     private fun sessionResponse(session: ExamSessionEntity): SessionResponse = SessionResponse(session.id, session.examId, session.attemptNo, session.status, session.startedAt, session.expiresAt, session.submittedAt, readAnswers(session.answersJson), examQuestions.findAllByExamIdOrderBySortOrderAsc(session.examId).map { it.view(mapper) })
     private fun readAnswers(json: String): Map<String, JsonNode> = mapper.readValue(json, object : TypeReference<Map<String, JsonNode>>() {})
     private fun ownedSession(id: UUID): ExamSessionEntity {
@@ -246,7 +326,19 @@ class AssessmentManagementService(
     private fun examNotFound() = ApiException(HttpStatus.NOT_FOUND, "EXAM_NOT_FOUND", "Không tìm thấy bài kiểm tra")
 }
 
-private fun QuestionEntity.response(mapper: ObjectMapper) = QuestionResponse(id, type, prompt, mapper.readValue(optionsJson, object: TypeReference<List<String>>() {}), explanation, difficulty, tagsCsv.split(',').filter { it.isNotBlank() }.toSet(), defaultPoints, status, questionVersion)
+private fun QuestionEntity.response(mapper: ObjectMapper) = QuestionResponse(
+    id,
+    type,
+    prompt,
+    mapper.readValue(optionsJson, object: TypeReference<List<String>>() {}),
+    mapper.readValue(correctAnswersJson, object: TypeReference<List<String>>() {}),
+    explanation,
+    difficulty,
+    tagsCsv.split(',').filter { it.isNotBlank() }.toSet(),
+    defaultPoints,
+    status,
+    questionVersion,
+)
 private fun ExamQuestionEntity.view(mapper: ObjectMapper) = ExamQuestionView(questionId, type, promptSnapshot, mapper.readValue(optionsSnapshotJson, object: TypeReference<List<String>>() {}), points, sortOrder)
 
 @RestController
@@ -255,6 +347,7 @@ class QuestionController(private val service: AssessmentManagementService) {
     @GetMapping @PreAuthorize("hasAuthority('${Permissions.ASSESSMENT_MANAGE}')") fun list() = service.listQuestions()
     @PostMapping @ResponseStatus(HttpStatus.CREATED) @PreAuthorize("hasAuthority('${Permissions.ASSESSMENT_MANAGE}')") fun create(@Valid @RequestBody input: QuestionRequest) = service.createQuestion(input)
     @PutMapping("/{id}") @PreAuthorize("hasAuthority('${Permissions.ASSESSMENT_MANAGE}')") fun update(@PathVariable id: UUID, @Valid @RequestBody input: QuestionRequest) = service.updateQuestion(id, input)
+    @DeleteMapping("/{id}") @ResponseStatus(HttpStatus.NO_CONTENT) @PreAuthorize("hasAuthority('${Permissions.ASSESSMENT_MANAGE}')") fun archive(@PathVariable id: UUID) = service.archiveQuestion(id)
 }
 
 @RestController
@@ -262,6 +355,8 @@ class QuestionController(private val service: AssessmentManagementService) {
 class ExamController(private val service: AssessmentManagementService) {
     @GetMapping @PreAuthorize("hasAnyAuthority('${Permissions.ASSESSMENT_MANAGE}','${Permissions.ASSESSMENT_TAKE}')") fun list() = service.listExams()
     @PostMapping @ResponseStatus(HttpStatus.CREATED) @PreAuthorize("hasAuthority('${Permissions.ASSESSMENT_MANAGE}')") fun create(@Valid @RequestBody input: ExamRequest) = service.createExam(input)
+    @PutMapping("/{id}") @PreAuthorize("hasAuthority('${Permissions.ASSESSMENT_MANAGE}')") fun update(@PathVariable id: UUID, @Valid @RequestBody input: ExamRequest) = service.updateExam(id, input)
+    @DeleteMapping("/{id}") @ResponseStatus(HttpStatus.NO_CONTENT) @PreAuthorize("hasAuthority('${Permissions.ASSESSMENT_MANAGE}')") fun archive(@PathVariable id: UUID) = service.archiveExam(id)
     @GetMapping("/{id}") @PreAuthorize("hasAnyAuthority('${Permissions.ASSESSMENT_MANAGE}','${Permissions.ASSESSMENT_TAKE}')") fun get(@PathVariable id: UUID) = service.getExam(id)
     @PostMapping("/start") @ResponseStatus(HttpStatus.CREATED) @PreAuthorize("hasAuthority('${Permissions.ASSESSMENT_TAKE}')") fun start(@Valid @RequestBody input: StartSessionRequest) = service.start(input)
 }

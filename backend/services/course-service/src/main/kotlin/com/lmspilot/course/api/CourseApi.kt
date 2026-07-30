@@ -114,6 +114,8 @@ class CourseManagementService(
             categoryId,
             ownerId,
             assignedCourseIds,
+            status == CourseStatus.ARCHIVED,
+            CourseStatus.ARCHIVED,
             PageRequest.of(page.coerceAtLeast(0), size.coerceIn(1, 100), Sort.by("updatedAt").descending()),
         )
         return PageResponse(result.content.map { it.response() }, result.number, result.size, result.totalElements, result.totalPages)
@@ -146,6 +148,7 @@ class CourseManagementService(
         val course = courses.findById(id).orElseThrow { notFound() }
         requireOwner(course.ownerId)
         if (course.status == CourseStatus.ARCHIVED) throw ApiException(HttpStatus.CONFLICT, "COURSE_ARCHIVED", "Không thể sửa khóa học đã lưu trữ")
+        input.categoryId?.let { categories.findById(it).orElseThrow { ApiException(HttpStatus.BAD_REQUEST, "CATEGORY_NOT_FOUND", "Danh mục không tồn tại") } }
         if (course.status == CourseStatus.PUBLISHED) course.contentVersion += 1
         course.name = input.name.trim(); course.description = input.description; course.objectives = input.objectives
         course.targetAudience = input.targetAudience; course.durationMinutes = input.durationMinutes
@@ -158,12 +161,10 @@ class CourseManagementService(
     fun addLesson(courseId: UUID, input: LessonRequest): LessonResponse {
         val course = courses.findById(courseId).orElseThrow { notFound() }
         requireOwner(course.ownerId)
-        if (course.status == CourseStatus.ARCHIVED) throw ApiException(HttpStatus.CONFLICT, "COURSE_ARCHIVED", "Khóa học đã lưu trữ")
-        if (input.type != LessonType.TEXT && input.fileId == null && input.type !in setOf(LessonType.ASSIGNMENT, LessonType.EXAM)) {
-            throw ApiException(HttpStatus.BAD_REQUEST, "FILE_REQUIRED", "Loại bài học này cần file tài nguyên")
-        }
-        val lesson = lessons.save(LessonEntity(courseId = courseId, title = input.title.trim(), type = input.type, textContent = input.textContent, fileId = input.fileId, required = input.required, sortOrder = input.sortOrder, estimatedMinutes = input.estimatedMinutes))
-        course.updatedAt = Instant.now()
+        ensureEditable(course)
+        validateLesson(input)
+        val lesson = lessons.save(LessonEntity(courseId = courseId, title = input.title.trim(), type = input.type, textContent = normalizedText(input), fileId = normalizedFileId(input), required = input.required, sortOrder = input.sortOrder, estimatedMinutes = input.estimatedMinutes))
+        touchContent(course)
         return lesson.response()
     }
 
@@ -171,11 +172,33 @@ class CourseManagementService(
     fun updateLesson(courseId: UUID, lessonId: UUID, input: LessonRequest): LessonResponse {
         val course = courses.findById(courseId).orElseThrow { notFound() }
         requireOwner(course.ownerId)
+        ensureEditable(course)
+        validateLesson(input)
         val lesson = lessons.findById(lessonId).orElseThrow { ApiException(HttpStatus.NOT_FOUND, "LESSON_NOT_FOUND", "Không tìm thấy bài học") }
         if (lesson.courseId != courseId) throw ApiException(HttpStatus.NOT_FOUND, "LESSON_NOT_FOUND", "Không tìm thấy bài học")
-        lesson.title = input.title.trim(); lesson.type = input.type; lesson.textContent = input.textContent; lesson.fileId = input.fileId
+        lesson.title = input.title.trim(); lesson.type = input.type; lesson.textContent = normalizedText(input); lesson.fileId = normalizedFileId(input)
         lesson.required = input.required; lesson.sortOrder = input.sortOrder; lesson.estimatedMinutes = input.estimatedMinutes; lesson.updatedAt = Instant.now()
+        touchContent(course)
         return lesson.response()
+    }
+
+    @Transactional
+    fun deleteLesson(courseId: UUID, lessonId: UUID) {
+        val course = courses.findById(courseId).orElseThrow { notFound() }
+        requireOwner(course.ownerId)
+        ensureEditable(course)
+        val lesson = lessons.findById(lessonId).orElseThrow { ApiException(HttpStatus.NOT_FOUND, "LESSON_NOT_FOUND", "Không tìm thấy bài học") }
+        if (lesson.courseId != courseId) throw ApiException(HttpStatus.NOT_FOUND, "LESSON_NOT_FOUND", "Không tìm thấy bài học")
+        lessons.delete(lesson)
+        touchContent(course)
+    }
+
+    @Transactional
+    fun archive(id: UUID) {
+        val course = courses.findById(id).orElseThrow { notFound() }
+        requireOwner(course.ownerId)
+        course.status = CourseStatus.ARCHIVED
+        course.updatedAt = Instant.now()
     }
 
     @Transactional
@@ -213,6 +236,27 @@ class CourseManagementService(
             lessonIds = courseLessons.map { it.id }.toSet(),
             requiredLessonIds = courseLessons.filter { it.required }.map { it.id }.toSet(),
         )
+    }
+
+    private fun ensureEditable(course: CourseEntity) {
+        if (course.status == CourseStatus.ARCHIVED) throw ApiException(HttpStatus.CONFLICT, "COURSE_ARCHIVED", "Khóa học đã lưu trữ")
+    }
+
+    private fun validateLesson(input: LessonRequest) {
+        if (input.type == LessonType.TEXT && input.textContent.isNullOrBlank()) {
+            throw ApiException(HttpStatus.BAD_REQUEST, "TEXT_REQUIRED", "Bài học văn bản cần có nội dung")
+        }
+        if (input.type !in setOf(LessonType.TEXT, LessonType.ASSIGNMENT, LessonType.EXAM) && input.fileId == null) {
+            throw ApiException(HttpStatus.BAD_REQUEST, "FILE_REQUIRED", "Loại bài học này cần file tài nguyên")
+        }
+    }
+
+    private fun normalizedText(input: LessonRequest) = input.textContent?.trim()?.takeIf { input.type in setOf(LessonType.TEXT, LessonType.ASSIGNMENT, LessonType.EXAM) && it.isNotBlank() }
+    private fun normalizedFileId(input: LessonRequest) = input.fileId?.takeIf { input.type !in setOf(LessonType.TEXT, LessonType.ASSIGNMENT, LessonType.EXAM) }
+
+    private fun touchContent(course: CourseEntity) {
+        if (course.status == CourseStatus.PUBLISHED) course.contentVersion += 1
+        course.updatedAt = Instant.now()
     }
 
     private fun learnerCourses(query: String?, categoryId: UUID?, page: Int, size: Int): PageResponse<CourseResponse> {
@@ -265,6 +309,8 @@ class CourseController(private val service: CourseManagementService) {
     @PutMapping("/{id}") @PreAuthorize("hasAuthority('${Permissions.COURSES_WRITE}')") fun update(@PathVariable id: UUID, @Valid @RequestBody input: CourseRequest) = service.update(id, input)
     @PostMapping("/{id}/lessons") @ResponseStatus(HttpStatus.CREATED) @PreAuthorize("hasAuthority('${Permissions.COURSES_WRITE}')") fun addLesson(@PathVariable id: UUID, @Valid @RequestBody input: LessonRequest) = service.addLesson(id, input)
     @PutMapping("/{courseId}/lessons/{lessonId}") @PreAuthorize("hasAuthority('${Permissions.COURSES_WRITE}')") fun updateLesson(@PathVariable courseId: UUID, @PathVariable lessonId: UUID, @Valid @RequestBody input: LessonRequest) = service.updateLesson(courseId, lessonId, input)
+    @DeleteMapping("/{courseId}/lessons/{lessonId}") @ResponseStatus(HttpStatus.NO_CONTENT) @PreAuthorize("hasAuthority('${Permissions.COURSES_WRITE}')") fun deleteLesson(@PathVariable courseId: UUID, @PathVariable lessonId: UUID) = service.deleteLesson(courseId, lessonId)
+    @DeleteMapping("/{id}") @ResponseStatus(HttpStatus.NO_CONTENT) @PreAuthorize("hasAuthority('${Permissions.COURSES_WRITE}')") fun archive(@PathVariable id: UUID) = service.archive(id)
     @PostMapping("/{id}/status/{status}") @PreAuthorize("hasAuthority('${Permissions.COURSES_PUBLISH}')") fun transition(@PathVariable id: UUID, @PathVariable status: CourseStatus) = service.transition(id, status)
 }
 

@@ -50,6 +50,7 @@ lmspilot:
   jwt:
     secret: ${LMSPILOT_JWT_SECRET}
   internal-token: ${LMSPILOT_INTERNAL_TOKEN}
+  seed-demo: ${LMSPILOT_SEED_DEMO:false}
 storage:
   root: ${FILE_STORAGE_ROOT:./data/files}
   max-size-bytes: ${FILE_MAX_SIZE_BYTES:209715200}

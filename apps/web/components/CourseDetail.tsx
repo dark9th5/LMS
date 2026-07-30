@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { apiRequest } from "@/lib/api";
 import type { Course, CourseStatus, Lesson, LessonType } from "@/lib/models";
 import { formatDate, formatDuration } from "@/lib/models";
@@ -13,7 +14,7 @@ import { LessonResource } from "./LessonResource";
 import { StatusBadge } from "./StatusBadge";
 
 const lessonTypeLabels: Record<LessonType, string> = {
-  TEXT: "Nội dung văn bản", PDF: "Tài liệu PDF", VIDEO: "Video", AUDIO: "Âm thanh",
+  TEXT: "Nội dung văn bản", PDF: "Tài liệu PDF", DOCX: "Tài liệu DOCX", VIDEO: "Video", AUDIO: "Âm thanh",
   FILE: "Tệp đính kèm", ASSIGNMENT: "Bài thực hành", EXAM: "Bài kiểm tra",
 };
 
@@ -22,6 +23,7 @@ function fileRequired(type: LessonType) {
 }
 
 export function CourseDetail({ courseId, user }: { courseId: string; user: PortalUser }) {
+  const router = useRouter();
   const [course, setCourse] = useState<Course | null>(null);
   const [selectedLessonId, setSelectedLessonId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -111,10 +113,10 @@ export function CourseDetail({ courseId, user }: { courseId: string; user: Porta
 
       const payload = {
         title: String(data.get("title") ?? ""), type,
-        textContent: type === "TEXT" ? String(data.get("textContent") ?? "") : null,
+        textContent: ["TEXT", "ASSIGNMENT", "EXAM"].includes(type) ? String(data.get("textContent") ?? "") || null : null,
         fileId,
         required: data.get("required") === "on",
-        sortOrder: editingLesson?.sortOrder ?? (course.lessons?.length ?? 0) + 1,
+        sortOrder: editingLesson?.sortOrder ?? Math.max(0, ...(course.lessons ?? []).map((lesson) => lesson.sortOrder)) + 1,
         estimatedMinutes: Number(data.get("estimatedMinutes") || 0),
       };
       const saved = editingLesson
@@ -126,6 +128,34 @@ export function CourseDetail({ courseId, user }: { courseId: string; user: Porta
       await load(); setSelectedLessonId(saved.id);
     } catch (caught) { setFormError(caught instanceof Error ? caught.message : "Không thể lưu bài học"); }
     finally { setSaving(false); }
+  }
+
+  async function deleteLesson(lesson: Lesson) {
+    if (!course || !canEdit) return;
+    if (!window.confirm(`Xóa bài học “${lesson.title}”? Tiến độ liên quan có thể không còn được tính vào phiên bản mới của khóa học.`)) return;
+    setSaving(true);
+    try {
+      await apiRequest(`/api/v1/courses/${course.id}/lessons/${lesson.id}`, { method: "DELETE" });
+      setToast({ message: "Đã xóa bài học khỏi khóa học." });
+      setSelectedLessonId(null);
+      await load();
+    } catch (caught) {
+      setToast({ message: caught instanceof Error ? caught.message : "Không thể xóa bài học", tone: "error" });
+    } finally { setSaving(false); }
+  }
+
+  async function archiveCourse() {
+    if (!course || !canEdit) return;
+    if (!window.confirm("Xóa khóa học khỏi danh sách đang dùng? Hệ thống sẽ lưu trữ thay vì xóa vật lý để giữ nguyên lớp, tiến độ và điểm đã phát sinh.")) return;
+    setSaving(true);
+    try {
+      await apiRequest(`/api/v1/courses/${course.id}`, { method: "DELETE" });
+      router.replace("/courses");
+      router.refresh();
+    } catch (caught) {
+      setToast({ message: caught instanceof Error ? caught.message : "Không thể lưu trữ khóa học", tone: "error" });
+      setSaving(false);
+    }
   }
 
   if (loading) return <LoadingState label="Đang tải cấu trúc và nội dung khóa học..."/>;
@@ -159,11 +189,11 @@ export function CourseDetail({ courseId, user }: { courseId: string; user: Porta
 
       <article className="lesson-preview">
         {selectedLesson ? <>
-          <div className="lesson-preview-head"><div><span className="content-type">{lessonTypeLabels[selectedLesson.type]}</span><h2>{selectedLesson.title}</h2><p>{selectedLesson.required ? "Nội dung bắt buộc" : "Nội dung tự chọn"} · {selectedLesson.estimatedMinutes || 0} phút</p></div>{canEdit && <button className="button secondary compact" onClick={() => openLessonModal(selectedLesson)}><Icon name="edit"/>Chỉnh sửa</button>}</div>
+          <div className="lesson-preview-head"><div><span className="content-type">{lessonTypeLabels[selectedLesson.type]}</span><h2>{selectedLesson.title}</h2><p>{selectedLesson.required ? "Nội dung bắt buộc" : "Nội dung tự chọn"} · {selectedLesson.estimatedMinutes || 0} phút</p></div>{canEdit && <div className="page-actions"><button className="button secondary compact" onClick={() => openLessonModal(selectedLesson)}><Icon name="edit"/>Chỉnh sửa</button><button className="button danger compact" disabled={saving} onClick={() => void deleteLesson(selectedLesson)}><Icon name="trash"/>Xóa</button></div>}</div>
           <div className="lesson-content">
-            {selectedLesson.type === "TEXT" ? <div className="rich-text"><p>{selectedLesson.textContent || "Bài học chưa có nội dung văn bản."}</p></div> : selectedLesson.fileId ? <LessonResource fileId={selectedLesson.fileId} type={selectedLesson.type} compact/> : <EmptyState title="Nội dung nghiệp vụ" description={selectedLesson.type === "ASSIGNMENT" ? "Bài thực hành sẽ được học viên nộp trong luồng học tập." : "Bài kiểm tra được quản lý tại chức năng Bài kiểm tra."}/>} 
+            {selectedLesson.type === "TEXT" ? <div className="rich-text"><p>{selectedLesson.textContent || "Bài học chưa có nội dung văn bản."}</p></div> : selectedLesson.fileId ? <LessonResource fileId={selectedLesson.fileId} type={selectedLesson.type} compact/> : <EmptyState title="Nội dung nghiệp vụ" description={selectedLesson.textContent || (selectedLesson.type === "ASSIGNMENT" ? "Bài thực hành sẽ được học viên nộp trong luồng học tập." : "Bài kiểm tra được quản lý tại chức năng Bài kiểm tra.")}/>}
           </div>
-        </> : <EmptyState title="Bắt đầu xây dựng khóa học" description={canEdit ? "Thêm bài học đầu tiên. Sau khi có nội dung, bạn có thể xuất bản khóa học để mở lớp." : "Khóa học chưa có nội dung được công bố."} action={canEdit ? <button className="button primary" onClick={() => openLessonModal()}><Icon name="plus"/>Thêm bài học</button> : undefined}/>} 
+        </> : <EmptyState title="Bắt đầu xây dựng khóa học" description={canEdit ? "Thêm bài học đầu tiên. Sau khi có nội dung, bạn có thể xuất bản khóa học để mở lớp." : "Khóa học chưa có nội dung được công bố."} action={canEdit ? <button className="button primary" onClick={() => openLessonModal()}><Icon name="plus"/>Thêm bài học</button> : undefined}/>}
       </article>
     </section> : <section className="settings-panel">
       <form className="form-stack" onSubmit={updateCourse}>
@@ -176,13 +206,14 @@ export function CourseDetail({ courseId, user }: { courseId: string; user: Porta
         {formError && <div className="form-alert error"><Icon name="warning"/>{formError}</div>}
         {canEdit && <div className="form-footer"><button className="button primary" disabled={saving}><Icon name="check"/>{saving ? "Đang lưu..." : "Lưu thay đổi"}</button></div>}
       </form>
-      {canPublish && course.status !== "ARCHIVED" && <div className="danger-zone"><div><strong>Lưu trữ khóa học</strong><p>Khóa học lưu trữ không thể chỉnh sửa. Dữ liệu lịch sử vẫn được giữ lại.</p></div><button className="button danger" disabled={saving} onClick={() => void transition("ARCHIVED")}><Icon name="lock"/>Lưu trữ</button></div>}
+      {canEdit && course.status !== "ARCHIVED" && <div className="danger-zone"><div><strong>Xóa khỏi danh sách đang dùng</strong><p>Đây là xóa an toàn: khóa học được chuyển sang lưu trữ, còn lớp học, tiến độ, điểm và lịch sử vẫn được giữ nguyên.</p></div><button className="button danger" disabled={saving} onClick={() => void archiveCourse()}><Icon name="trash"/>Xóa / lưu trữ</button></div>}
+      {canPublish && course.status === "ARCHIVED" && <div className="danger-zone"><div><strong>Khôi phục khóa học</strong><p>Xuất bản lại để khóa học quay về danh sách sử dụng.</p></div><button className="button primary" disabled={saving} onClick={() => void transition("PUBLISHED")}><Icon name="unlock"/>Khôi phục</button></div>}
     </section>}
 
     <Modal open={lessonModal} onClose={() => { if (!saving) { setLessonModal(false); setEditingLesson(null); } }} title={editingLesson ? "Chỉnh sửa bài học" : "Thêm bài học"} description="Nội dung được lưu trực tiếp trong Course Service và File Storage Service.">
       <LessonForm key={editingLesson?.id ?? "new"} lesson={editingLesson} onSubmit={saveLesson} busy={saving} error={formError}/>
     </Modal>
-    {toast && <Toast message={toast.message} tone={toast.tone} onClose={() => setToast(null)}/>} 
+    {toast && <Toast message={toast.message} tone={toast.tone} onClose={() => setToast(null)}/>}
   </>;
 }
 
@@ -192,8 +223,8 @@ function LessonForm({ lesson, onSubmit, busy, error }: { lesson: Lesson | null; 
   return <form className="form-stack" onSubmit={onSubmit}>
     <label>Tên bài học <b>*</b><input name="title" required maxLength={220} defaultValue={lesson?.title ?? ""} placeholder="VD: Tổng quan và mục tiêu"/></label>
     <div className="form-grid two"><label>Loại nội dung<select name="type" value={type} onChange={(event) => setType(event.target.value as LessonType)}>{Object.entries(lessonTypeLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label><label>Thời lượng dự kiến (phút)<input name="estimatedMinutes" type="number" min="0" defaultValue={lesson?.estimatedMinutes ?? 10}/></label></div>
-    {type === "TEXT" && <label>Nội dung văn bản<textarea name="textContent" rows={8} required defaultValue={lesson?.type === "TEXT" ? lesson.textContent ?? "" : ""} placeholder="Nhập nội dung bài học..."/></label>}
-    {fileRequired(type) && <label>Tệp nội dung {hasStoredFile ? "" : <b>*</b>}<input name="file" type="file" required={!hasStoredFile} accept={type === "PDF" ? ".pdf" : type === "VIDEO" ? ".mp4" : type === "AUDIO" ? ".mp3" : ".pdf,.docx,.txt,.csv,.png,.jpg,.jpeg"}/><small>{hasStoredFile ? "Để trống để giữ tệp hiện tại, hoặc chọn tệp mới để thay thế." : "Tệp được kiểm tra định dạng, kích thước và lưu trong hệ thống nội bộ."}</small></label>}
+    {["TEXT", "ASSIGNMENT", "EXAM"].includes(type) && <label>{type === "TEXT" ? "Nội dung văn bản" : "Hướng dẫn hiển thị"}<textarea name="textContent" rows={type === "TEXT" ? 8 : 4} required={type === "TEXT"} defaultValue={["TEXT", "ASSIGNMENT", "EXAM"].includes(lesson?.type ?? "") ? lesson?.textContent ?? "" : ""} placeholder={type === "TEXT" ? "Nhập nội dung bài học..." : "Mô tả cách thực hiện hoặc tên bài kiểm tra liên quan..."}/></label>}
+    {fileRequired(type) && <label>Tệp nội dung {hasStoredFile ? "" : <b>*</b>}<input name="file" type="file" required={!hasStoredFile} accept={type === "PDF" ? ".pdf" : type === "DOCX" ? ".docx" : type === "VIDEO" ? ".mp4" : type === "AUDIO" ? ".mp3" : ".pdf,.docx,.txt,.csv,.png,.jpg,.jpeg"}/><small>{hasStoredFile ? "Để trống để giữ tệp hiện tại, hoặc chọn tệp mới để thay thế." : "Tệp được kiểm tra định dạng, kích thước và lưu trong hệ thống nội bộ."}</small></label>}
     {["ASSIGNMENT", "EXAM"].includes(type) && <div className="form-alert info"><Icon name="warning"/>Loại nội dung này tạo điểm neo trong khóa học. Học viên thao tác trong luồng Bài thực hành hoặc Bài kiểm tra tương ứng.</div>}
     <label className="check-row"><input name="required" type="checkbox" defaultChecked={lesson?.required ?? true}/><span><strong>Nội dung bắt buộc</strong><small>Tính vào điều kiện hoàn thành khóa học</small></span></label>
     {error && <div className="form-alert error"><Icon name="warning"/>{error}</div>}

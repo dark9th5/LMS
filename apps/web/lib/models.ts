@@ -1,5 +1,5 @@
 export type CourseStatus = "DRAFT" | "PUBLISHED" | "HIDDEN" | "ARCHIVED";
-export type LessonType = "TEXT" | "PDF" | "VIDEO" | "AUDIO" | "FILE" | "ASSIGNMENT" | "EXAM";
+export type LessonType = "TEXT" | "PDF" | "DOCX" | "VIDEO" | "AUDIO" | "FILE" | "ASSIGNMENT" | "EXAM";
 
 export type Lesson = {
   id: string;
@@ -100,11 +100,12 @@ export type Question = {
   type: "SINGLE_CHOICE" | "MULTIPLE_CHOICE" | "TRUE_FALSE" | "SHORT_TEXT" | "ESSAY";
   prompt: string;
   options: string[];
+  correctAnswers: string[];
   explanation?: string | null;
   difficulty: number;
   tags: string[];
   defaultPoints: number;
-  status: string;
+  status: "DRAFT" | "ACTIVE" | "ARCHIVED";
   version: number;
 };
 
@@ -121,12 +122,17 @@ export type Exam = {
   id: string;
   title: string;
   courseId?: string | null;
+  lessonId?: string | null;
   durationMinutes: number;
   opensAt?: string | null;
   closesAt?: string | null;
   maxAttempts: number;
+  waitMinutesBetweenAttempts: number;
   passingScore: number;
-  status: "DRAFT" | "ACTIVE" | "CLOSED";
+  shuffleQuestions: boolean;
+  shuffleAnswers: boolean;
+  scoreStrategy: "HIGHEST" | "LATEST" | "AVERAGE";
+  status: "DRAFT" | "ACTIVE" | "INACTIVE" | "ARCHIVED";
   version: number;
   questions: ExamQuestion[];
 };
@@ -135,7 +141,7 @@ export type ExamSession = {
   id: string;
   examId: string;
   attemptNo: number;
-  status: "IN_PROGRESS" | "SUBMITTED" | "EXPIRED";
+  status: "IN_PROGRESS" | "SUBMITTED" | "EXPIRED" | "GRADED";
   startedAt: string;
   expiresAt: string;
   submittedAt?: string | null;
