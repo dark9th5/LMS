@@ -2,7 +2,6 @@ import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { encodeUserCookie } from "@/lib/session-cookie";
 import type { PortalUser } from "@/lib/types";
-import { handleMockGatewayRequest } from "@/lib/standalone-mock";
 
 const gateway = (process.env.LMSPILOT_GATEWAY_URL ?? "http://localhost:8080").replace(
   /\/+$/,
@@ -307,8 +306,7 @@ async function proxy(req: NextRequest, { params }: RouteContext) {
   try {
     upstream = await callGateway(req, url, access, body);
   } catch {
-    const bodyText = body ? new TextDecoder().decode(body) : undefined;
-    return handleMockGatewayRequest(path, req.method, bodyText);
+    return unavailable();
   }
 
   if (upstream.status === 401 && refresh && !refreshedSession) {

@@ -141,7 +141,7 @@ export async function POST(request: Request) {
     );
   }
 
-  let response: Response | null = null;
+  let response: Response;
   try {
     response = await fetchWithTimeout(`${gateway}/api/v1/auth/login`, {
       method: "POST",
@@ -154,107 +154,43 @@ export async function POST(request: Request) {
       cache: "no-store",
     });
   } catch {
-    // Gateway offline fallback for local standalone demo testing
+    return noStoreJson(
+      {
+        ok: false,
+        code: "AUTH_SERVICE_UNAVAILABLE",
+        message:
+          "Dịch vụ đăng nhập đang không khả dụng. Hệ thống không chuyển sang tài khoản giả.",
+      },
+      503,
+    );
   }
 
-  if (response && response.ok) {
-    const data = (await response.json().catch(() => null)) as unknown;
-    if (validPayload(data)) {
-      const secure = process.env.LMSPILOT_COOKIE_SECURE === "true";
-      const accessMaxAge = Math.max(1, Math.floor(data.expiresInSeconds));
-      const result = noStoreJson({ ok: true, user: data.user }, 200);
-
-      result.cookies.set("lmspilot_access", data.accessToken, {
-        httpOnly: true,
-        sameSite: "lax",
-        secure,
-        path: "/",
-        maxAge: accessMaxAge,
-      });
-      result.cookies.set("lmspilot_refresh", "", {
-        httpOnly: true,
-        sameSite: "strict",
-        secure,
-        path: "/api",
-        maxAge: 0,
-      });
-      result.cookies.set("lmspilot_refresh", data.refreshToken, {
-        httpOnly: true,
-        sameSite: "strict",
-        secure,
-        path: "/",
-        maxAge: 604_800,
-      });
-      result.cookies.set("lmspilot_user", encodeUserCookie(data.user), {
-        httpOnly: true,
-        sameSite: "lax",
-        secure,
-        path: "/",
-        maxAge: 604_800,
-      });
-
-      return result;
-    }
-  }
-
-  if (response && !response.ok) {
+  if (!response.ok) {
     return upstreamError(response);
   }
 
-  // Local Standalone Demo Login Fallback
-  const inputUsername = username.toLowerCase().trim();
-  let demoUser: PortalUser;
-  if (inputUsername === "instructor" || inputUsername === "giangvien") {
-    demoUser = {
-      id: "usr-instructor-01",
-      code: "INST-001",
-      username: "instructor",
-      fullName: "Trần Thị Giảng Viên",
-      email: "instructor@lmspilot.local",
-      roles: ["INSTRUCTOR"],
-      permissions: [
-        "course:write",
-        "class:write",
-        "exam:grade",
-        "courses:write",
-        "courses:publish",
-        "classes:write",
-        "assessment:manage",
-      ],
-    };
-  } else if (inputUsername === "student" || inputUsername === "hocvien") {
-    demoUser = {
-      id: "usr-student-01",
-      code: "STU-001",
-      username: "student",
-      fullName: "Lê Văn Học Viên",
-      email: "student@lmspilot.local",
-      roles: ["STUDENT"],
-      permissions: ["course:read", "exam:take"],
-    };
-  } else {
-    demoUser = {
-      id: "usr-admin-01",
-      code: "ADM-001",
-      username: "admin",
-      fullName: "Nguyễn Văn Quản Trị",
-      email: "admin@lmspilot.local",
-      roles: ["ADMIN"],
-      permissions: ["*"],
-    };
+  const data = (await response.json().catch(() => null)) as unknown;
+  if (!validPayload(data)) {
+    return noStoreJson(
+      {
+        ok: false,
+        code: "INVALID_AUTH_RESPONSE",
+        message: "Dịch vụ đăng nhập trả về dữ liệu không hợp lệ",
+      },
+      502,
+    );
   }
 
-  const mockAccessToken = `mock-access-token-${demoUser.username}-${Date.now()}`;
-  const mockRefreshToken = `mock-refresh-token-${demoUser.username}-${Date.now()}`;
   const secure = process.env.LMSPILOT_COOKIE_SECURE === "true";
-  const result = noStoreJson({ ok: true, user: demoUser }, 200);
+  const accessMaxAge = Math.max(1, Math.floor(data.expiresInSeconds));
+  const result = noStoreJson({ ok: true, user: data.user }, 200);
 
-  result.cookies.set("lmspilot_access", mockAccessToken, {
+  result.cookies.set("lmspilot_access", data.accessToken, {
     httpOnly: true,
     sameSite: "lax",
     secure,
     path: "/",
-    maxAge: 86400,
+    maxAge: accessMaxAge,
   });
   result.cookies.set("lmspilot_refresh", "", {
     httpOnly: true,
@@ -263,14 +199,14 @@ export async function POST(request: Request) {
     path: "/api",
     maxAge: 0,
   });
-  result.cookies.set("lmspilot_refresh", mockRefreshToken, {
+  result.cookies.set("lmspilot_refresh", data.refreshToken, {
     httpOnly: true,
     sameSite: "strict",
     secure,
     path: "/",
     maxAge: 604_800,
   });
-  result.cookies.set("lmspilot_user", encodeUserCookie(demoUser), {
+  result.cookies.set("lmspilot_user", encodeUserCookie(data.user), {
     httpOnly: true,
     sameSite: "lax",
     secure,
