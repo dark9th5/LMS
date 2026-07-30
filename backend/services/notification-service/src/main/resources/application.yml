@@ -1,0 +1,62 @@
+server:
+  port: ${SERVER_PORT:8092}
+  shutdown: graceful
+spring:
+  application:
+    name: notification-service
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/lmspilot?currentSchema=notification}
+    username: ${DB_USERNAME:notification_user}
+    password: ${DB_PASSWORD:notification_dev}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+  flyway:
+    enabled: true
+  mail:
+    host: ${SMTP_HOST:localhost}
+    port: ${SMTP_PORT:25}
+    username: ${SMTP_USERNAME:}
+    password: ${SMTP_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: ${SMTP_AUTH:false}
+          starttls:
+            enable: ${SMTP_STARTTLS:false}
+  rabbitmq:
+    listener:
+      simple:
+        default-requeue-rejected: false
+        retry:
+          enabled: true
+          initial-interval: 1s
+          max-attempts: 4
+          multiplier: 2
+          max-interval: 10s
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  health:
+    readinessstate:
+      enabled: true
+    livenessstate:
+      enabled: true
+lmspilot:
+  jwt:
+    secret: ${LMSPILOT_JWT_SECRET}
+  internal-token: ${LMSPILOT_INTERNAL_TOKEN}
+notification:
+  email-enabled: ${NOTIFICATION_EMAIL_ENABLED:false}
+  from: ${NOTIFICATION_FROM:no-reply@lmspilot.local}

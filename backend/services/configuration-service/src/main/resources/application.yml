@@ -1,0 +1,48 @@
+server:
+  port: ${SERVER_PORT:8095}
+  shutdown: graceful
+spring:
+  application:
+    name: configuration-service
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/lmspilot?currentSchema=configuration}
+    username: ${DB_USERNAME:configuration_user}
+    password: ${DB_PASSWORD:configuration_dev}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+  flyway:
+    enabled: true
+  rabbitmq:
+    listener:
+      simple:
+        default-requeue-rejected: false
+        retry:
+          enabled: true
+          initial-interval: 1s
+          max-attempts: 4
+          multiplier: 2
+          max-interval: 10s
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  health:
+    readinessstate:
+      enabled: true
+    livenessstate:
+      enabled: true
+lmspilot:
+  jwt:
+    secret: ${LMSPILOT_JWT_SECRET}
+  internal-token: ${LMSPILOT_INTERNAL_TOKEN}

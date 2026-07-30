@@ -1,0 +1,31 @@
+server:
+  port: ${SERVER_PORT:8097}
+  shutdown: graceful
+spring:
+  application:
+    name: operations-service
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/lmspilot?currentSchema=operations}
+    username: ${DB_USERNAME:operations_user}
+    password: ${DB_PASSWORD:operations_dev}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  endpoint:
+    health:
+      probes:
+        enabled: true
+lmspilot:
+  jwt:
+    secret: ${LMSPILOT_JWT_SECRET}
+  internal-token: ${LMSPILOT_INTERNAL_TOKEN}
+operations:
+  service-urls: ${OPERATIONS_SERVICE_URLS:identity=http://localhost:8081,course=http://localhost:8083,learning=http://localhost:8085,assessment=http://localhost:8086}

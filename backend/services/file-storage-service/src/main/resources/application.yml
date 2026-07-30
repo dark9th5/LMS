@@ -1,0 +1,56 @@
+server:
+  port: ${SERVER_PORT:8089}
+  shutdown: graceful
+spring:
+  application:
+    name: file-storage-service
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/lmspilot?currentSchema=file_storage}
+    username: ${DB_USERNAME:file_storage_user}
+    password: ${DB_PASSWORD:file_storage_dev}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+  flyway:
+    enabled: true
+  servlet:
+    multipart:
+      max-file-size: ${FILE_MAX_SIZE:200MB}
+      max-request-size: ${FILE_MAX_REQUEST_SIZE:210MB}
+  rabbitmq:
+    listener:
+      simple:
+        default-requeue-rejected: false
+        retry:
+          enabled: true
+          initial-interval: 1s
+          max-attempts: 4
+          multiplier: 2
+          max-interval: 10s
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  health:
+    readinessstate:
+      enabled: true
+    livenessstate:
+      enabled: true
+lmspilot:
+  jwt:
+    secret: ${LMSPILOT_JWT_SECRET}
+  internal-token: ${LMSPILOT_INTERNAL_TOKEN}
+storage:
+  root: ${FILE_STORAGE_ROOT:./data/files}
+  max-size-bytes: ${FILE_MAX_SIZE_BYTES:209715200}
+  allowed-content-types: ${FILE_ALLOWED_TYPES:application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,video/mp4,audio/mpeg,image/png,image/jpeg,text/plain,text/csv}

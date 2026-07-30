@@ -1,0 +1,41 @@
+# OS / IDE
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.iml
+
+# Secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+secrets/
+
+# Frontend
+node_modules/
+.next/
+out/
+coverage/
+
+# Python
+__pycache__/
+*.py[cod]
+
+# Backend
+.gradle/
+build/
+**/build/
+*.log
+
+# Runtime data
+data/
+backups/
+exports/
+uploads/
+
+# Archives
+*.zip
+*.tar.gz

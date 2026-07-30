@@ -1,0 +1,24 @@
+server:
+  port: ${SERVER_PORT:8094}
+  shutdown: graceful
+spring:
+  application:
+    name: ai-service
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  endpoint:
+    health:
+      probes:
+        enabled: true
+lmspilot:
+  jwt:
+    secret: ${LMSPILOT_JWT_SECRET}
+  internal-token: ${LMSPILOT_INTERNAL_TOKEN}
+ai:
+  enabled: ${AI_ENABLED:false}
+  base-url: ${AI_BASE_URL:http://host.docker.internal:11434/v1}
+  model: ${AI_MODEL:qwen3:8b}
+  api-key: ${AI_API_KEY:local-only}

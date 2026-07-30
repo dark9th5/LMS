@@ -1,0 +1,35 @@
+LMSPilot 0.4.0 - Verification report
+Generated: 2026-07-30
+
+PASSED IN THIS ENVIRONMENT
+- Repository validator: 18 services, 16 Flyway services, 23 YAML files, API/Gateway wiring, Gradle wrapper, secrets and Docker layout.
+- TypeScript/TSX syntax validation.
+- Offline TypeScript semantic validation with local tsc and minimal framework declarations.
+- Bash syntax validation for setup, preflight, smoke, backup, restore and PostgreSQL initialization scripts.
+- 14 repository contract tests, including:
+  * consistent seed identifiers;
+  * pinned/patched frontend dependencies;
+  * runtime secret policy;
+  * internal service-token enforcement;
+  * non-destructive migrations;
+  * unique Gateway routes;
+  * Docker socket isolation;
+  * role-aware login and landing routes;
+  * real LMS API wiring for courses/classes/learning/exams/grading;
+  * hidden sidebar/course-outline scrollbars;
+  * real lesson editing and inline PDF/video/audio delivery;
+  * idempotency imports;
+  * static icon contract;
+  * assigned-instructor course visibility with owner-only editing.
+- Git whitespace/object verification.
+- Release archive extraction and static-suite re-validation.
+
+NOT EXECUTED IN THIS ENVIRONMENT
+- Docker Compose image build/start (Docker Engine unavailable).
+- Full Gradle compile/test with downloaded Maven dependencies (registry unavailable).
+- npm ci and Next.js production build with downloaded dependencies (npm registry unavailable).
+- PostgreSQL/RabbitMQ/Redis runtime integration, browser E2E, load testing, penetration testing and customer UAT.
+
+RELEASE ACCEPTANCE RULE
+On the target machine, run scripts/setup.sh or scripts/setup.ps1.
+Treat installation as successful only when the script ends with: SMOKE TEST PASSED.

@@ -1,0 +1,88 @@
+server:
+  port: ${SERVER_PORT:8080}
+  shutdown: graceful
+spring:
+  application:
+    name: api-gateway
+  data:
+    redis:
+      host: ${SPRING_DATA_REDIS_HOST:localhost}
+      port: ${SPRING_DATA_REDIS_PORT:6379}
+      password: ${SPRING_DATA_REDIS_PASSWORD:}
+  cloud:
+    gateway:
+      server:
+        webflux:
+          default-filters:
+            - DedupeResponseHeader=Access-Control-Allow-Credentials Access-Control-Allow-Origin
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 40
+                redis-rate-limiter.burstCapacity: 80
+                redis-rate-limiter.requestedTokens: 1
+                key-resolver: "#{@userOrIpKeyResolver}"
+          routes:
+            - id: identity
+              uri: ${IDENTITY_URL:http://localhost:8081}
+              predicates:
+                - Path=/api/v1/auth/**,/api/v1/users/**,/api/v1/roles/**
+            - id: organization
+              uri: ${ORGANIZATION_URL:http://localhost:8082}
+              predicates: [Path=/api/v1/organization/**]
+            - id: course
+              uri: ${COURSE_URL:http://localhost:8083}
+              predicates: [Path=/api/v1/categories/**,/api/v1/courses/**]
+            - id: enrollment
+              uri: ${ENROLLMENT_URL:http://localhost:8084}
+              predicates: [Path=/api/v1/classes/**,/api/v1/enrollments/**]
+            - id: learning
+              uri: ${LEARNING_URL:http://localhost:8085}
+              predicates: [Path=/api/v1/learning/**]
+            - id: assessment
+              uri: ${ASSESSMENT_URL:http://localhost:8086}
+              predicates: [Path=/api/v1/questions/**,/api/v1/exams/**,/api/v1/exam-sessions/**]
+            - id: grading
+              uri: ${GRADING_URL:http://localhost:8087}
+              predicates: [Path=/api/v1/grades/**,/api/v1/grading/**]
+            - id: reporting
+              uri: ${REPORTING_URL:http://localhost:8088}
+              predicates: [Path=/api/v1/reports/**,/api/v1/dashboard/**]
+            - id: files
+              uri: ${FILE_STORAGE_URL:http://localhost:8089}
+              predicates: [Path=/api/v1/files/**]
+            - id: license
+              uri: ${LICENSE_URL:http://localhost:8090}
+              predicates: [Path=/api/v1/license/**]
+            - id: audit
+              uri: ${AUDIT_URL:http://localhost:8091}
+              predicates: [Path=/api/v1/audit/**]
+            - id: notifications
+              uri: ${NOTIFICATION_URL:http://localhost:8092}
+              predicates: [Path=/api/v1/notifications/**]
+            - id: certificates
+              uri: ${CERTIFICATE_URL:http://localhost:8093}
+              predicates: [Path=/api/v1/certificates/**,/public/v1/certificates/**]
+            - id: ai
+              uri: ${AI_URL:http://localhost:8094}
+              predicates: [Path=/api/v1/ai/**]
+            - id: configuration
+              uri: ${CONFIGURATION_URL:http://localhost:8095}
+              predicates: [Path=/api/v1/configuration/**,/public/v1/configuration]
+            - id: integration
+              uri: ${INTEGRATION_URL:http://localhost:8096}
+              predicates: [Path=/api/v1/integrations/**]
+            - id: operations
+              uri: ${OPERATIONS_URL:http://localhost:8097}
+              predicates: [Path=/api/v1/operations/**]
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics,gateway
+  endpoint:
+    health:
+      probes:
+        enabled: true
+lmspilot:
+  jwt:
+    secret: ${LMSPILOT_JWT_SECRET}

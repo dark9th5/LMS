@@ -1,0 +1,27 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: lmspilot
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets:
+          - api-gateway:8080
+          - identity-service:8081
+          - organization-service:8082
+          - course-service:8083
+          - enrollment-service:8084
+          - learning-service:8085
+          - assessment-service:8086
+          - grading-service:8087
+          - reporting-service:8088
+          - file-storage-service:8089
+          - license-service:8090
+          - audit-service:8091
+          - notification-service:8092
+          - certificate-service:8093
+          - ai-service:8094
+          - configuration-service:8095
+          - integration-service:8096
+          - operations-service:8097
