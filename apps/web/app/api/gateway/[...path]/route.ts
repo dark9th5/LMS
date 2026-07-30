@@ -2,7 +2,6 @@ import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { encodeUserCookie } from "@/lib/session-cookie";
 import type { PortalUser } from "@/lib/types";
-import { handleMockGatewayRequest, MOCK_USERS } from "@/lib/standalone-mock";
 
 const gateway = (process.env.LMSPILOT_GATEWAY_URL ?? "http://localhost:8080").replace(
   /\/+$/,
@@ -168,20 +167,6 @@ async function fetchWithTimeout(
 }
 
 function refreshSession(refreshToken: string): Promise<RefreshResult> {
-  if (refreshToken.startsWith("mock-refresh-token")) {
-    const userId = refreshToken.replace("mock-refresh-token-", "");
-    const user = MOCK_USERS.find((u) => u.id === userId || u.username === userId) ?? MOCK_USERS[0];
-    return Promise.resolve({
-      kind: "ok",
-      session: {
-        accessToken: `mock-access-token-${user.id}`,
-        refreshToken,
-        expiresInSeconds: 86400,
-        user,
-      },
-    });
-  }
-
   const existing = refreshInFlight.get(refreshToken);
   if (existing) return existing;
 
@@ -317,17 +302,11 @@ async function proxy(req: NextRequest, { params }: RouteContext) {
     ? undefined
     : await req.arrayBuffer();
 
-  if (access.startsWith("mock-access-token")) {
-    const bodyText = body ? new TextDecoder().decode(body) : undefined;
-    return handleMockGatewayRequest(path, req.method, bodyText);
-  }
-
   let upstream: Response;
   try {
     upstream = await callGateway(req, url, access, body);
   } catch {
-    const bodyText = body ? new TextDecoder().decode(body) : undefined;
-    return handleMockGatewayRequest(path, req.method, bodyText);
+    return unavailable();
   }
 
   if (upstream.status === 401 && refresh && !refreshedSession) {
