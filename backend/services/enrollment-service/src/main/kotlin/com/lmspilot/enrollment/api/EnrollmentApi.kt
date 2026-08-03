@@ -13,7 +13,6 @@ import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.NotEmpty
 import jakarta.validation.constraints.Size
 import org.springframework.beans.factory.annotation.Value
-import org.springframework.boot.web.client.RestClientBuilder
 import org.springframework.http.HttpStatus
 import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.stereotype.Service
@@ -41,7 +40,7 @@ data class EnrollmentValidation(val enrollmentId: UUID, val classId: UUID, val c
 
 @Service
 class CoursePublicationClient(
-    builder: RestClientBuilder,
+    builder: RestClient.Builder,
     @Value("\${course-service.url:http://localhost:8083}") baseUrl: String,
     @Value("\${lmspilot.internal-token}") private val serviceToken: String,
 ) {

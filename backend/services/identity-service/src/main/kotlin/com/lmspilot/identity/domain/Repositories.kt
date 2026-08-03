@@ -19,11 +19,11 @@ interface UserAccountRepository : JpaRepository<UserAccountEntity, UUID> {
 
     @Query("""
         select distinct u from UserAccountEntity u left join u.roles r
-        where (:query is null or lower(u.username) like lower(concat('%', :query, '%'))
-            or lower(u.fullName) like lower(concat('%', :query, '%'))
-            or lower(u.code) like lower(concat('%', :query, '%')))
+        where (:query is null or lower(u.username) like lower(concat('%', cast(:query as string), '%'))
+            or lower(u.fullName) like lower(concat('%', cast(:query as string), '%'))
+            or lower(u.code) like lower(concat('%', cast(:query as string), '%')))
           and (:status is null or u.status = :status)
-          and (:role is null or lower(r.code) = lower(:role))
+          and (:role is null or lower(r.code) = lower(cast(:role as string)))
     """)
     fun search(query: String?, status: AccountStatus?, role: String?, pageable: Pageable): Page<UserAccountEntity>
 }

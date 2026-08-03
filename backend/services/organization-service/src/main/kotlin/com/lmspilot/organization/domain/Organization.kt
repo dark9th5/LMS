@@ -30,7 +30,7 @@ interface OrganizationUnitRepository : org.springframework.data.jpa.repository.J
 
     @org.springframework.data.jpa.repository.Query("""
         select o from OrganizationUnitEntity o
-        where (:query is null or lower(o.code) like lower(concat('%', :query, '%')) or lower(o.name) like lower(concat('%', :query, '%')))
+        where (:query is null or lower(o.code) like lower(concat('%', cast(:query as string), '%')) or lower(o.name) like lower(concat('%', cast(:query as string), '%')))
           and (:status is null or o.status = :status)
         order by o.materializedPath, o.sortOrder, o.name
     """)

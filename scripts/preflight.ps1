@@ -1,4 +1,5 @@
 $ErrorActionPreference = "Stop"
+$env:DOCKER_API_VERSION = "1.48"
 Set-Location (Resolve-Path "$PSScriptRoot\..")
 function Fail([string]$Message) { throw "PRECHECK FAILED: $Message" }
 if (-not (Get-Command docker -ErrorAction SilentlyContinue)) { Fail "Chưa cài Docker Desktop." }

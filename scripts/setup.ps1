@@ -1,4 +1,5 @@
 $ErrorActionPreference = "Stop"
+$env:DOCKER_API_VERSION = "1.48"
 Set-Location (Resolve-Path "$PSScriptRoot\..")
 if (-not (Get-Command docker -ErrorAction SilentlyContinue)) { throw "Docker Desktop chưa được cài đặt." }
 docker compose version | Out-Null
@@ -7,7 +8,8 @@ if (-not (Test-Path .env)) {
   Copy-Item .env.example .env
   function New-Token([int]$Bytes = 48) {
     $data = New-Object byte[] $Bytes
-    [Security.Cryptography.RandomNumberGenerator]::Fill($data)
+    $rng = [System.Security.Cryptography.RandomNumberGenerator]::Create()
+    $rng.GetBytes($data)
     return [Convert]::ToBase64String($data).Replace('+','-').Replace('/','_').TrimEnd('=')
   }
   $values = @{

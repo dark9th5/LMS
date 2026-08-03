@@ -16,6 +16,15 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 import java.nio.charset.StandardCharsets
 import java.util.UUID
 
+class JwtAuthenticationConverter : Converter<Jwt, AbstractAuthenticationToken> {
+    override fun convert(jwt: Jwt): AbstractAuthenticationToken {
+        val authorities = mutableSetOf<GrantedAuthority>()
+        jwt.getClaimAsStringList("roles")?.forEach { authorities += SimpleGrantedAuthority("ROLE_$it") }
+        jwt.getClaimAsStringList("permissions")?.forEach { authorities += SimpleGrantedAuthority(it) }
+        return JwtAuthenticationToken(jwt, authorities, jwt.getClaimAsString("username") ?: jwt.subject)
+    }
+}
+
 @Configuration
 class JwtDecoderConfiguration {
     @Bean
@@ -23,12 +32,7 @@ class JwtDecoderConfiguration {
         NimbusJwtDecoder.withSecretKey(hmacKey(secret)).build()
 
     @Bean
-    fun jwtAuthenticationConverter(): Converter<Jwt, AbstractAuthenticationToken> = Converter { jwt ->
-        val authorities = mutableSetOf<GrantedAuthority>()
-        jwt.getClaimAsStringList("roles")?.forEach { authorities += SimpleGrantedAuthority("ROLE_$it") }
-        jwt.getClaimAsStringList("permissions")?.forEach { authorities += SimpleGrantedAuthority(it) }
-        JwtAuthenticationToken(jwt, authorities, jwt.getClaimAsString("username") ?: jwt.subject)
-    }
+    fun jwtAuthenticationConverter(): Converter<Jwt, AbstractAuthenticationToken> = JwtAuthenticationConverter()
 }
 
 fun hmacKey(secret: String): SecretKey {

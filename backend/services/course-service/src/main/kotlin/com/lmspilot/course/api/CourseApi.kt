@@ -12,7 +12,6 @@ import jakarta.validation.constraints.*
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.beans.factory.annotation.Value
-import org.springframework.boot.web.client.RestClientBuilder
 import org.springframework.http.HttpStatus
 import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.stereotype.Service
@@ -61,7 +60,7 @@ data class CourseLearningMetadata(val courseId: UUID, val version: Int, val stat
 
 @Service
 class EnrollmentCourseScopeClient(
-    builder: RestClientBuilder,
+    builder: RestClient.Builder,
     @Value("\${enrollment-service.url:http://localhost:8084}") baseUrl: String,
     @Value("\${lmspilot.internal-token}") private val serviceToken: String,
 ) {

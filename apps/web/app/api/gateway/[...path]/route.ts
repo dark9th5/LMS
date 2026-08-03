@@ -3,10 +3,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { encodeUserCookie } from "@/lib/session-cookie";
 import type { PortalUser } from "@/lib/types";
 
-const gateway = (process.env.LMSPILOT_GATEWAY_URL ?? "http://localhost:8080").replace(
-  /\/+$/,
-  "",
-);
+function getGatewayUrl(): string {
+  const envUrl = process.env.LMSPILOT_GATEWAY_URL;
+  if (envUrl && envUrl.trim().length > 0) {
+    return envUrl.trim().replace(/\/+$/, "");
+  }
+  return "http://localhost:8080";
+}
 
 const upstreamTimeoutMs = positiveInteger(
   process.env.LMSPILOT_UPSTREAM_TIMEOUT_MS,
@@ -159,8 +162,34 @@ async function fetchWithTimeout(
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), upstreamTimeoutMs);
 
+  const primaryGateway = getGatewayUrl();
+  let rawPathOrUrl = typeof input === "string" ? input : input.toString();
+  let path = rawPathOrUrl;
+  if (rawPathOrUrl.startsWith("http://") || rawPathOrUrl.startsWith("https://")) {
+    const parsed = new URL(rawPathOrUrl);
+    path = parsed.pathname + parsed.search;
+  }
+  if (!path.startsWith("/")) path = "/" + path;
+
+  const urlsToTry = Array.from(
+    new Set([
+      `${primaryGateway}${path}`,
+      `http://127.0.0.1:8080${path}`,
+      `http://localhost:8080${path}`,
+      `http://api-gateway:8080${path}`,
+    ]),
+  );
+
+  let lastError: unknown;
   try {
-    return await fetch(input, { ...init, signal: controller.signal });
+    for (const url of urlsToTry) {
+      try {
+        return await fetch(url, { ...init, signal: controller.signal });
+      } catch (err) {
+        lastError = err;
+      }
+    }
+    throw lastError;
   } finally {
     clearTimeout(timer);
   }
@@ -173,7 +202,7 @@ function refreshSession(refreshToken: string): Promise<RefreshResult> {
   const pending = (async (): Promise<RefreshResult> => {
     let response: Response;
     try {
-      response = await fetchWithTimeout(`${gateway}/api/v1/auth/refresh`, {
+      response = await fetchWithTimeout("/api/v1/auth/refresh", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -293,7 +322,7 @@ async function proxy(req: NextRequest, { params }: RouteContext) {
   }
 
   const encodedPath = path.map((segment) => encodeURIComponent(segment)).join("/");
-  const url = new URL(encodedPath, `${gateway}/`);
+  const url = new URL(encodedPath, `${getGatewayUrl()}/`);
   req.nextUrl.searchParams.forEach((value, key) => {
     url.searchParams.append(key, value);
   });

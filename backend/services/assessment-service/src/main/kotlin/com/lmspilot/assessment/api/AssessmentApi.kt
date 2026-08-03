@@ -14,7 +14,6 @@ import com.lmspilot.support.security.InternalTokenAuthorizer
 import jakarta.validation.Valid
 import jakarta.validation.constraints.*
 import org.springframework.beans.factory.annotation.Value
-import org.springframework.boot.web.client.RestClientBuilder
 import org.springframework.http.HttpStatus
 import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.stereotype.Service
@@ -76,7 +75,7 @@ data class GradingPayload(val sessionId: UUID, val examId: UUID, val userId: UUI
 
 @Service
 class EnrollmentCourseClient(
-    builder: RestClientBuilder,
+    builder: RestClient.Builder,
     @Value("\${enrollment-service.url:http://localhost:8084}") baseUrl: String,
     @Value("\${lmspilot.internal-token}") private val serviceToken: String,
 ) {

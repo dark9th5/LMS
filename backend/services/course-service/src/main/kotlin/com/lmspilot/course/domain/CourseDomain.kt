@@ -71,7 +71,7 @@ interface CourseRepository : org.springframework.data.jpa.repository.JpaReposito
 
     @org.springframework.data.jpa.repository.Query("""
         select c from CourseEntity c
-        where (:query is null or lower(c.code) like lower(concat('%', :query, '%')) or lower(c.name) like lower(concat('%', :query, '%')))
+        where (:query is null or lower(c.code) like lower(concat('%', cast(:query as string), '%')) or lower(c.name) like lower(concat('%', cast(:query as string), '%')))
           and (:status is null or c.status = :status)
           and (:categoryId is null or c.categoryId = :categoryId)
           and (:ownerId is null or c.ownerId = :ownerId)
@@ -80,7 +80,7 @@ interface CourseRepository : org.springframework.data.jpa.repository.JpaReposito
 
     @org.springframework.data.jpa.repository.Query("""
         select c from CourseEntity c
-        where (:query is null or lower(c.code) like lower(concat('%', :query, '%')) or lower(c.name) like lower(concat('%', :query, '%')))
+        where (:query is null or lower(c.code) like lower(concat('%', cast(:query as string), '%')) or lower(c.name) like lower(concat('%', cast(:query as string), '%')))
           and (:status is null or c.status = :status)
           and (:categoryId is null or c.categoryId = :categoryId)
           and (:ownerId is null or c.ownerId = :ownerId or c.id in :assignedCourseIds)

@@ -137,7 +137,7 @@ class DevelopmentSeed(
             }
         }
 
-        jdbc.update("INSERT INTO demo_seed_history(seed_key, applied_at) VALUES (?, ?)", DEMO_SEED_KEY, now)
+        jdbc.update("INSERT INTO demo_seed_history(seed_key, applied_at) VALUES (?, ?)", DEMO_SEED_KEY, java.sql.Timestamp.from(now))
     }
 
     private fun upsertQuestion(sample: SampleQuestion, now: Instant): QuestionEntity {

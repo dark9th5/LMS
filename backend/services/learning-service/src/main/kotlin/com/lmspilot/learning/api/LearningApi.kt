@@ -26,7 +26,6 @@ import org.springframework.amqp.core.Queue
 import org.springframework.amqp.core.TopicExchange
 import org.springframework.amqp.rabbit.annotation.RabbitListener
 import org.springframework.beans.factory.annotation.Value
-import org.springframework.boot.web.client.RestClientBuilder
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.http.HttpStatus
@@ -106,7 +105,7 @@ class LearningMessagingConfiguration {
 
 @Service
 class EnrollmentValidationClient(
-    builder: RestClientBuilder,
+    builder: RestClient.Builder,
     @Value("\${enrollment-service.url:http://localhost:8084}") baseUrl: String,
     @Value("\${lmspilot.internal-token}") private val serviceToken: String,
 ) {
@@ -132,7 +131,7 @@ class EnrollmentValidationClient(
 
 @Service
 class CourseLearningClient(
-    builder: RestClientBuilder,
+    builder: RestClient.Builder,
     @Value("\${course-service.url:http://localhost:8083}") baseUrl: String,
     @Value("\${lmspilot.internal-token}") private val serviceToken: String,
 ) {

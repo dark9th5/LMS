@@ -2,10 +2,13 @@ import { NextResponse } from "next/server";
 import type { PortalUser } from "@/lib/types";
 import { encodeUserCookie } from "@/lib/session-cookie";
 
-const gateway = (process.env.LMSPILOT_GATEWAY_URL ?? "http://localhost:8080").replace(
-  /\/+$/,
-  "",
-);
+function getGatewayUrl(): string {
+  const envUrl = process.env.LMSPILOT_GATEWAY_URL;
+  if (envUrl && envUrl.trim().length > 0) {
+    return envUrl.trim().replace(/\/+$/, "");
+  }
+  return "http://localhost:8080";
+}
 
 const upstreamTimeoutMs = positiveInteger(
   process.env.LMSPILOT_UPSTREAM_TIMEOUT_MS,
@@ -54,14 +57,39 @@ function validPayload(value: unknown): value is LoginPayload {
 }
 
 async function fetchWithTimeout(
-  input: string,
+  path: string,
   init: RequestInit,
 ): Promise<Response> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), upstreamTimeoutMs);
+  const primaryGateway = getGatewayUrl();
 
+  const urlsToTry = Array.from(
+    new Set([
+      `${primaryGateway}${path}`,
+      `http://127.0.0.1:8080${path}`,
+      `http://localhost:8080${path}`,
+      `http://api-gateway:8080${path}`,
+    ]),
+  );
+
+  let lastError: unknown;
   try {
-    return await fetch(input, { ...init, signal: controller.signal });
+    for (const url of urlsToTry) {
+      try {
+        console.log("[LOGIN ROUTE DEBUG] Fetching:", url);
+        const res = await fetch(url, { ...init, signal: controller.signal });
+        if (res.ok || res.status === 400 || res.status === 401) {
+          return res;
+        }
+        console.error("[LOGIN ROUTE DEBUG] Non-ok status from:", url, res.status);
+        lastError = new Error(`HTTP ${res.status} from ${url}`);
+      } catch (err) {
+        console.error("[LOGIN ROUTE DEBUG] Failed url:", url, err);
+        lastError = err;
+      }
+    }
+    throw lastError;
   } finally {
     clearTimeout(timer);
   }
@@ -143,7 +171,7 @@ export async function POST(request: Request) {
 
   let response: Response;
   try {
-    response = await fetchWithTimeout(`${gateway}/api/v1/auth/login`, {
+    response = await fetchWithTimeout("/api/v1/auth/login", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

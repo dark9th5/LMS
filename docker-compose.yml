@@ -12,6 +12,8 @@ x-service-common: &service-common
   networks: [lmspilot]
   environment: &service-env
     SPRING_PROFILES_ACTIVE: docker
+    SPRING_CLOUD_COMPATIBILITY_VERIFIER_ENABLED: "false"
+    SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE: 5
     LMSPILOT_JWT_SECRET: ${LMSPILOT_JWT_SECRET}
     LMSPILOT_INTERNAL_TOKEN: ${LMSPILOT_INTERNAL_TOKEN}
     SPRING_RABBITMQ_HOST: rabbitmq
@@ -29,13 +31,14 @@ x-service-common: &service-common
     test: ["CMD-SHELL", "curl -fsS http://localhost:$${SERVER_PORT:-8080}/actuator/health/readiness || exit 1"]
     interval: 10s
     timeout: 5s
-    retries: 20
-    start_period: 30s
+    retries: 30
+    start_period: 180s
 
 services:
   postgres:
     image: postgres:17-alpine
     restart: unless-stopped
+    command: ["postgres", "-c", "max_connections=300"]
     networks: [lmspilot]
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-lmspilot}
@@ -64,8 +67,8 @@ services:
       - rabbitmq_data:/var/lib/rabbitmq
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
-      interval: 5s
-      timeout: 5s
+      interval: 10s
+      timeout: 10s
       retries: 20
 
   redis:
@@ -215,6 +218,7 @@ services:
 
   file-storage-service:
     <<: *service-common
+    user: "0:0"
     build: { context: ./backend, dockerfile: Dockerfile, args: { SERVICE: file-storage-service } }
     environment:
       <<: *service-env
