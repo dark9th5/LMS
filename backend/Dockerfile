@@ -9,8 +9,12 @@ COPY gradle ./gradle
 COPY platform-contracts ./platform-contracts
 COPY service-support ./service-support
 COPY services ./services
-RUN chmod +x ./gradlew \
-    && ./gradlew ":services:${SERVICE}:bootJar" --no-daemon --stacktrace
+RUN set -eux; \
+    if find "services/${SERVICE}/build/libs" -maxdepth 1 -name "*.jar" ! -name "*-plain.jar" | grep -q .; then \
+        echo "Found pre-built JAR for ${SERVICE}, skipping Gradle build inside container."; \
+    else \
+        chmod +x ./gradlew && ./gradlew ":services:${SERVICE}:bootJar" --no-daemon --stacktrace; \
+    fi
 
 FROM eclipse-temurin:21-jre-alpine
 ARG SERVICE
