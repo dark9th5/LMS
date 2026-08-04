@@ -28,16 +28,16 @@ export function CourseDetail({ courseId, user }: { courseId: string; user: Porta
   const [selectedLessonId, setSelectedLessonId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [tab, setTab] = useState<"content" | "information">("content");
+  const [tab, setTab] = useState<"content" | "information" | "discussion">("content");
   const [lessonModal, setLessonModal] = useState(false);
   const [editingLesson, setEditingLesson] = useState<Lesson | null>(null);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState("");
   const [toast, setToast] = useState<{ message: string; tone?: "success" | "error" | "info" } | null>(null);
 
-  const ownsCourse = Boolean(course && (user.roles.includes("ADMIN") || course.ownerId === user.id));
-  const canEdit = ownsCourse && user.permissions.includes("courses:write");
-  const canPublish = ownsCourse && user.permissions.includes("courses:publish");
+  const ownsCourse = Boolean(course && (user.accountType === "SYSTEM_ADMIN" || course.ownerId === user.id));
+  const canEdit = Boolean(course && (user.accountType === "SYSTEM_ADMIN" || user.permissions.includes("courses:update") || user.permissions.includes("courses:write")));
+  const canPublish = Boolean(course && (user.accountType === "SYSTEM_ADMIN" || user.permissions.includes("courses:publish")));
   const load = useCallback(async () => {
     setLoading(true); setError("");
     try {
@@ -176,7 +176,7 @@ export function CourseDetail({ courseId, user }: { courseId: string; user: Porta
       <div><Icon name="calendar"/><span><strong>{formatDate(course.publishedAt)}</strong>Ngày xuất bản</span></div>
     </section>
 
-    <div className="tabs"><button className={tab === "content" ? "active" : ""} onClick={() => setTab("content")}>Nội dung khóa học</button><button className={tab === "information" ? "active" : ""} onClick={() => setTab("information")}>Thông tin & cài đặt</button></div>
+    <div className="tabs"><button className={tab === "content" ? "active" : ""} onClick={() => setTab("content")}>Nội dung khóa học</button>{user.permissions.includes("discussions:read") && <button className={tab === "discussion" ? "active" : ""} onClick={() => setTab("discussion")}>Thảo luận</button>}<button className={tab === "information" ? "active" : ""} onClick={() => setTab("information")}>Thông tin & cài đặt</button></div>
 
     {tab === "content" ? <section className="course-builder">
       <aside className="lesson-outline">
@@ -195,7 +195,7 @@ export function CourseDetail({ courseId, user }: { courseId: string; user: Porta
           </div>
         </> : <EmptyState title="Bắt đầu xây dựng khóa học" description={canEdit ? "Thêm bài học đầu tiên. Sau khi có nội dung, bạn có thể xuất bản khóa học để mở lớp." : "Khóa học chưa có nội dung được công bố."} action={canEdit ? <button className="button primary" onClick={() => openLessonModal()}><Icon name="plus"/>Thêm bài học</button> : undefined}/>}
       </article>
-    </section> : <section className="settings-panel">
+    </section> : tab === "discussion" ? <CourseDiscussion courseId={course.id} user={user} lessons={course.lessons ?? []} /> : <section className="settings-panel">
       <form className="form-stack" onSubmit={updateCourse}>
         <div className="section-title"><div><h2>Thông tin khóa học</h2><p>{canEdit ? "Các thay đổi được lưu trực tiếp vào Course Service." : "Bạn đang xem khóa học thuộc lớp được phân công. Chỉ chủ sở hữu hoặc quản trị viên được chỉnh sửa."}</p></div></div>
         <div className="form-grid two"><label>Mã khóa học<input value={course.code} disabled/></label><label>Thời lượng (phút)<input name="durationMinutes" type="number" min="0" defaultValue={course.durationMinutes ?? 0} disabled={!canEdit}/></label></div>
@@ -230,4 +230,84 @@ function LessonForm({ lesson, onSubmit, busy, error }: { lesson: Lesson | null; 
     {error && <div className="form-alert error"><Icon name="warning"/>{error}</div>}
     <div className="modal-actions"><button type="submit" className="button primary" disabled={busy}><Icon name={lesson ? "check" : "plus"}/>{busy ? "Đang lưu..." : lesson ? "Lưu thay đổi" : "Thêm bài học"}</button></div>
   </form>;
+}
+
+
+type DiscussionThread = { id: string; courseId: string; lessonId?: string; title: string; authorId: string; status: string; pinned: boolean; postCount: number; createdAt: string; updatedAt: string; posts?: DiscussionPost[] };
+type DiscussionPost = { id: string; authorId: string; parentPostId?: string; content: string; status: string; createdAt: string; updatedAt: string };
+
+function CourseDiscussion({ courseId, user, lessons }: { courseId: string; user: PortalUser; lessons: Lesson[] }) {
+  const canWrite = user.accountType === "SYSTEM_ADMIN" || user.permissions.includes("discussions:write");
+  const canModerate = user.accountType === "SYSTEM_ADMIN" || user.permissions.includes("discussions:moderate");
+  const [threads, setThreads] = useState<DiscussionThread[]>([]);
+  const [active, setActive] = useState<DiscussionThread | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [working, setWorking] = useState(false);
+  const [newThread, setNewThread] = useState({ title: "", lessonId: "", content: "" });
+  const [reply, setReply] = useState("");
+
+  const loadThreads = useCallback(async () => {
+    setLoading(true); setError("");
+    try {
+      const values = await apiRequest<DiscussionThread[]>(`/api/v1/discussions/courses/${courseId}/threads`);
+      setThreads(values);
+      if (active) {
+        const refreshed = await apiRequest<DiscussionThread>(`/api/v1/discussions/threads/${active.id}`);
+        setActive(refreshed);
+      } else if (values[0]) {
+        setActive(await apiRequest<DiscussionThread>(`/api/v1/discussions/threads/${values[0].id}`));
+      }
+    } catch (cause) { setError(cause instanceof Error ? cause.message : "Không thể tải thảo luận"); }
+    finally { setLoading(false); }
+  }, [courseId, active?.id]);
+
+  useEffect(() => { void loadThreads(); }, [courseId]);
+
+  async function openThread(id: string) {
+    try { setActive(await apiRequest<DiscussionThread>(`/api/v1/discussions/threads/${id}`)); }
+    catch (cause) { setError(cause instanceof Error ? cause.message : "Không thể mở chủ đề"); }
+  }
+
+  async function createThread(event: React.FormEvent) {
+    event.preventDefault(); setWorking(true);
+    try {
+      const created = await apiRequest<DiscussionThread>(`/api/v1/discussions/courses/${courseId}/threads`, { method: "POST", body: JSON.stringify({ title: newThread.title, lessonId: newThread.lessonId || null, content: newThread.content }) });
+      setNewThread({ title: "", lessonId: "", content: "" });
+      setActive(await apiRequest<DiscussionThread>(`/api/v1/discussions/threads/${created.id}`));
+      setThreads(await apiRequest<DiscussionThread[]>(`/api/v1/discussions/courses/${courseId}/threads`));
+    } catch (cause) { setError(cause instanceof Error ? cause.message : "Không thể tạo chủ đề"); }
+    finally { setWorking(false); }
+  }
+
+  async function sendReply(event: React.FormEvent) {
+    event.preventDefault(); if (!active) return; setWorking(true);
+    try {
+      await apiRequest(`/api/v1/discussions/threads/${active.id}/posts`, { method: "POST", body: JSON.stringify({ content: reply }) });
+      setReply(""); await openThread(active.id);
+      setThreads(await apiRequest<DiscussionThread[]>(`/api/v1/discussions/courses/${courseId}/threads`));
+    } catch (cause) { setError(cause instanceof Error ? cause.message : "Không thể gửi phản hồi"); }
+    finally { setWorking(false); }
+  }
+
+  async function moderate(status: "OPEN" | "LOCKED" | "HIDDEN", pinned?: boolean) {
+    if (!active) return;
+    try {
+      await apiRequest(`/api/v1/discussions/threads/${active.id}`, { method: "PATCH", body: JSON.stringify({ status, pinned }) });
+      await openThread(active.id); setThreads(await apiRequest<DiscussionThread[]>(`/api/v1/discussions/courses/${courseId}/threads`));
+    } catch (cause) { setError(cause instanceof Error ? cause.message : "Không thể kiểm duyệt chủ đề"); }
+  }
+
+  if (loading && !threads.length) return <LoadingState label="Đang mở không gian thảo luận..." />;
+  return <section className="discussion-workspace">
+    <aside className="discussion-sidebar">
+      <header><div><strong>Chủ đề</strong><small>{threads.length} cuộc trao đổi</small></div><button className="icon-button" onClick={() => void loadThreads()} aria-label="Làm mới"><Icon name="refresh" /></button></header>
+      <div className="discussion-thread-list">{threads.map((thread) => <button key={thread.id} className={active?.id === thread.id ? "active" : ""} onClick={() => void openThread(thread.id)}><span>{thread.pinned ? "✦" : "◇"}</span><div><strong>{thread.title}</strong><small>{thread.postCount} phản hồi · {thread.status}</small></div></button>)}</div>
+      {canWrite && <form className="discussion-create" onSubmit={createThread}><h3>Mở chủ đề mới</h3><input required minLength={3} maxLength={240} placeholder="Tiêu đề" value={newThread.title} onChange={(event) => setNewThread({ ...newThread, title: event.target.value })}/><select value={newThread.lessonId} onChange={(event) => setNewThread({ ...newThread, lessonId: event.target.value })}><option value="">Toàn khóa học</option>{lessons.map((lesson) => <option key={lesson.id} value={lesson.id}>{lesson.title}</option>)}</select><textarea required maxLength={20000} placeholder="Nội dung trao đổi..." value={newThread.content} onChange={(event) => setNewThread({ ...newThread, content: event.target.value })}/><button className="button primary" disabled={working}>Đăng chủ đề</button></form>}
+    </aside>
+    <article className="discussion-main">
+      {error && <div className="form-alert error"><Icon name="warning" />{error}</div>}
+      {active ? <><header><div><span className="content-type">{active.pinned ? "Đã ghim" : "Thảo luận"}</span><h2>{active.title}</h2><p>{active.postCount} bài viết · cập nhật {formatDate(active.updatedAt)}</p></div>{canModerate && <div className="page-actions"><button className="button secondary compact" onClick={() => void moderate(active.status === "LOCKED" ? "OPEN" : "LOCKED")}>{active.status === "LOCKED" ? "Mở khóa" : "Khóa"}</button><button className="button secondary compact" onClick={() => void moderate(active.status as "OPEN" | "LOCKED", !active.pinned)}>{active.pinned ? "Bỏ ghim" : "Ghim"}</button></div>}</header><div className="discussion-post-list">{active.posts?.map((post) => <article key={post.id}><span className="avatar avatar-rune">{post.authorId.slice(0,2).toUpperCase()}</span><div><header><strong>Người dùng #{post.authorId.slice(0,8)}</strong><time>{formatDate(post.createdAt)}</time></header><p>{post.content}</p></div></article>)}</div>{canWrite && active.status === "OPEN" && <form className="discussion-reply" onSubmit={sendReply}><textarea required maxLength={20000} placeholder="Viết phản hồi..." value={reply} onChange={(event) => setReply(event.target.value)}/><button className="button primary" disabled={working || !reply.trim()}><Icon name="upload" />Gửi phản hồi</button></form>}</> : <EmptyState title="Chưa có chủ đề" description="Mở chủ đề đầu tiên để trao đổi về nội dung khóa học." />}
+    </article>
+  </section>;
 }

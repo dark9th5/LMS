@@ -33,7 +33,7 @@ class IdentitySecurityConfiguration {
         .csrf { it.disable() }
         .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
         .authorizeHttpRequests {
-            it.requestMatchers("/actuator/health/**", "/actuator/info", "/api/v1/auth/login", "/api/v1/auth/refresh", "/api/v1/auth/logout", "/error").permitAll()
+            it.requestMatchers("/actuator/health/**", "/actuator/info", "/api/v1/auth/login", "/api/v1/auth/refresh", "/api/v1/auth/logout", "/internal/v1/**", "/error").permitAll()
             it.anyRequest().authenticated()
         }
         .oauth2ResourceServer { resource -> resource.jwt { it.jwtAuthenticationConverter(jwtAuthenticationConverter) } }

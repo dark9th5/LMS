@@ -51,3 +51,8 @@ enrollment-service:
   url: ${ENROLLMENT_SERVICE_URL:http://localhost:8084}
 course-service:
   url: ${COURSE_SERVICE_URL:http://localhost:8083}
+
+file-storage-service:
+  url: ${FILE_STORAGE_SERVICE_URL:http://localhost:8089}
+learning:
+  assignment-max-attempts: ${LEARNING_ASSIGNMENT_MAX_ATTEMPTS:10}

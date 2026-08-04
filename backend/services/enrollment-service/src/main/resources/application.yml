@@ -49,3 +49,11 @@ lmspilot:
 
 course-service:
   url: ${COURSE_SERVICE_URL:http://localhost:8083}
+
+organization-service:
+  url: ${ORGANIZATION_SERVICE_URL:http://localhost:8082}
+
+learning-service:
+  url: ${LEARNING_SERVICE_URL:http://localhost:8085}
+  connect-timeout-ms: ${LEARNING_SERVICE_CONNECT_TIMEOUT_MS:3000}
+  read-timeout-ms: ${LEARNING_SERVICE_READ_TIMEOUT_MS:5000}

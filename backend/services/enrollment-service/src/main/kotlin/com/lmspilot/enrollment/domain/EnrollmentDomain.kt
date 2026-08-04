@@ -59,3 +59,53 @@ interface EnrollmentRepository : org.springframework.data.jpa.repository.JpaRepo
     fun findAllByUserIdOrderByEnrolledAtDesc(userId: UUID): List<EnrollmentEntity>
     fun findAllByClassIdOrderByEnrolledAtDesc(classId: UUID): List<EnrollmentEntity>
 }
+
+enum class AssignmentTargetType { USER, GROUP, DEPARTMENT, BRANCH }
+enum class CourseAssignmentStatus { ACTIVE, CANCELLED, COMPLETED }
+enum class LiveSessionStatus { SCHEDULED, LIVE, ENDED, CANCELLED }
+
+@Entity
+@Table(name = "course_assignments_v2")
+class CourseAssignmentEntity(
+    @Id var id: UUID = UUID.randomUUID(),
+    @Column(nullable = false) var courseId: UUID = UUID.randomUUID(),
+    @Column(nullable = false) var classId: UUID = UUID.randomUUID(),
+    @Enumerated(EnumType.STRING) @Column(nullable = false, length = 30) var assigneeType: AssignmentTargetType = AssignmentTargetType.USER,
+    @Column(nullable = false) var assigneeId: UUID = UUID.randomUUID(),
+    @Column(nullable = false) var assignedVersion: Int = 1,
+    @Column(nullable = false) var assignedAt: Instant = Instant.now(),
+    var availableFrom: Instant? = null,
+    var dueAt: Instant? = null,
+    @Column(nullable = false) var gracePeriodMinutes: Int = 0,
+    @Column(nullable = false) var required: Boolean = true,
+    @Column(nullable = false) var assignedBy: UUID = UUID.randomUUID(),
+    @Enumerated(EnumType.STRING) @Column(nullable = false, length = 30) var status: CourseAssignmentStatus = CourseAssignmentStatus.ACTIVE,
+)
+
+@Entity
+@Table(name = "live_sessions", indexes = [Index(name = "idx_live_session_class_time", columnList = "class_id,starts_at")])
+class LiveSessionEntity(
+    @Id var id: UUID = UUID.randomUUID(),
+    @Column(nullable = false) var classId: UUID = UUID.randomUUID(),
+    @Column(nullable = false) var courseId: UUID = UUID.randomUUID(),
+    @Column(nullable = false, length = 220) var title: String = "",
+    @Column(length = 120) var provider: String = "EXTERNAL",
+    @Column(nullable = false, length = 2000) var joinUrl: String = "",
+    @Column(length = 2000) var hostUrl: String? = null,
+    @Column(nullable = false) var startsAt: Instant = Instant.now(),
+    @Column(nullable = false) var endsAt: Instant = Instant.now(),
+    @Enumerated(EnumType.STRING) @Column(nullable = false, length = 30) var status: LiveSessionStatus = LiveSessionStatus.SCHEDULED,
+    @Column(nullable = false) var createdBy: UUID = UUID.randomUUID(),
+    @Column(nullable = false) var createdAt: Instant = Instant.now(),
+    @Column(nullable = false) var updatedAt: Instant = Instant.now(),
+)
+
+interface CourseAssignmentRepository : org.springframework.data.jpa.repository.JpaRepository<CourseAssignmentEntity, UUID> {
+    fun findAllByAssigneeTypeAndAssigneeIdAndStatusOrderByAssignedAtDesc(type: AssignmentTargetType, assigneeId: UUID, status: CourseAssignmentStatus): List<CourseAssignmentEntity>
+    fun findAllByCourseIdOrderByAssignedAtDesc(courseId: UUID): List<CourseAssignmentEntity>
+}
+
+interface LiveSessionRepository : org.springframework.data.jpa.repository.JpaRepository<LiveSessionEntity, UUID> {
+    fun findAllByClassIdOrderByStartsAtAsc(classId: UUID): List<LiveSessionEntity>
+    fun findAllByCourseIdAndEndsAtAfterOrderByStartsAtAsc(courseId: UUID, after: Instant): List<LiveSessionEntity>
+}

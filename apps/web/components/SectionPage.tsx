@@ -1,10 +1,13 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { apiRequest, ApiRequestError, unwrapItems } from "@/lib/api";
 import type { IconName, PortalUser } from "@/lib/types";
 import { EntityDialog, type FormField } from "./EntityDialog";
 import { Icon } from "./Icon";
+import { RealmControlCenter, realmSections } from "./RealmControlCenter";
+import { AdvancedSection, advancedSections } from "./AdvancedCenters";
 
 type UnknownRecord = Record<string, unknown>;
 type TableRow = { id: string; cells: string[] };
@@ -71,7 +74,7 @@ const definitions: Record<string, SectionDefinition> = {
     icon: "learn",
     columns: ["Khóa học", "Tiến độ", "Thời gian học", "Truy cập gần nhất", "Trạng thái"],
     endpoint: () => "/api/v1/learning/me",
-    roles: ["STUDENT"],
+    roles: ["LEARNER", "STUDENT"],
   },
   exams: {
     title: "Bài kiểm tra",
@@ -79,7 +82,7 @@ const definitions: Record<string, SectionDefinition> = {
     icon: "exam",
     columns: ["Bài kiểm tra", "Khóa học", "Thời lượng", "Số lượt", "Trạng thái"],
     endpoint: () => "/api/v1/exams",
-    roles: ["ADMIN", "INSTRUCTOR", "STUDENT"],
+    roles: ["ADMIN", "INSTRUCTOR", "LEARNER", "STUDENT"],
   },
   grading: {
     title: "Chấm điểm",
@@ -105,7 +108,7 @@ const definitions: Record<string, SectionDefinition> = {
     icon: "certificate",
     columns: ["Mã xác minh", "Khóa học", "Lần cấp", "Ngày cấp", "Trạng thái"],
     endpoint: (user) => user.permissions.includes("certificates:manage") ? "/api/v1/certificates" : "/api/v1/certificates/me",
-    roles: ["ADMIN", "STUDENT"],
+    roles: ["ADMIN", "LEARNER", "STUDENT"],
   },
   operations: {
     title: "Vận hành hệ thống",
@@ -156,7 +159,8 @@ const statusLabels: Record<string, string> = {
 const roleLabels: Record<string, string> = {
   ADMIN: "Quản trị viên",
   INSTRUCTOR: "Giảng viên",
-  STUDENT: "Học viên",
+  LEARNER: "Học viên",
+  STUDENT: "Học viên (tương thích)",
 };
 
 function record(value: unknown): UnknownRecord {
@@ -250,8 +254,8 @@ function actionFields(section: string, references: References): FormField[] {
         { name: "email", label: "Email", type: "email" },
         { name: "password", label: "Mật khẩu tạm", type: "password", required: true, placeholder: "Tối thiểu 12 ký tự" },
         { name: "organizationUnitId", label: "Đơn vị", type: "select", options: references.units.map((unit) => ({ label: `${text(unit.name)} (${text(unit.code)})`, value: text(unit.id, "") })) },
-        { name: "role", label: "Vai trò", type: "select", required: true, defaultValue: "STUDENT", options: [
-          { label: "Học viên", value: "STUDENT" },
+        { name: "role", label: "Vai trò", type: "select", required: true, defaultValue: "LEARNER", options: [
+          { label: "Học viên", value: "LEARNER" },
           { label: "Giảng viên", value: "INSTRUCTOR" },
           { label: "Quản trị viên", value: "ADMIN" },
         ] },
@@ -311,8 +315,14 @@ function statusClass(value: string): string {
 }
 
 export function SectionPage({ section, user }: { section: string; user: PortalUser }) {
+  if (realmSections.has(section)) return <RealmControlCenter section={section} user={user} />;
+  if (advancedSections.has(section)) return <AdvancedSection section={section} user={user} />;
+  return <LegacySectionPage section={section} user={user} />;
+}
+
+function LegacySectionPage({ section, user }: { section: string; user: PortalUser }) {
   const definition = definitions[section];
-  const canAccess = Boolean(definition && (!definition.roles || definition.roles.some((role) => user.roles.includes(role))));
+  const canAccess = Boolean(definition && (user.accountType === "SYSTEM_ADMIN" || !definition.roles || !definition.roles.length || definition.roles.some((role) => user.roles.includes(role)) || ["courses:read","courses:learn","classes:read","assessments:read","assessment:take","reports:read:self","reports:read:scope"].some((permission) => user.permissions.includes(permission))));
   const [payload, setPayload] = useState<unknown>(null);
   const [references, setReferences] = useState<References>({ courses: [], units: [], instructors: [] });
   const [query, setQuery] = useState("");
@@ -432,11 +442,18 @@ export function SectionPage({ section, user }: { section: string; user: PortalUs
           <span className="page-icon"><Icon name={definition.icon} /></span>
           <div><h1>{definition.title}</h1><p>{definition.description}</p></div>
         </div>
-        {canUseAction && (
-          <button className="primary-button" onClick={() => void runPrimaryAction()}>
-            <Icon name="plus" size={18} />{definition.actionLabel}
-          </button>
-        )}
+        <div className="page-head-actions">
+          {section === "users" && (user.permissions.includes("users:bulk-manage") || user.permissions.includes("users:write")) && (
+            <Link className="soft-button import-users-link" href="/users/import">
+              <Icon name="upload" size={18} /> Nhập Excel/CSV
+            </Link>
+          )}
+          {canUseAction && (
+            <button className="primary-button" onClick={() => void runPrimaryAction()}>
+              <Icon name="plus" size={18} />{definition.actionLabel}
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="filter-card">

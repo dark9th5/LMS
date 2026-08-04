@@ -4,30 +4,15 @@ server:
 spring:
   application:
     name: api-gateway
-  data:
-    redis:
-      host: ${SPRING_DATA_REDIS_HOST:localhost}
-      port: ${SPRING_DATA_REDIS_PORT:6379}
-      password: ${SPRING_DATA_REDIS_PASSWORD:}
   cloud:
-    compatibility-verifier:
-      enabled: false
     gateway:
       server:
         webflux:
-          default-filters:
-            - DedupeResponseHeader=Access-Control-Allow-Credentials Access-Control-Allow-Origin
-            - name: RequestRateLimiter
-              args:
-                redis-rate-limiter.replenishRate: 40
-                redis-rate-limiter.burstCapacity: 80
-                redis-rate-limiter.requestedTokens: 1
-                key-resolver: "#{@userOrIpKeyResolver}"
           routes:
             - id: identity
               uri: ${IDENTITY_URL:http://localhost:8081}
               predicates:
-                - Path=/api/v1/auth/**,/api/v1/users/**,/api/v1/roles/**
+                - Path=/api/v1/auth/**,/api/v1/users/**,/api/v1/roles/**,/api/v1/authorization/**
             - id: organization
               uri: ${ORGANIZATION_URL:http://localhost:8082}
               predicates:
@@ -35,19 +20,19 @@ spring:
             - id: course
               uri: ${COURSE_URL:http://localhost:8083}
               predicates:
-                - Path=/api/v1/categories/**,/api/v1/courses/**
+                - Path=/api/v1/categories/**,/api/v1/courses/**,/api/v1/discussions/**
             - id: enrollment
               uri: ${ENROLLMENT_URL:http://localhost:8084}
               predicates:
-                - Path=/api/v1/classes/**,/api/v1/enrollments/**
+                - Path=/api/v1/classes/**,/api/v1/enrollments/**,/api/v1/course-assignments/**,/api/v1/live-sessions/**,/api/v1/learning-paths/**
             - id: learning
               uri: ${LEARNING_URL:http://localhost:8085}
               predicates:
-                - Path=/api/v1/learning/**
+                - Path=/api/v1/learning/**,/api/v1/xapi/**
             - id: assessment
               uri: ${ASSESSMENT_URL:http://localhost:8086}
               predicates:
-                - Path=/api/v1/questions/**,/api/v1/exams/**,/api/v1/exam-sessions/**
+                - Path=/api/v1/questions/**,/api/v1/exams/**,/api/v1/exam-sessions/**,/api/v1/competitions/**,/api/v1/assessment-assignments/**
             - id: grading
               uri: ${GRADING_URL:http://localhost:8087}
               predicates:
@@ -59,7 +44,7 @@ spring:
             - id: files
               uri: ${FILE_STORAGE_URL:http://localhost:8089}
               predicates:
-                - Path=/api/v1/files/**
+                - Path=/api/v1/files/**,/public/v1/file-edit/**
             - id: license
               uri: ${LICENSE_URL:http://localhost:8090}
               predicates:
@@ -71,7 +56,7 @@ spring:
             - id: notifications
               uri: ${NOTIFICATION_URL:http://localhost:8092}
               predicates:
-                - Path=/api/v1/notifications/**
+                - Path=/api/v1/notifications/**,/api/v1/news/**
             - id: certificates
               uri: ${CERTIFICATE_URL:http://localhost:8093}
               predicates:
@@ -83,7 +68,7 @@ spring:
             - id: configuration
               uri: ${CONFIGURATION_URL:http://localhost:8095}
               predicates:
-                - Path=/api/v1/configuration/**,/public/v1/configuration
+                - Path=/api/v1/configuration/**,/api/v1/branding/**,/api/v1/external-services/**,/public/v1/configuration,/public/v1/branding,/public/v1/branding/**
             - id: integration
               uri: ${INTEGRATION_URL:http://localhost:8096}
               predicates:
@@ -92,6 +77,10 @@ spring:
               uri: ${OPERATIONS_URL:http://localhost:8097}
               predicates:
                 - Path=/api/v1/operations/**
+            - id: competency
+              uri: ${COMPETENCY_URL:http://localhost:8098}
+              predicates:
+                - Path=/api/v1/competencies/**
 management:
   endpoints:
     web:

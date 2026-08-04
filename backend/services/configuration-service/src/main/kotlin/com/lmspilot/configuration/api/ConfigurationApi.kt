@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.lmspilot.configuration.domain.*
 import com.lmspilot.contracts.Permissions
 import com.lmspilot.support.security.CurrentUser
+import com.lmspilot.support.security.LicenseGuard
 import jakarta.validation.Valid
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.Pattern
@@ -19,14 +20,25 @@ data class ProductConfigurationRequest(@field:NotBlank val productName: String, 
 data class ProductConfigurationResponse(val productName: String, val logoUrl: String, val primaryColor: String, val accentColor: String, val defaultLocale: String, val featureFlags: Map<String, Boolean>, val terminology: Map<String, String>, val updatedAt: Instant)
 
 @Service
-class ProductConfigurationService(private val repository: ProductConfigurationRepository, private val mapper: ObjectMapper) {
+class ProductConfigurationService(
+    private val repository: ProductConfigurationRepository,
+    private val mapper: ObjectMapper,
+    private val license: LicenseGuard,
+) {
     private val singleton = UUID(0, 1)
     @Transactional(readOnly = true) fun get(): ProductConfigurationResponse = (repository.findById(singleton).orElse(ProductConfigurationEntity())).response(mapper)
     @Transactional fun update(input: ProductConfigurationRequest): ProductConfigurationResponse {
+        license.requireWritable()
+        val governed = input.featureFlags.filterValues { it }.keys.filter { it.uppercase() in GOVERNED_LICENSE_FEATURES }.toSet()
+        license.validateEnabledFeatures(governed)
         val entity = repository.findById(singleton).orElse(ProductConfigurationEntity())
         entity.productName = input.productName.trim(); entity.logoUrl = input.logoUrl.trim(); entity.primaryColor = input.primaryColor; entity.accentColor = input.accentColor; entity.defaultLocale = input.defaultLocale
         entity.featureFlagsJson = mapper.writeValueAsString(input.featureFlags); entity.terminologyJson = mapper.writeValueAsString(input.terminology); entity.updatedAt = Instant.now(); entity.updatedBy = CurrentUser.id()
         return repository.save(entity).response(mapper)
+    }
+
+    companion object {
+        private val GOVERNED_LICENSE_FEATURES = setOf("AI", "LDAP", "REPORT_EXPORT", "CUSTOM_THEME", "INTEGRATIONS", "GAMIFICATION")
     }
 }
 private fun ProductConfigurationEntity.response(mapper: ObjectMapper) = ProductConfigurationResponse(productName, logoUrl, primaryColor, accentColor, defaultLocale, mapper.readValue(featureFlagsJson, object: TypeReference<Map<String,Boolean>>(){}), mapper.readValue(terminologyJson, object: TypeReference<Map<String,String>>(){}), updatedAt)

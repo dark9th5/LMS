@@ -7,7 +7,7 @@ plugins {
 
 kotlin { jvmToolchain(21) }
 
-extra["springCloudVersion"] = "2025.0.1"
+extra["springCloudVersion"] = "2025.0.3"
 
 dependencyManagement {
     imports { mavenBom("org.springframework.cloud:spring-cloud-dependencies:${property("springCloudVersion")}") }

@@ -1,0 +1,43 @@
+services:
+  redis:
+    image: ${REDIS_IMAGE:-redis:7-alpine}
+    profiles: ["redis"]
+    restart: unless-stopped
+    command:
+      - sh
+      - -ec
+      - exec redis-server --appendonly yes --requirepass "$${REDIS_PASSWORD}"
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?Set REDIS_PASSWORD}
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a $$REDIS_PASSWORD ping | grep PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    expose:
+      - "6379"
+
+  document-editor:
+    image: ${DOCUMENT_EDITOR_IMAGE:-onlyoffice/documentserver:latest}
+    profiles: ["documents"]
+    restart: unless-stopped
+    environment:
+      JWT_ENABLED: "true"
+      JWT_SECRET: ${DOCUMENT_EDITOR_JWT_SECRET:?Set DOCUMENT_EDITOR_JWT_SECRET}
+    expose:
+      - "80"
+
+  local-ai:
+    image: ${LOCAL_AI_IMAGE:-ollama/ollama:latest}
+    profiles: ["local-ai"]
+    restart: unless-stopped
+    volumes:
+      - local-ai-data:/root/.ollama
+    expose:
+      - "11434"
+
+volumes:
+  redis-data:
+  local-ai-data:

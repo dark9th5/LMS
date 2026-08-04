@@ -46,3 +46,9 @@ lmspilot:
   jwt:
     secret: ${LMSPILOT_JWT_SECRET}
   internal-token: ${LMSPILOT_INTERNAL_TOKEN}
+
+configuration:
+  secret-key: ${CONFIGURATION_SECRET_KEY}
+
+file-storage-service:
+  url: ${FILE_STORAGE_SERVICE_URL:http://localhost:8089}

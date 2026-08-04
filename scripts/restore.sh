@@ -5,7 +5,18 @@ cd "$ROOT_DIR"
 SOURCE="${1:-}"
 [[ -n "$SOURCE" ]] || { echo "Usage: ./scripts/restore.sh backups/<folder>" >&2; exit 2; }
 SOURCE="$(cd "$SOURCE" 2>/dev/null && pwd)" || { echo "Backup folder not found." >&2; exit 2; }
+BACKUP_ROOT="$(mkdir -p "$ROOT_DIR/backups" && cd "$ROOT_DIR/backups" && pwd)"
+[[ "$SOURCE" == "$BACKUP_ROOT"/* ]] || { echo "Chỉ được phục hồi bản sao nằm trong thư mục backups của LMSPilot." >&2; exit 2; }
 [[ -f "$SOURCE/SHA256SUMS" && -f "$SOURCE/manifest.json" ]] || { echo "Backup không đầy đủ." >&2; exit 2; }
+python3 - "$SOURCE/manifest.json" <<'PY_MANIFEST'
+import json, sys
+from pathlib import Path
+manifest = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+if manifest.get("formatVersion") != 1:
+    raise SystemExit("Unsupported backup formatVersion")
+if not manifest.get("applicationVersion"):
+    raise SystemExit("Backup manifest is missing applicationVersion")
+PY_MANIFEST
 [[ -f .env ]] || { echo "Thiếu .env." >&2; exit 2; }
 (cd "$SOURCE" && sha256sum -c SHA256SUMS)
 set -a
@@ -13,7 +24,10 @@ set -a
 source .env
 set +a
 
-read -r -p "Khôi phục sẽ ghi đè dữ liệu hiện tại. Nhập RESTORE để tiếp tục: " confirm
+confirm="${LMSPILOT_RESTORE_CONFIRMATION:-}"
+if [[ -z "$confirm" ]]; then
+  read -r -p "Khôi phục sẽ ghi đè dữ liệu hiện tại. Nhập RESTORE để tiếp tục: " confirm
+fi
 [[ "$confirm" == "RESTORE" ]] || { echo "Đã hủy."; exit 1; }
 
 docker compose stop >/dev/null || true

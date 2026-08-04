@@ -28,4 +28,5 @@ lmspilot:
     secret: ${LMSPILOT_JWT_SECRET}
   internal-token: ${LMSPILOT_INTERNAL_TOKEN}
 operations:
+  agent-lease: ${OPERATIONS_AGENT_LEASE:PT2M}
   service-urls: ${OPERATIONS_SERVICE_URLS:identity=http://localhost:8081,course=http://localhost:8083,learning=http://localhost:8085,assessment=http://localhost:8086}

@@ -76,16 +76,16 @@ Auth-Get $instructor.accessToken "/api/v1/classes"
 Auth-Get $instructor.accessToken "/api/v1/questions"
 Auth-Get $instructor.accessToken "/api/v1/grades/queue"
 
-$student = Login "student"
-if (-not $student.accessToken) { throw "Dang nhap student khong tra access token." }
-Assert-Role $student "STUDENT" "student"
-Auth-Get $student.accessToken "/api/v1/learning/me"
-Auth-Get $student.accessToken "/api/v1/exams"
-Auth-Get $student.accessToken "/api/v1/grades/me"
-Auth-Get $student.accessToken "/api/v1/certificates/me"
+$learner = Login "learner"
+if (-not $learner.accessToken) { throw "Dang nhap learner khong tra access token." }
+Assert-Role $learner "LEARNER" "learner"
+Auth-Get $learner.accessToken "/api/v1/learning/me"
+Auth-Get $learner.accessToken "/api/v1/exams"
+Auth-Get $learner.accessToken "/api/v1/grades/me"
+Auth-Get $learner.accessToken "/api/v1/certificates/me"
 
 Web-Login-Check "admin" "ADMIN" "/dashboard" "Quản trị hệ thống"
 Web-Login-Check "instructor" "INSTRUCTOR" "/dashboard" "Giảng viên mẫu"
-Web-Login-Check "student" "STUDENT" "/learning" "Học viên mẫu"
+Web-Login-Check "learner" "LEARNER" "/learning" "Học viên mẫu"
 
 Write-Host "SMOKE TEST PASSED"

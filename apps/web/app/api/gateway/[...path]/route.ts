@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { encodeUserCookie } from "@/lib/session-cookie";
 import type { PortalUser } from "@/lib/types";
+import { isSameOriginMutation } from "@/lib/request-origin";
 
 function getGatewayUrl(): string {
   const envUrl = process.env.LMSPILOT_GATEWAY_URL;
@@ -293,6 +294,17 @@ async function callGateway(
 }
 
 async function proxy(req: NextRequest, { params }: RouteContext) {
+  if (!isSameOriginMutation(req)) {
+    return NextResponse.json(
+      {
+        ok: false,
+        code: "CROSS_SITE_REQUEST",
+        message: "Yêu cầu khác nguồn đã bị từ chối",
+      },
+      { status: 403, headers: { "Cache-Control": "no-store" } },
+    );
+  }
+
   const jar = await cookies();
   let access = jar.get("lmspilot_access")?.value;
   const refresh = jar.get("lmspilot_refresh")?.value;

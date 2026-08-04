@@ -6,9 +6,12 @@ export type PortalUser = {
   email?: string | null;
   organizationUnitId?: string | null;
   status?: string;
+  accountType?: "SYSTEM_ADMIN" | "USER";
+  protectedAccount?: boolean;
   roles: string[];
   permissions: string[];
   lastLoginAt?: string | null;
+  mustChangePassword?: boolean;
 };
 
 export type IconName =

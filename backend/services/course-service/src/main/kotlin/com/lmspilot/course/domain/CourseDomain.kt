@@ -37,6 +37,7 @@ class CourseEntity(
     var categoryId: UUID? = null,
     @Enumerated(EnumType.STRING) @Column(nullable = false, length = 30) var status: CourseStatus = CourseStatus.DRAFT,
     @Column(nullable = false) var contentVersion: Int = 1,
+    @Column(nullable = false) var publishedVersion: Int = 0,
     var publishedAt: Instant? = null,
     var publishedBy: UUID? = null,
     @Column(nullable = false) var ownerId: UUID = UUID.randomUUID(),
@@ -92,4 +93,46 @@ interface CourseRepository : org.springframework.data.jpa.repository.JpaReposito
 interface LessonRepository : org.springframework.data.jpa.repository.JpaRepository<LessonEntity, UUID> {
     fun findAllByCourseIdOrderBySortOrderAsc(courseId: UUID): List<LessonEntity>
     fun countByCourseId(courseId: UUID): Long
+}
+
+enum class DiscussionThreadStatus { OPEN, LOCKED, HIDDEN }
+
+enum class DiscussionPostStatus { VISIBLE, HIDDEN, DELETED }
+
+@Entity
+@Table(name = "discussion_threads", indexes = [Index(name = "idx_discussion_thread_course", columnList = "course_id,updated_at")])
+class DiscussionThreadEntity(
+    @Id var id: UUID = UUID.randomUUID(),
+    @Column(name = "course_id", nullable = false) var courseId: UUID = UUID.randomUUID(),
+    @Column(name = "lesson_id") var lessonId: UUID? = null,
+    @Column(nullable = false, length = 240) var title: String = "",
+    @Column(name = "author_id", nullable = false) var authorId: UUID = UUID.randomUUID(),
+    @Enumerated(EnumType.STRING) @Column(nullable = false, length = 20) var status: DiscussionThreadStatus = DiscussionThreadStatus.OPEN,
+    @Column(nullable = false) var pinned: Boolean = false,
+    @Column(name = "post_count", nullable = false) var postCount: Int = 0,
+    @Column(name = "created_at", nullable = false) var createdAt: Instant = Instant.now(),
+    @Column(name = "updated_at", nullable = false) var updatedAt: Instant = Instant.now(),
+    @Version var version: Long = 0,
+)
+
+@Entity
+@Table(name = "discussion_posts", indexes = [Index(name = "idx_discussion_post_thread", columnList = "thread_id,created_at")])
+class DiscussionPostEntity(
+    @Id var id: UUID = UUID.randomUUID(),
+    @Column(name = "thread_id", nullable = false) var threadId: UUID = UUID.randomUUID(),
+    @Column(name = "author_id", nullable = false) var authorId: UUID = UUID.randomUUID(),
+    @Column(name = "parent_post_id") var parentPostId: UUID? = null,
+    @Column(nullable = false, columnDefinition = "text") var content: String = "",
+    @Enumerated(EnumType.STRING) @Column(nullable = false, length = 20) var status: DiscussionPostStatus = DiscussionPostStatus.VISIBLE,
+    @Column(name = "created_at", nullable = false) var createdAt: Instant = Instant.now(),
+    @Column(name = "updated_at", nullable = false) var updatedAt: Instant = Instant.now(),
+    @Version var version: Long = 0,
+)
+
+interface DiscussionThreadRepository : org.springframework.data.jpa.repository.JpaRepository<DiscussionThreadEntity, UUID> {
+    fun findAllByCourseIdAndStatusNotOrderByPinnedDescUpdatedAtDesc(courseId: UUID, status: DiscussionThreadStatus): List<DiscussionThreadEntity>
+}
+
+interface DiscussionPostRepository : org.springframework.data.jpa.repository.JpaRepository<DiscussionPostEntity, UUID> {
+    fun findAllByThreadIdAndStatusNotOrderByCreatedAtAsc(threadId: UUID, status: DiscussionPostStatus): List<DiscussionPostEntity>
 }

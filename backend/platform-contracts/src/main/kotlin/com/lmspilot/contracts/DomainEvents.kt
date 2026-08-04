@@ -18,14 +18,23 @@ data class DomainEventEnvelope(
 object EventTypes {
     const val USER_CREATED = "identity.user.created.v1"
     const val USER_STATUS_CHANGED = "identity.user.status-changed.v1"
+    const val USER_PASSWORD_CHANGED = "identity.user.password-changed.v1"
+    const val USER_SESSION_REVOKED = "identity.user.session-revoked.v1"
     const val COURSE_PUBLISHED = "course.course.published.v1"
     const val ENROLLED = "enrollment.learner.enrolled.v1"
+    const val LEARNING_PATH_ASSIGNED = "enrollment.learning-path.assigned.v1"
+    const val LEARNING_PATH_COMPLETED = "enrollment.learning-path.completed.v1"
     const val LESSON_COMPLETED = "learning.lesson.completed.v1"
+    const val XAPI_STATEMENT_RECORDED = "learning.xapi.statement-recorded.v1"
     const val EXAM_SUBMITTED = "assessment.exam.submitted.v1"
     const val EXAM_GRADED = "grading.exam.graded.v1"
+    const val GRADE_APPEAL_OPENED = "grading.appeal.opened.v1"
+    const val GRADE_APPEAL_RESOLVED = "grading.appeal.resolved.v1"
     const val COURSE_COMPLETED = "learning.course.completed.v1"
     const val CERTIFICATE_ISSUED = "certificate.issued.v1"
     const val AUDIT_RECORDED = "audit.recorded.v1"
+    const val COMPETENCY_ASSESSED = "competency.assessed.v1"
+    const val REMINDER_DISPATCHED = "notification.reminder.dispatched.v1"
 }
 
 data class UserCreatedPayload(
@@ -67,7 +76,12 @@ data class ExamGradedPayload(
     val maxScore: Double,
     val passed: Boolean,
     val status: String,
+    val enrollmentId: UUID? = null,
     val courseId: UUID? = null,
+    val lessonId: UUID? = null,
+    val effectivePassed: Boolean? = null,
+    val effectivePercentage: Double? = null,
+    val scoreStrategy: String = "LATEST",
 )
 
 data class CourseCompletedPayload(

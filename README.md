@@ -1,22 +1,88 @@
-# LMSPilot Platform 0.4.0
+# LMSPilot CLS 0.9.0
 
-LMSPilot là hệ thống quản lý học tập On-Premise chạy trong mạng LAN. Repository giữ đúng ba nhóm người dùng chính của tài liệu BA: **Quản trị viên, Giảng viên và Học viên**, cùng luồng cốt lõi **tài khoản → khóa học → lớp/ghi danh → học tập → kiểm tra/chấm điểm → hoàn thành → chứng chỉ → báo cáo**.
+LMSPilot CLS là nền tảng quản lý học tập on-premise cho doanh nghiệp, trường học và trung tâm đào tạo. Source này hợp nhất repository LMSPilot gốc, tài liệu BA/URD 48 trang và các yêu cầu mở rộng: phân quyền theo phạm vi, lộ trình học tập, bài thi độc lập, cuộc thi, AI sinh câu hỏi, tài liệu có phiên bản, tùy biến thương hiệu và giao diện “Học viện Huyền Tri”.
 
-## Những thay đổi giao diện và luồng thật ở 0.4.0
+> Trạng thái: **full-source release candidate**. Đây là repository đầy đủ, không phải overlay. Cần chạy build, Docker smoke test và UAT trên hạ tầng đích trước production.
 
-- Sửa dứt điểm điều hướng sau đăng nhập: Admin/Giảng viên vào Dashboard, Học viên vào trang Học tập; dùng full navigation để không tái sử dụng giao diện của phiên trước.
-- Thay trang khóa học dạng bảng/demo bằng thẻ khóa học và trang chi tiết riêng. Có tạo khóa học, thêm/sửa bài học văn bản hoặc tệp, cập nhật thông tin và chuyển trạng thái xuất bản.
-- Thêm trang lớp riêng, xem danh sách ghi danh và ghi danh học viên qua Enrollment Service.
-- Thêm trình học riêng: mục lục không hiện thanh cuộn, xem PDF/phát video hoặc audio trực tiếp, tải tài liệu, nộp tệp bài thực hành và cập nhật tiến độ thật.
-- Thêm luồng thi hoàn chỉnh: bắt đầu phiên, điều hướng câu hỏi, tự lưu 20 giây, nộp bài idempotent, tự nộp khi hết giờ và xem trạng thái kết quả.
-- Thêm hàng chờ chấm tự luận cho giảng viên/quản trị viên.
-- Thiết kế lại toàn bộ typography, khoảng cách, responsive, dashboard và thanh điều hướng; không dồn mọi nghiệp vụ vào một màn hình.
+## Trải nghiệm Astral Academy V3
 
-## Cách chạy dễ nhất
+- Giao diện được tái thiết kế toàn diện thành một học viện số có chiều sâu: nền thiên thể nhiều lớp, bản đồ chòm sao, kính mờ có kiểm soát và hệ phân cấp nội dung rõ ràng.
+- Shell điều hướng nổi, top bar theo ngữ cảnh, chỉ báo hệ thống và **Command Atlas** (`Ctrl/Cmd + K`) chỉ hiển thị các đích người dùng có quyền truy cập.
+- Login, dashboard, khóa học, lớp học, lộ trình, kỳ thi, đổi mật khẩu và các trung tâm quản trị đều dùng chung một hệ design token, component và trạng thái tương tác.
+- Bố cục thích ứng từ màn hình rộng đến điện thoại; có focus-visible, tương phản cao tùy hệ điều hành và chế độ giảm chuyển động.
+- Toàn bộ hiệu ứng thị giác dùng CSS/SVG nội bộ, không phụ thuộc CDN hình ảnh hoặc font bên ngoài; dynamic branding vẫn được giữ nguyên.
 
-### Windows 10/11
+Chi tiết thiết kế và phạm vi thay đổi: `docs/UI_UX_REDESIGN_0.9.0.md`.
 
-Yêu cầu: Docker Desktop đang chạy và sử dụng Linux containers.
+## Mô hình tài khoản và quyền
+
+- Account type chỉ gồm `SYSTEM_ADMIN` và `USER`.
+- `ADMIN`, `INSTRUCTOR`, `LEARNER` là ba role mặc định; Admin có thể tạo role tùy chỉnh.
+- Một tài khoản có thể nhận nhiều role/quyền đồng thời.
+- Quyền có hiệu lực theo `SYSTEM`, chi nhánh, phòng ban, nhóm, khóa học, lớp hoặc kỳ thi.
+- `DENY` ưu tiên hơn `ALLOW`; Gateway và service đều kiểm tra quyền.
+- Không có đăng ký công khai; quản trị viên tạo tài khoản đơn lẻ hoặc hàng loạt.
+- Tài khoản quản trị bootstrap được bảo vệ và luôn có đường đăng nhập local dự phòng.
+
+## Năng lực chính
+
+### Đào tạo và lộ trình
+
+- Khóa học, chương/bài, lớp/cohort, ghi danh, giảng viên phụ trách và lớp trực tuyến.
+- Snapshot khóa học bất biến khi xuất bản; lớp, ghi danh và tiến độ ghim đúng phiên bản.
+- Giao khóa học theo cá nhân, nhóm, phòng ban hoặc chi nhánh.
+- Lộ trình học tập nhiều chặng, mở khóa tuần tự, giao theo user/đơn vị, tự động ghi danh và tổng hợp tiến độ.
+- Deadline, grace period, vị trí học gần nhất, lịch sử thời gian học và trạng thái quá hạn.
+- Discussion theo khóa học có kiểm duyệt.
+- xAPI Learning Record Store có idempotency.
+
+### Bài tập, thi và cuộc thi
+
+- Assignment submission riêng: nhiều lần nộp, file owner validation, trạng thái nộp muộn, hàng chờ chấm theo lớp, trả chỉnh sửa, điểm và phản hồi; chỉ hoàn thành sau khi giảng viên chấp nhận.
+- Quiz trong bài học, bài kiểm tra trong khóa học, standalone exam và competition là bốn ngữ cảnh riêng.
+- Ngân hàng câu hỏi, đề/phiên bản đề, autosave, heartbeat, resume phiên thi, grace period, enrollment context và nộp idempotent.
+- Tự chấm câu khách quan; queue chấm tự luận; HIGHEST/LATEST/AVERAGE; lịch sử điểm và phúc khảo.
+- Giao bài thi theo user/nhóm/phòng ban/chi nhánh.
+- Leaderboard có tie-break xác định và reward ledger chống trao thưởng trùng.
+
+### Tài khoản, tổ chức và năng lực
+
+- Cây công ty, chi nhánh, phòng ban, nhóm; một người có thể thuộc nhiều đơn vị.
+- Import CSV/XLSX có mapping, preview, lỗi từng dòng, `CREATE_ONLY/UPSERT`, `ATOMIC/PARTIAL`, idempotency và giới hạn giải nén XLSX.
+- Chính sách mật khẩu, buộc đổi mật khẩu, khóa đăng nhập và quản lý/thu hồi phiên.
+- LDAP/AD bind tùy chọn với timeout, filter escaping và local protected-admin fallback.
+- Competency framework: danh mục năng lực, profile yêu cầu, đánh giá khoảng cách và mức sẵn sàng.
+
+### AI, file và tài liệu
+
+- AI local hoặc API OpenAI-compatible do khách hàng cấu hình endpoint/API key.
+- JSON Schema chung cho câu hỏi, provenance theo file/trang/mục/đoạn trích/phiên bản, review và import.
+- File Storage quản lý metadata, owner/purpose, grant chính xác theo file-người dùng và phiên bản; không thực thi file tải lên.
+- DOCX edit session/callback qua editor tương thích; PDF annotation/upload thành revision mới.
+- Redis, OnlyOffice/Collabora và local AI là profile tùy chọn, không bắt buộc cho lõi LMS.
+
+### Báo cáo, thông báo và chứng chỉ
+
+- Reporting read model theo sự kiện; dashboard cá nhân, phạm vi được giao và toàn hệ thống.
+- KPI tổng hợp: completion, pass rate, overdue, due soon, active learner, progress và score theo khóa học.
+- Export có license guard; lịch xuất báo cáo nền.
+- Mẫu thông báo cấu hình không cần build lại; in-app/email outbox có retry, lease và dead state.
+- Quy tắc nhắc hạn trước/sau deadline, chạy theo UTC, đọc từ Reporting read model và chống gửi trùng.
+- Tin tức toàn hệ thống hoặc theo đơn vị, ghim, lịch xuất bản và xác nhận đã đọc.
+- Mẫu chứng chỉ, cấp/thu hồi/cấp lại và mã xác minh.
+
+### License, vận hành và tùy biến
+
+- License offline ký Ed25519, machine/org binding, giới hạn active user, feature entitlement, grace period và read-only mode.
+- Branding động: tên, giới thiệu, logo, favicon, màu sắc, ảnh nền và tên miền.
+- Registry dịch vụ ngoài có secret mã hóa, enable/disable, health/probe và timeout.
+- Health dashboard, Prometheus/Grafana profile, correlation ID và service inventory.
+- Backup/restore scripts; operation schedule; host agent có claim token, heartbeat, lease và command allowlist.
+- `UPDATE`/`ROLLBACK` cố ý fail-closed cho tới khi tích hợp gói phát hành ký số.
+
+## Chạy nhanh
+
+### Windows
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\setup.ps1
@@ -24,101 +90,42 @@ powershell -ExecutionPolicy Bypass -File .\scripts\setup.ps1
 
 ### Linux
 
-Yêu cầu: Docker Engine và Docker Compose v2.
-
 ```bash
+chmod +x scripts/*.sh
 ./scripts/setup.sh
 ```
 
-Hai script trên sẽ:
+Setup tạo `.env`, sinh secret/mật khẩu, chạy preflight, build container, chờ health và chạy smoke test. Chỉ coi cài đặt runtime thành công khi xuất hiện:
 
-1. Tạo `.env` và sinh secret/mật khẩu ngẫu nhiên nếu chưa tồn tại.
-2. Kiểm tra Docker, cấu hình, dung lượng trống và các biến bắt buộc.
-3. Build rồi khởi động hệ thống.
-4. Chờ hệ thống sẵn sàng và chạy smoke test API/web bằng tài khoản Admin, Giảng viên và Học viên.
+```text
+SMOKE TEST PASSED
+```
 
-Sau khi thành công:
+Sau đó mở `http://localhost:3000`. Mật khẩu demo nằm trong `.env`, biến `LMSPILOT_DEFAULT_ADMIN_PASSWORD`; username mặc định gồm `admin`, `instructor`, `learner`.
 
-- Portal: `http://localhost:3000`
-- API Gateway: `http://localhost:8080`
-- RabbitMQ Management: `http://localhost:15672`
-
-Mật khẩu tài khoản demo nằm trong biến `LMSPILOT_DEFAULT_ADMIN_PASSWORD` của file `.env`:
-
-| Vai trò | Tên đăng nhập |
-|---|---|
-| Quản trị viên | `admin` |
-| Giảng viên | `instructor` |
-| Học viên | `student` |
-
-> Lần build đầu cần Internet để tải Docker image và dependency. Sau khi image đã được build, hệ thống có thể vận hành trong LAN mà không phụ thuộc Internet.
-
-## Kiểm tra trước khi chạy
+## Kiểm tra source
 
 ```bash
 ./scripts/test-static.sh
 ./scripts/preflight.sh
 ```
 
-Trên Windows:
+Bản 0.9.0 đạt **104/104** static/contract/UI regression tests, semantic TypeScript typecheck trên 65 file, Next.js production build và `npm audit` 0 vulnerability. Backend Gradle và Docker E2E chưa chạy được vì host chỉ có Java 17, không tải được Gradle distribution và không có Docker Engine. Xem `DELIVERY_STATUS.md`, `docs/UI_UX_REDESIGN_0.9.0.md`, `docs/BUILD_VERIFICATION_0.9.0.md`, `docs/AUDIT_0.8.2.md` và `docs/BA_CLS_TRACEABILITY_0.8.2.md`.
 
-```powershell
-.\scripts\test-static.ps1
-.\scripts\preflight.ps1
-```
-
-Kiểm tra trạng thái sau khi đã khởi động:
-
-```bash
-./scripts/smoke-test.sh
-docker compose ps
-docker compose logs --tail=200
-```
-
-## Các phần đã có trong mã nguồn
-
-- Portal responsive dùng chung cho ba vai trò, điều hướng và trang bắt đầu tách đúng theo quyền.
-- Đăng nhập local, access/refresh token, RBAC và kiểm tra quyền tại backend.
-- Quản lý người dùng, vai trò, cơ cấu tổ chức; tạo/mở/chỉnh sửa/xuất bản khóa học; thêm/sửa bài học; tạo lớp và ghi danh thật qua API.
-- Trình học riêng theo từng khóa học: mở bài học, xem PDF/video/audio trực tiếp, tải tài liệu, nộp tệp thực hành, lưu tiến độ và tiếp tục vị trí gần nhất.
-- Ngân hàng câu hỏi, cấu hình bài kiểm tra, phiên thi có đồng hồ, tự lưu định kỳ, tự nộp khi hết giờ và chấm điểm thật.
-- Báo cáo read-model, dashboard, CSV an toàn và giới hạn dữ liệu theo phạm vi.
-- Thông báo trong ứng dụng, SMTP tùy chọn, chứng chỉ và mã xác minh trong LAN.
-- File storage có giới hạn dung lượng, allow-list định dạng, kiểm tra tên tệp và SHA-256.
-- License offline, audit, health check, backup/restore bằng script.
-- AI local và adapter tích hợp được giữ ở profile tùy chọn, không làm nặng luồng lõi.
-
-## Lệnh vận hành
-
-```bash
-make up             # chạy stack lõi
-make up-all         # thêm AI/integration/observability
-make down
-make logs
-make backup
-```
-
-Sao lưu và phục hồi thật được thực hiện tại máy chủ:
-
-```bash
-./scripts/backup.sh
-./scripts/restore.sh backups/<thu-muc-backup>
-```
-
-API Operations chỉ ghi nhận yêu cầu và hiển thị health; nó không được cấp Docker socket để tránh tạo lỗ hổng điều khiển máy chủ.
-
-## Cấu trúc repository
+## Cấu trúc
 
 ```text
-apps/web/                 Next.js portal
-backend/platform-*        contract và support dùng chung
-backend/services/*        18 Spring/Kotlin service, gồm API Gateway
-infrastructure/           PostgreSQL, Prometheus, Grafana
-tests/                    kiểm tra contract của repository
-scripts/                  setup, preflight, smoke test, backup/restore
-docs/                     kiến trúc, API, traceability và runbook
+apps/web/                 Next.js 16 / React 19 portal
+backend/platform-*        contracts và support dùng chung
+backend/services/*        19 Spring/Kotlin service, gồm API Gateway
+contracts/cls/            JSON Schema và mẫu dữ liệu AI/CLS
+deploy/                    profile Redis, document editor và local AI
+infrastructure/            PostgreSQL, RabbitMQ, Prometheus, Grafana
+tests/                     contract/requirement/unit tests
+scripts/                   setup, preflight, smoke, backup/restore, agent
+docs/                      kiến trúc, traceability, runbook và verification
 ```
 
-## Phạm vi xác nhận
+## Trước production
 
-Bản 0.4.0 là **release candidate có bộ cài và kiểm tra tự động**, chưa phải chứng nhận production cho mọi khách hàng. Các chỉ tiêu tải đồng thời, SLA, RPO/RTO, retention, LDAP/AD và adapter HRM/ERP vẫn phải chốt theo môi trường triển khai cụ thể. Xem `DELIVERY_STATUS.md` và `docs/verification-checklist.md`.
+Cần hoàn tất trên máy đích: fresh-install migration, upgrade migration từ bản đang chạy, browser E2E, RBAC/UAT, tải đồng thời kỳ thi, backup/restore drill, update/rollback drill, TLS/domain, SMTP, LDAP/AD mapping, retention, RPO/RTO, pentest và accessibility audit.

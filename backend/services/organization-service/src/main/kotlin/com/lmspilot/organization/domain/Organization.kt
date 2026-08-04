@@ -4,7 +4,7 @@ import jakarta.persistence.*
 import java.time.Instant
 import java.util.UUID
 
-enum class OrganizationUnitType { ORGANIZATION, DIVISION, DEPARTMENT, TEAM, CLASS, GROUP }
+enum class OrganizationUnitType { ORGANIZATION, BRANCH, DIVISION, DEPARTMENT, TEAM, CLASS, GROUP }
 enum class OrganizationUnitStatus { ACTIVE, INACTIVE }
 
 @Entity

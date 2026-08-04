@@ -4,7 +4,7 @@ import jakarta.persistence.*
 import java.time.Instant
 import java.util.UUID
 
-enum class LicenseStatus { ACTIVE, EXPIRED, INVALID, DEVELOPMENT }
+enum class LicenseStatus { ACTIVE, GRACE_PERIOD, EXPIRED, INVALID, DEVELOPMENT }
 
 @Entity
 @Table(name = "licenses")
@@ -17,6 +17,7 @@ class LicenseEntity(
     @Column(nullable = false, columnDefinition = "text") var featuresJson: String = "[]",
     @Column(nullable = false) var issuedAt: Instant = Instant.now(),
     var expiresAt: Instant? = null,
+    @Column(nullable = false) var gracePeriodDays: Int = 0,
     @Enumerated(EnumType.STRING) @Column(nullable = false, length = 30) var status: LicenseStatus = LicenseStatus.ACTIVE,
     @Column(nullable = false, columnDefinition = "text") var sourcePayload: String = "",
     @Column(nullable = false) var activatedAt: Instant = Instant.now(),

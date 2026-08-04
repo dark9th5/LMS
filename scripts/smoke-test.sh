@@ -95,17 +95,17 @@ auth_get "$INSTRUCTOR_TOKEN" '/api/v1/courses?size=5'
 auth_get "$INSTRUCTOR_TOKEN" /api/v1/classes
 auth_get "$INSTRUCTOR_TOKEN" /api/v1/grades/queue
 
-STUDENT_JSON="$(login student)"
-STUDENT_TOKEN="$(printf '%s' "$STUDENT_JSON" | json_access_token)"
-[[ -n "$STUDENT_TOKEN" ]] || { echo "Đăng nhập student không trả access token: $STUDENT_JSON" >&2; exit 1; }
-assert_role "$STUDENT_JSON" "STUDENT" "student"
-auth_get "$STUDENT_TOKEN" /api/v1/learning/me
-auth_get "$STUDENT_TOKEN" /api/v1/exams
-auth_get "$STUDENT_TOKEN" /api/v1/grades/me
-auth_get "$STUDENT_TOKEN" /api/v1/certificates/me
+LEARNER_JSON="$(login learner)"
+LEARNER_TOKEN="$(printf '%s' "$LEARNER_JSON" | json_access_token)"
+[[ -n "$LEARNER_TOKEN" ]] || { echo "Đăng nhập learner không trả access token: $LEARNER_JSON" >&2; exit 1; }
+assert_role "$LEARNER_JSON" "LEARNER" "learner"
+auth_get "$LEARNER_TOKEN" /api/v1/learning/me
+auth_get "$LEARNER_TOKEN" /api/v1/exams
+auth_get "$LEARNER_TOKEN" /api/v1/grades/me
+auth_get "$LEARNER_TOKEN" /api/v1/certificates/me
 
 web_login_check admin ADMIN /dashboard "Quản trị hệ thống"
 web_login_check instructor INSTRUCTOR /dashboard "Giảng viên mẫu"
-web_login_check student STUDENT /learning "Học viên mẫu"
+web_login_check learner LEARNER /learning "Học viên mẫu"
 
 echo "SMOKE TEST PASSED"

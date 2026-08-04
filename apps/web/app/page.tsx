@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
 import { getUser } from "@/lib/session";
-import { landingForRoles } from "@/lib/role";
+import { landingForUser } from "@/lib/authorization";
 export const dynamic = "force-dynamic";
-export default async function Home(){const user=await getUser();redirect(user?landingForRoles(user.roles):"/login")}
+export default async function Home(){const user=await getUser();redirect(user?landingForUser(user):"/login")}

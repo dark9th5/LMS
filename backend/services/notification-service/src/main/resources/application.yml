@@ -57,6 +57,23 @@ lmspilot:
   jwt:
     secret: ${LMSPILOT_JWT_SECRET}
   internal-token: ${LMSPILOT_INTERNAL_TOKEN}
+identity-service:
+  url: ${IDENTITY_SERVICE_URL:http://localhost:8081}
+file-storage-service:
+  url: ${FILE_STORAGE_SERVICE_URL:http://localhost:8089}
 notification:
+  reminder-worker-delay-ms: ${NOTIFICATION_REMINDER_WORKER_DELAY_MS:60000}
+  reminder-retry-delay-seconds: ${NOTIFICATION_REMINDER_RETRY_DELAY_SECONDS:300}
+  reporting-connect-timeout-ms: ${NOTIFICATION_REPORTING_CONNECT_TIMEOUT_MS:3000}
+  reporting-read-timeout-ms: ${NOTIFICATION_REPORTING_READ_TIMEOUT_MS:5000}
   email-enabled: ${NOTIFICATION_EMAIL_ENABLED:false}
   from: ${NOTIFICATION_FROM:no-reply@lmspilot.local}
+  email-max-attempts: ${NOTIFICATION_EMAIL_MAX_ATTEMPTS:8}
+  email-initial-backoff: ${NOTIFICATION_EMAIL_INITIAL_BACKOFF:PT1M}
+  email-max-backoff: ${NOTIFICATION_EMAIL_MAX_BACKOFF:PT6H}
+  email-processing-lease: ${NOTIFICATION_EMAIL_PROCESSING_LEASE:PT5M}
+  email-batch-size: ${NOTIFICATION_EMAIL_BATCH_SIZE:50}
+  email-worker-delay-ms: ${NOTIFICATION_EMAIL_WORKER_DELAY_MS:15000}
+
+reporting-service:
+  url: ${REPORTING_SERVICE_URL:http://localhost:8088}

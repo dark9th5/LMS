@@ -1,0 +1,29 @@
+{
+  "release": "LMSPilot CLS 0.9.0",
+  "version": "0.9.0",
+  "date": "2026-08-04",
+  "status": "Astral Academy V3 full-source release candidate",
+  "sourceFileCount": 410,
+  "backendServiceCount": 19,
+  "flywayServiceCount": 18,
+  "testCount": 104,
+  "verification": {
+    "repositoryValidator": "PASS",
+    "staticContractFlowUiRegression": "104/104 PASS",
+    "uiRedesignRegression": "8/8 PASS",
+    "semanticTypeScript": "65 source files PASS",
+    "frontendProductionBuild": "PASS - Next.js 16.2.12",
+    "productionRealMode": "PASS",
+    "npmProductionAudit": "PASS - 0 known vulnerabilities",
+    "gradleBuild": "NOT VERIFIED - Java 21 and Gradle distribution unavailable",
+    "dockerE2E": "NOT VERIFIED - Docker Engine unavailable",
+    "browserVisualE2E": "NOT VERIFIED - browser runtime unavailable",
+    "archiveVerification": "PASS - SHA-256, safe listing, source checksums, validator, 104 tests and production guard rerun after extraction"
+  },
+  "uiRedesign": "docs/UI_UX_REDESIGN_0.9.0.md",
+  "audit": "docs/AUDIT_0.8.2.md",
+  "startHere": "BAT_DAU_TAI_DAY.md",
+  "traceability": "docs/BA_CLS_TRACEABILITY_0.8.2.md",
+  "buildVerification": "docs/BUILD_VERIFICATION_0.9.0.md",
+  "deliveryStatus": "DELIVERY_STATUS.md"
+}

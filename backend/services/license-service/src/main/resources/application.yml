@@ -46,7 +46,8 @@ lmspilot:
   jwt:
     secret: ${LMSPILOT_JWT_SECRET}
   internal-token: ${LMSPILOT_INTERNAL_TOKEN}
+  license-enforcement-enabled: false
 license:
   public-key: ${LMSPILOT_LICENSE_PUBLIC_KEY:}
-  allow-development: ${LMSPILOT_ALLOW_DEVELOPMENT_LICENSE:true}
+  allow-development: ${LMSPILOT_ALLOW_DEVELOPMENT_LICENSE:false}
   machine-fingerprint: ${LMSPILOT_MACHINE_FINGERPRINT:development}

@@ -1,0 +1,26 @@
+{
+  "release": "LMSPilot CLS 0.8.2",
+  "version": "0.8.2",
+  "date": "2026-08-03",
+  "status": "verified-flow full-source release candidate",
+  "sourceFileCount": 403,
+  "backendServiceCount": 19,
+  "flywayServiceCount": 18,
+  "testCount": 96,
+  "verification": {
+    "repositoryValidator": "PASS",
+    "staticContractFlowRegression": "96/96 PASS",
+    "semanticTypeScript": "65 source files PASS",
+    "frontendProductionBuild": "PASS - Next.js 16.2.12",
+    "productionRealMode": "PASS",
+    "npmProductionAudit": "PASS - 0 known vulnerabilities",
+    "gradleBuild": "NOT VERIFIED - Java 21 and Gradle distribution unavailable",
+    "dockerE2E": "NOT VERIFIED - Docker Engine unavailable",
+    "archiveVerification": "PASS - SHA-256, safe listing, source checksums, validator, 96 tests and production guard rerun after extraction"
+  },
+  "audit": "docs/AUDIT_0.8.2.md",
+  "startHere": "BAT_DAU_TAI_DAY.md",
+  "traceability": "docs/BA_CLS_TRACEABILITY_0.8.2.md",
+  "buildVerification": "docs/BUILD_VERIFICATION_0.8.2.md",
+  "deliveryStatus": "DELIVERY_STATUS.md"
+}

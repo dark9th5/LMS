@@ -50,5 +50,7 @@ object CurrentUser {
     fun id(): UUID = UUID.fromString(jwt().subject)
     fun username(): String = jwt().getClaimAsString("username") ?: jwt().subject
     fun roles(): Set<String> = jwt().getClaimAsStringList("roles")?.toSet() ?: emptySet()
+    fun accountType(): String = jwt().getClaimAsString("accountType") ?: "USER"
+    fun isSystemAdmin(): Boolean = accountType() == "SYSTEM_ADMIN"
     fun authorities(): Set<String> = (jwt().getClaimAsStringList("permissions") ?: emptyList()).toSet()
 }

@@ -1,0 +1,44 @@
+{
+  "version": "1.0",
+  "permissions": [
+    "users:read", "users:create", "users:update", "users:lock", "users:bulk-manage",
+    "roles:read", "roles:manage", "authorization:grant", "authorization:revoke",
+    "organization:read", "organization:manage", "organization:membership:manage",
+    "courses:read", "courses:create", "courses:update", "courses:publish", "courses:assign", "courses:learn",
+    "classes:manage", "live-sessions:manage", "live-sessions:join",
+    "assessments:read", "assessments:create", "assessments:update", "assessments:take", "assessments:grade",
+    "exams:manage", "exams:assign", "competitions:manage", "competitions:participate", "competitions:reward",
+    "learning:read:self", "learning:read:scope", "reports:read:self", "reports:read:scope", "reports:export",
+    "questions:read", "questions:manage", "questions:generate:ai", "questions:approve:ai",
+    "files:read", "files:upload", "files:edit", "files:publish", "files:version:read",
+    "news:read", "news:manage", "news:publish",
+    "branding:manage", "configuration:manage", "integrations:manage", "audit:read"
+  ],
+  "defaultRoles": {
+    "ADMIN": [
+      "users:read", "users:create", "users:update", "users:lock", "users:bulk-manage",
+      "roles:read", "roles:manage", "authorization:grant", "authorization:revoke",
+      "organization:read", "organization:manage", "organization:membership:manage",
+      "courses:read", "courses:create", "courses:update", "courses:publish", "courses:assign",
+      "classes:manage", "live-sessions:manage", "assessments:read", "assessments:create",
+      "assessments:update", "assessments:grade", "exams:manage", "exams:assign",
+      "competitions:manage", "competitions:reward", "learning:read:scope", "reports:read:scope",
+      "reports:export", "questions:read", "questions:manage", "questions:generate:ai",
+      "questions:approve:ai", "files:read", "files:upload", "files:edit", "files:publish",
+      "files:version:read", "news:read", "news:manage", "news:publish", "branding:manage",
+      "configuration:manage", "integrations:manage", "audit:read"
+    ],
+    "INSTRUCTOR": [
+      "courses:read", "courses:create", "courses:update", "courses:publish", "courses:assign",
+      "classes:manage", "live-sessions:manage", "live-sessions:join", "assessments:read",
+      "assessments:create", "assessments:update", "assessments:grade", "exams:manage",
+      "questions:read", "questions:manage", "questions:generate:ai", "questions:approve:ai",
+      "learning:read:scope", "reports:read:scope", "reports:export", "files:read", "files:upload",
+      "files:edit", "files:version:read", "news:read"
+    ],
+    "LEARNER": [
+      "courses:read", "courses:learn", "live-sessions:join", "assessments:take",
+      "competitions:participate", "learning:read:self", "reports:read:self", "files:read", "news:read"
+    ]
+  }
+}

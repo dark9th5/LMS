@@ -1,9 +1,16 @@
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
+import { isSameOriginMutation } from "@/lib/request-origin";
 
 const gateway = process.env.LMSPILOT_GATEWAY_URL ?? "http://localhost:8080";
 
 export async function POST(request: NextRequest) {
+  if (!isSameOriginMutation(request)) {
+    return NextResponse.json(
+      { code: "CROSS_SITE_REQUEST", message: "Yêu cầu khác nguồn đã bị từ chối" },
+      { status: 403, headers: { "Cache-Control": "no-store" } },
+    );
+  }
   const jar = await cookies();
   const refresh = jar.get("lmspilot_refresh")?.value;
   if (refresh) {

@@ -1,0 +1,97 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://lmspilot.local/schemas/question-set-v1.json",
+  "title": "LMSPilot Question Set",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "source", "language", "questions"],
+  "properties": {
+    "schemaVersion": { "const": "1.0" },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["courseId", "documentVersionIds"],
+      "properties": {
+        "courseId": { "type": "string", "format": "uuid" },
+        "documentVersionIds": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "format": "uuid" }
+        },
+        "provider": { "type": "string", "maxLength": 80 },
+        "model": { "type": "string", "maxLength": 160 },
+        "generatedAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "language": { "type": "string", "minLength": 2, "maxLength": 16 },
+    "title": { "type": "string", "maxLength": 240 },
+    "questions": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 500,
+      "items": { "$ref": "#/$defs/question" }
+    }
+  },
+  "$defs": {
+    "citation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["documentVersionId", "quote"],
+      "properties": {
+        "documentVersionId": { "type": "string", "format": "uuid" },
+        "page": { "type": "integer", "minimum": 1 },
+        "section": { "type": "string", "maxLength": 240 },
+        "quote": { "type": "string", "minLength": 1, "maxLength": 800 }
+      }
+    },
+    "option": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "text"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]{0,15}$" },
+        "text": { "type": "string", "minLength": 1, "maxLength": 1000 }
+      }
+    },
+    "question": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["externalId", "type", "stem", "difficulty", "points", "options", "correctOptionIds", "explanation", "citations"],
+      "properties": {
+        "externalId": { "type": "string", "minLength": 1, "maxLength": 100 },
+        "type": { "enum": ["SINGLE_CHOICE", "MULTIPLE_CHOICE", "TRUE_FALSE"] },
+        "stem": { "type": "string", "minLength": 5, "maxLength": 4000 },
+        "difficulty": { "enum": ["EASY", "MEDIUM", "HARD"] },
+        "topic": { "type": "string", "maxLength": 240 },
+        "learningObjective": { "type": "string", "maxLength": 500 },
+        "points": { "type": "number", "exclusiveMinimum": 0, "maximum": 1000 },
+        "options": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 10,
+          "items": { "$ref": "#/$defs/option" }
+        },
+        "correctOptionIds": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]{0,15}$" }
+        },
+        "explanation": { "type": "string", "minLength": 1, "maxLength": 4000 },
+        "citations": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 10,
+          "items": { "$ref": "#/$defs/citation" }
+        },
+        "tags": {
+          "type": "array",
+          "uniqueItems": true,
+          "maxItems": 20,
+          "items": { "type": "string", "maxLength": 80 }
+        }
+      }
+    }
+  }
+}

@@ -4,7 +4,7 @@ set -euo pipefail
 : "${POSTGRES_DB:?POSTGRES_DB is required}"
 : "${POSTGRES_SERVICE_PASSWORD:?POSTGRES_SERVICE_PASSWORD is required}"
 
-schemas=(identity organization course enrollment learning assessment grading reporting file_storage license audit notification certificate configuration integration operations)
+schemas=(identity organization course enrollment learning assessment grading reporting file_storage license audit notification certificate ai configuration integration operations competency)
 for schema in "${schemas[@]}"; do
   role="${schema}_user"
   psql -v ON_ERROR_STOP=1 \

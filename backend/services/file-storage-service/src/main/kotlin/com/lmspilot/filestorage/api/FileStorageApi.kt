@@ -4,13 +4,17 @@ import com.lmspilot.contracts.Permissions
 import com.lmspilot.filestorage.domain.StoredFileEntity
 import com.lmspilot.filestorage.domain.StoredFileRepository
 import com.lmspilot.filestorage.domain.StoredFileStatus
+import com.lmspilot.filestorage.domain.FileAccessGrantEntity
+import com.lmspilot.filestorage.domain.FileAccessGrantRepository
 import com.lmspilot.support.api.ApiException
 import com.lmspilot.support.security.CurrentUser
 import jakarta.annotation.PostConstruct
 import org.springframework.beans.factory.annotation.Value
-import org.springframework.core.io.InputStreamResource
+import org.springframework.core.io.FileSystemResource
+import org.springframework.core.io.support.ResourceRegion
 import org.springframework.http.ContentDisposition
 import org.springframework.http.HttpHeaders
+import org.springframework.http.HttpRange
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
@@ -22,6 +26,7 @@ import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RequestPart
 import org.springframework.web.bind.annotation.ResponseStatus
@@ -51,9 +56,22 @@ data class StoredFileResponse(
     val createdAt: Instant,
 )
 
+data class InternalStoredFileResponse(
+    val id: UUID,
+    val ownerId: UUID,
+    val originalName: String,
+    val contentType: String,
+    val sizeBytes: Long,
+    val sha256: String,
+    val purpose: String,
+    val status: StoredFileStatus,
+    val createdAt: Instant,
+)
+
 @Service
 class FileStorageService(
     private val repository: StoredFileRepository,
+    private val grants: FileAccessGrantRepository,
     @Value("\${storage.root:./data/files}") root: String,
     @Value("\${storage.max-size-bytes:209715200}") private val maxSizeBytes: Long,
     @Value("\${storage.allowed-content-types:application/pdf,text/plain}") allowedContentTypes: String,
@@ -147,22 +165,87 @@ class FileStorageService(
     }
 
     @Transactional(readOnly = true)
-    fun metadata(id: UUID): StoredFileResponse = available(id).response()
+    fun list(): List<StoredFileResponse> = (if (Permissions.OPERATIONS_MANAGE in CurrentUser.authorities()) repository.findAll() else repository.findAllByOwnerIdOrderByCreatedAtDesc(CurrentUser.id()))
+        .filter { it.status == StoredFileStatus.AVAILABLE }
+        .sortedByDescending { it.createdAt }
+        .map { it.response() }
 
     @Transactional(readOnly = true)
-    fun download(id: UUID, inline: Boolean = false): ResponseEntity<InputStreamResource> {
-        val entity = available(id)
+    fun metadata(id: UUID): StoredFileResponse = readable(id).response()
+
+    @Transactional(readOnly = true)
+    fun internalMetadata(id: UUID): InternalStoredFileResponse = available(id).internalResponse()
+
+    @Transactional(readOnly = true)
+    fun download(id: UUID, inline: Boolean = false, rangeHeader: String? = null): ResponseEntity<*> {
+        val entity = readable(id)
+        return fileResponse(entity, inline, rangeHeader)
+    }
+
+    @Transactional(readOnly = true)
+    fun internalDownload(id: UUID, inline: Boolean = false): ResponseEntity<*> =
+        fileResponse(available(id), inline)
+
+    @Transactional
+    fun grantAccess(userId: UUID, fileIds: Set<UUID>, sourceInput: String, ttlSeconds: Long) {
+        if (fileIds.size > 500) throw ApiException(HttpStatus.BAD_REQUEST, "FILE_GRANT_LIMIT", "Mỗi yêu cầu chỉ được cấp tối đa 500 tệp")
+        val source = sourceInput.trim().uppercase(Locale.ROOT)
+        if (source.isBlank() || source.length > 80 || !source.matches(Regex("[A-Z0-9_:-]+"))) {
+            throw ApiException(HttpStatus.BAD_REQUEST, "INVALID_GRANT_SOURCE", "Nguồn cấp quyền tệp không hợp lệ")
+        }
+        val now = Instant.now()
+        val expiresAt = now.plusSeconds(ttlSeconds.coerceIn(60, 14_400))
+        fileIds.forEach { fileId ->
+            val file = available(fileId)
+            if (file.purpose !in setOf("COURSE_CONTENT", "ASSIGNMENT_SUBMISSION", "COURSE_DOCUMENT", "NEWS_ATTACHMENT")) {
+                throw ApiException(HttpStatus.BAD_REQUEST, "FILE_PURPOSE_NOT_GRANTABLE", "Không thể cấp quyền chia sẻ cho mục đích tệp này")
+            }
+            val grant = grants.findByFileIdAndUserId(fileId, userId)
+                ?: FileAccessGrantEntity(fileId = fileId, userId = userId, createdAt = now)
+            grant.source = source
+            grant.expiresAt = expiresAt
+            grant.updatedAt = now
+            grants.save(grant)
+        }
+    }
+
+    private fun fileResponse(entity: StoredFileEntity, inline: Boolean, rangeHeader: String? = null): ResponseEntity<*> {
         val path = checkedPath(entity.storageKey)
         if (!Files.isRegularFile(path)) throw ApiException(HttpStatus.NOT_FOUND, "FILE_BYTES_MISSING", "Dữ liệu tệp không còn tồn tại")
-        val resource = InputStreamResource(Files.newInputStream(path, StandardOpenOption.READ))
+        val resource = FileSystemResource(path)
         val mediaType = runCatching { MediaType.parseMediaType(entity.contentType) }.getOrDefault(MediaType.APPLICATION_OCTET_STREAM)
         val disposition = (if (inline) ContentDisposition.inline() else ContentDisposition.attachment()).filename(entity.originalName, Charsets.UTF_8).build().toString()
+        val region = requestedRegion(rangeHeader, resource, entity.sizeBytes)
+        if (region != null) {
+            return ResponseEntity.status(HttpStatus.PARTIAL_CONTENT)
+                .contentType(mediaType)
+                .contentLength(region.count)
+                .header(HttpHeaders.CONTENT_DISPOSITION, disposition)
+                .header(HttpHeaders.ACCEPT_RANGES, "bytes")
+                .header("X-Content-Type-Options", "nosniff")
+                .body(region)
+        }
         return ResponseEntity.ok()
             .contentType(mediaType)
             .contentLength(entity.sizeBytes)
             .header(HttpHeaders.CONTENT_DISPOSITION, disposition)
+            .header(HttpHeaders.ACCEPT_RANGES, "bytes")
             .header("X-Content-Type-Options", "nosniff")
             .body(resource)
+    }
+
+    private fun requestedRegion(rangeHeader: String?, resource: FileSystemResource, size: Long): ResourceRegion? {
+        if (rangeHeader.isNullOrBlank()) return null
+        return try {
+            val range = HttpRange.parseRanges(rangeHeader).singleOrNull()
+                ?: throw IllegalArgumentException("Only one byte range is supported")
+            val start = range.getRangeStart(size)
+            val end = range.getRangeEnd(size)
+            if (start !in 0 until size || end < start) throw IllegalArgumentException("Unsatisfiable byte range")
+            ResourceRegion(resource, start, end - start + 1)
+        } catch (_: IllegalArgumentException) {
+            throw ApiException(HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE, "INVALID_FILE_RANGE", "Khoảng byte được yêu cầu không hợp lệ")
+        }
     }
 
     @Transactional
@@ -180,6 +263,25 @@ class FileStorageService(
         if (entity.status != StoredFileStatus.AVAILABLE) throw ApiException(HttpStatus.GONE, "FILE_UNAVAILABLE", "Tệp không còn khả dụng")
         return entity
     }
+
+    /**
+     * Public file routes must enforce object access in addition to the coarse
+     * FILES_DOWNLOAD authority carried by the JWT. Internal service routes use
+     * [available] after validating their service token.
+     */
+    private fun readable(id: UUID): StoredFileEntity {
+        val entity = available(id)
+        if (entity.ownerId == CurrentUser.id() || hasAdministrativeFileAccess()) return entity
+
+        if (grants.findByFileIdAndUserId(entity.id, CurrentUser.id())?.expiresAt?.isAfter(Instant.now()) == true) return entity
+
+        throw ApiException(HttpStatus.FORBIDDEN, "FILE_READ_FORBIDDEN", "Bạn không có quyền đọc tệp này")
+    }
+
+    private fun hasAdministrativeFileAccess(): Boolean =
+        CurrentUser.isSystemAdmin() ||
+            "ADMIN" in CurrentUser.roles() ||
+            Permissions.OPERATIONS_MANAGE in CurrentUser.authorities()
 
     private fun checkedPath(storageKey: String): Path {
         val path = rootPath.resolve(storageKey).normalize()
@@ -225,10 +327,15 @@ class FileStorageService(
 }
 
 private fun StoredFileEntity.response() = StoredFileResponse(id, originalName, contentType, sizeBytes, sha256, purpose, status, createdAt)
+private fun StoredFileEntity.internalResponse() = InternalStoredFileResponse(id, ownerId, originalName, contentType, sizeBytes, sha256, purpose, status, createdAt)
 
 @RestController
 @RequestMapping("/api/v1/files")
 class FileController(private val service: FileStorageService) {
+    @GetMapping
+    @PreAuthorize("hasAnyAuthority('${Permissions.FILES_READ}','${Permissions.FILES_DOWNLOAD}')")
+    fun list() = service.list()
+
     @PostMapping(consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
     @PreAuthorize("hasAuthority('${Permissions.FILES_UPLOAD}')")
     fun upload(@RequestPart("file") file: MultipartFile, @RequestParam(defaultValue = "GENERAL") purpose: String) = service.store(file, purpose)
@@ -239,7 +346,11 @@ class FileController(private val service: FileStorageService) {
 
     @GetMapping("/{id}/content")
     @PreAuthorize("hasAuthority('${Permissions.FILES_DOWNLOAD}')")
-    fun download(@PathVariable id: UUID, @RequestParam(defaultValue = "false") inline: Boolean) = service.download(id, inline)
+    fun download(
+        @PathVariable id: UUID,
+        @RequestParam(defaultValue = "false") inline: Boolean,
+        @RequestHeader(HttpHeaders.RANGE, required = false) range: String?,
+    ) = service.download(id, inline, range)
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)

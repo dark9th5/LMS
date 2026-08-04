@@ -1,35 +1,22 @@
-LMSPilot 0.4.0 - Verification report
-Generated: 2026-07-30
+LMSPilot CLS 0.5.0 - Verification report
+Generated: 2026-08-03
 
 PASSED IN THIS ENVIRONMENT
-- Repository validator: 18 services, 16 Flyway services, 23 YAML files, API/Gateway wiring, Gradle wrapper, secrets and Docker layout.
+- Repository validator: 18 services, 17 Flyway services, JSON/YAML, API/Gateway wiring, Gradle wrapper, secrets and Docker layout.
 - TypeScript/TSX syntax validation.
-- Offline TypeScript semantic validation with local tsc and minimal framework declarations.
-- Bash syntax validation for setup, preflight, smoke, backup, restore and PostgreSQL initialization scripts.
-- 14 repository contract tests, including:
-  * consistent seed identifiers;
-  * pinned/patched frontend dependencies;
-  * runtime secret policy;
-  * internal service-token enforcement;
-  * non-destructive migrations;
-  * unique Gateway routes;
-  * Docker socket isolation;
-  * role-aware login and landing routes;
-  * real LMS API wiring for courses/classes/learning/exams/grading;
-  * hidden sidebar/course-outline scrollbars;
-  * real lesson editing and inline PDF/video/audio delivery;
-  * idempotency imports;
-  * static icon contract;
-  * assigned-instructor course visibility with owner-only editing.
-- Git whitespace/object verification.
-- Release archive extraction and static-suite re-validation.
+- Bash syntax validation for operational scripts.
+- 36 tests: 16 repository contracts + 20 CLS requirement trace tests.
+- Flyway duplicate-version and non-destructive migration checks.
+- Pure Kotlin policy compilation.
+- Objective scoring and leaderboard tie-break smoke checks.
+- Git whitespace verification.
 
 NOT EXECUTED IN THIS ENVIRONMENT
-- Docker Compose image build/start (Docker Engine unavailable).
-- Full Gradle compile/test with downloaded Maven dependencies (registry unavailable).
-- npm ci and Next.js production build with downloaded dependencies (npm registry unavailable).
-- PostgreSQL/RabbitMQ/Redis runtime integration, browser E2E, load testing, penetration testing and customer UAT.
+- Full Gradle compile/test with downloaded dependencies.
+- npm ci, semantic typecheck and Next.js production build.
+- Docker Compose runtime integration and browser E2E.
+- Load testing, penetration testing and customer UAT.
 
 RELEASE ACCEPTANCE RULE
-On the target machine, run scripts/setup.sh or scripts/setup.ps1.
-Treat installation as successful only when the script ends with: SMOKE TEST PASSED.
+Run scripts/setup.sh or scripts/setup.ps1 on the target machine.
+Treat installation as successful only when smoke testing ends with: SMOKE TEST PASSED.

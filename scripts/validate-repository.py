@@ -15,6 +15,24 @@ except ImportError as exc:
     raise SystemExit("PyYAML is required for repository validation") from exc
 
 ROOT = Path(__file__).resolve().parents[1]
+IGNORED_DIRECTORY_NAMES = {
+    ".git",
+    ".gradle",
+    ".next",
+    ".runtime",
+    "__pycache__",
+    "build",
+    "coverage",
+    "node_modules",
+}
+
+
+def is_repository_source(path: Path) -> bool:
+    return not any(part in IGNORED_DIRECTORY_NAMES for part in path.relative_to(ROOT).parts)
+
+
+def source_files(pattern: str) -> list[Path]:
+    return [path for path in ROOT.rglob(pattern) if is_repository_source(path)]
 
 
 class UniqueKeyLoader(yaml.SafeLoader):
@@ -78,13 +96,13 @@ if missing:
     fail("Missing required files: " + ", ".join(missing))
 
 # JSON syntax.
-json_files = list(ROOT.rglob("*.json"))
+json_files = source_files("*.json")
 for path in json_files:
     with path.open(encoding="utf-8") as stream:
         json.load(stream)
 
 # YAML syntax and duplicate-key protection.
-yaml_files = [*ROOT.rglob("*.yml"), *ROOT.rglob("*.yaml")]
+yaml_files = [*source_files("*.yml"), *source_files("*.yaml")]
 for path in yaml_files:
     try:
         with path.open(encoding="utf-8") as stream:
@@ -103,6 +121,16 @@ for service in services:
         fail(f"Missing application entry point: {service.name}")
     if f'":services:{service.name}"' not in settings:
         fail(f"Service is not included in Gradle settings: {service.name}")
+    migration_dir = service / "src/main/resources/db/migration"
+    versions: dict[str, list[str]] = {}
+    if migration_dir.exists():
+        for migration in migration_dir.glob("V*__*.sql"):
+            match = re.match(r"V([^_]+)__", migration.name)
+            if match:
+                versions.setdefault(match.group(1), []).append(migration.name)
+    duplicates = {version: names for version, names in versions.items() if len(names) > 1}
+    if duplicates:
+        fail(f"Duplicate Flyway versions in {service.name}: {duplicates}")
 
 contracts_build = read("backend/platform-contracts/build.gradle.kts")
 if "io.spring.dependency-management" not in contracts_build or "spring-boot-dependencies" not in contracts_build:
@@ -161,7 +189,9 @@ for base in sorted(controller_bases):
 
 frontend_api_paths = set()
 frontend_pattern = re.compile(r'["`](/api/v1/[A-Za-z0-9_?=&${}/:.\-]+)')
-for source in (ROOT / "apps/web").rglob("*.ts*"):
+for source in source_files("*.ts*"):
+    if ROOT / "apps/web" not in source.parents:
+        continue
     frontend_api_paths.update(frontend_pattern.findall(source.read_text(encoding="utf-8")))
 for path in sorted(frontend_api_paths):
     static = path.split("?", 1)[0].split("${", 1)[0].rstrip("/")
@@ -190,7 +220,11 @@ if react_version < (19, 2, 6) or react_dom_version != react_version:
     fail("React/React DOM must use the aligned patched 19.2.6+ release")
 
 # Known API wiring that previously broke first-run flows.
-web_source = "\n".join(path.read_text(encoding="utf-8") for path in (ROOT / "apps/web").rglob("*.tsx"))
+web_source = "\n".join(
+    path.read_text(encoding="utf-8")
+    for path in source_files("*.tsx")
+    if ROOT / "apps/web" in path.parents
+)
 if '"/api/v1/organization"' in web_source:
     fail("Frontend still calls obsolete /api/v1/organization endpoint")
 if '"/api/v1/organization/units"' not in web_source:

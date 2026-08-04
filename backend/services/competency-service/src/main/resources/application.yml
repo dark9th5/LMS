@@ -1,0 +1,38 @@
+server:
+  port: ${SERVER_PORT:8098}
+  shutdown: graceful
+spring:
+  application:
+    name: competency-service
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/lmspilot?currentSchema=competency}
+    username: ${DB_USERNAME:competency_user}
+    password: ${DB_PASSWORD}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+  rabbitmq:
+    host: ${SPRING_RABBITMQ_HOST:localhost}
+    port: ${SPRING_RABBITMQ_PORT:5672}
+    username: ${SPRING_RABBITMQ_USERNAME}
+    password: ${SPRING_RABBITMQ_PASSWORD}
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  endpoint:
+    health:
+      probes:
+        enabled: true
+lmspilot:
+  jwt:
+    secret: ${LMSPILOT_JWT_SECRET}
+  internal-token: ${LMSPILOT_INTERNAL_TOKEN}
+  seed-demo: ${LMSPILOT_SEED_DEMO:false}
+  license-enforcement-enabled: ${LMSPILOT_LICENSE_ENFORCEMENT_ENABLED:true}
+license-service:
+  url: ${LICENSE_SERVICE_URL:http://localhost:8090}

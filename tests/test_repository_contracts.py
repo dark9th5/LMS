@@ -17,7 +17,7 @@ class RepositoryContractTests(unittest.TestCase):
         expected = {
             "admin": "00000000-0000-0000-0000-000000000001",
             "instructor": "00000000-0000-0000-0000-000000000002",
-            "student": "00000000-0000-0000-0000-000000000003",
+            "learner": "00000000-0000-0000-0000-000000000003",
             "course": "00000000-0000-0000-0000-000000000101",
             "class": "00000000-0000-0000-0000-000000000201",
             "enrollment": "00000000-0000-0000-0000-000000000202",
@@ -25,7 +25,7 @@ class RepositoryContractTests(unittest.TestCase):
         for label, value in expected.items():
             self.assertIn(value, seeds, f"Missing shared demo {label} identifier")
         self.assertGreaterEqual(seeds.count(expected["course"]), 4)
-        self.assertGreaterEqual(seeds.count(expected["student"]), 4)
+        self.assertGreaterEqual(seeds.count(expected["learner"]), 4)
 
     def test_frontend_dependencies_are_exact_and_patched(self) -> None:
         package = json.loads((ROOT / "apps/web/package.json").read_text(encoding="utf-8"))
@@ -44,6 +44,8 @@ class RepositoryContractTests(unittest.TestCase):
             self.assertNotIn("LMSPILOT_INTERNAL_TOKEN:development", text)
             if "lmspilot:\n" in text and "jwt:" in text:
                 self.assertIn("${LMSPILOT_JWT_SECRET}", text)
+            self.assertNotIn("change-this", text)
+            self.assertNotRegex(text, r"\$\{(?:AI_SECRET_KEY|CONFIGURATION_SECRET_KEY):[^}]+\}")
 
     def test_all_internal_controllers_require_service_token(self) -> None:
         for path in ROOT.glob("backend/services/*/src/main/kotlin/**/*.kt"):
@@ -61,7 +63,7 @@ class RepositoryContractTests(unittest.TestCase):
         text = (ROOT / "backend/services/api-gateway/src/main/resources/application.yml").read_text(encoding="utf-8")
         ids = re.findall(r"^\s+- id:\s+([A-Za-z0-9_-]+)\s*$", text, flags=re.MULTILINE)
         self.assertEqual(len(ids), len(set(ids)))
-        self.assertEqual(17, len(ids))
+        self.assertEqual(18, len(ids))
 
     def test_operational_scripts_are_not_exposed_to_web_container(self) -> None:
         compose = (ROOT / "docker-compose.yml").read_text(encoding="utf-8")
@@ -78,7 +80,7 @@ class RepositoryContractTests(unittest.TestCase):
         self.assertIn("encodeUserCookie(data.user)", login_api)
         self.assertNotIn("MOCK_USERS", login_api)
         self.assertIn('path: "/"', login_api)
-        self.assertIn("landingForRoles(data.user.roles)", login_form)
+        self.assertIn("landingForUser(data.user)", login_form)
         self.assertIn("window.location.replace", login_form)
         self.assertIn('redirect("/learning")', dashboard)
 

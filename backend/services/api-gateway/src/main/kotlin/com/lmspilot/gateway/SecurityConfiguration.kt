@@ -43,7 +43,7 @@ class SecurityConfiguration {
                 it.pathMatchers(
                     "/actuator/health/**", "/actuator/info",
                     "/api/v1/auth/login", "/api/v1/auth/refresh", "/api/v1/auth/logout",
-                    "/public/v1/configuration", "/public/v1/certificates/**",
+                    "/public/v1/configuration", "/public/v1/branding", "/public/v1/branding/**", "/public/v1/certificates/**", "/public/v1/file-edit/**",
                 ).permitAll()
                 it.anyExchange().authenticated()
             }

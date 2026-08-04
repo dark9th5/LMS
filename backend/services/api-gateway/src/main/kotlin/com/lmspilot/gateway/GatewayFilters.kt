@@ -47,3 +47,35 @@ class RateLimitConfiguration {
             .switchIfEmpty(Mono.just(exchange.request.remoteAddress?.address?.hostAddress ?: "unknown"))
     }
 }
+
+/**
+ * Forces a temporary-password user to replace the password before entering the
+ * rest of the platform. The check is at the gateway so hiding UI controls is
+ * never the only enforcement layer.
+ */
+@Component
+@Order(-50)
+class MustChangePasswordFilter : GlobalFilter {
+    private val allowed = setOf(
+        "/api/v1/auth/me",
+        "/api/v1/auth/change-password",
+        "/api/v1/auth/logout",
+        "/api/v1/auth/sessions",
+    )
+
+    override fun filter(exchange: ServerWebExchange, chain: GatewayFilterChain): Mono<Void> {
+        val path = exchange.request.uri.path
+        if (path in allowed || path.startsWith("/actuator/")) return chain.filter(exchange)
+        return ReactiveSecurityContextHolder.getContext()
+            .mapNotNull { it.authentication as? org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken }
+            .flatMap { authentication ->
+                if (authentication.token.getClaimAsBoolean("mustChangePassword") != true) return@flatMap chain.filter(exchange)
+                val response = exchange.response
+                response.statusCode = org.springframework.http.HttpStatus.PRECONDITION_REQUIRED
+                response.headers.contentType = org.springframework.http.MediaType.APPLICATION_JSON
+                val body = """{"code":"PASSWORD_CHANGE_REQUIRED","message":"Bạn phải đổi mật khẩu tạm thời trước khi tiếp tục"}"""
+                response.writeWith(Mono.just(response.bufferFactory().wrap(body.toByteArray(java.nio.charset.StandardCharsets.UTF_8))))
+            }
+            .switchIfEmpty(chain.filter(exchange))
+    }
+}

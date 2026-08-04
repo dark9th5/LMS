@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.lmspilot.contracts.*
 import com.lmspilot.reporting.domain.*
 import com.lmspilot.support.security.CurrentUser
+import com.lmspilot.support.security.LicenseGuard
 import org.springframework.amqp.core.*
 import org.springframework.amqp.rabbit.annotation.RabbitListener
 import org.springframework.context.annotation.Bean
@@ -57,6 +58,7 @@ class ReportingProjectionService(
     private val readModels: LearnerCourseReadModelRepository,
     private val mapper: ObjectMapper,
     private val enrollmentScope: EnrollmentScopeClient,
+    private val license: LicenseGuard,
 ) {
     @RabbitListener(queues = ["reporting.domain-events"])
     @Transactional
@@ -78,13 +80,17 @@ class ReportingProjectionService(
             }
             EventTypes.EXAM_GRADED -> {
                 val p = mapper.treeToValue(event.payload, ExamGradedPayload::class.java)
-                val userRows = readModels.findAllByUserId(p.userId)
-                val candidates = p.courseId?.let { courseId -> userRows.filter { it.courseId == courseId } } ?: userRows
-                // Do not attach a score to an arbitrary enrollment when the same learner has
-                // multiple matching classes. The BA does not define that association yet.
-                candidates.singleOrNull()?.apply {
-                    lastScore = if (p.maxScore == 0.0) 0.0 else p.score * 100.0 / p.maxScore
-                    passed = p.passed
+                val exact = p.enrollmentId?.let(readModels::findByEnrollmentId)
+                    ?.takeIf { it.userId == p.userId && (p.courseId == null || it.courseId == p.courseId) }
+                val legacy = if (p.enrollmentId == null) {
+                    val userRows = readModels.findAllByUserId(p.userId)
+                    val candidates = p.courseId?.let { courseId -> userRows.filter { it.courseId == courseId } } ?: userRows
+                    // Legacy events without enrollment context are projected only when unambiguous.
+                    candidates.singleOrNull()
+                } else null
+                (exact ?: legacy)?.apply {
+                    lastScore = p.effectivePercentage ?: if (p.maxScore == 0.0) 0.0 else p.score * 100.0 / p.maxScore
+                    passed = p.effectivePassed ?: p.passed
                     updatedAt = event.occurredAt
                 }
             }
@@ -109,12 +115,13 @@ class ReportingProjectionService(
     }
 
     private fun scopedRows(): List<LearnerCourseReadModel> {
-        if (CurrentUser.roles().contains("ADMIN")) return readModels.findAll()
+        if (CurrentUser.isSystemAdmin()) return readModels.findAll()
         val assigned = enrollmentScope.assignedClassIds(CurrentUser.id())
         return readModels.findAll().filter { it.classId in assigned }
     }
 
     fun exportCsv(rows: List<LearnerCourseRow>): ByteArray {
+        license.requireFeature("REPORT_EXPORT", write = false)
         val header = listOf("enrollmentId", "classId", "courseId", "userId", "progressPercent", "completed", "dueAt", "lastScore", "passed", "updatedAt")
             .joinToString(",")
         val body = rows.joinToString("\r\n") { row ->

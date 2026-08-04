@@ -21,6 +21,8 @@ if [[ ! -f .env ]]; then
   cp .env.example .env
   replace_env LMSPILOT_JWT_SECRET "$(random_token 64)" .env
   replace_env LMSPILOT_INTERNAL_TOKEN "$(random_token 56)" .env
+  replace_env CONFIGURATION_SECRET_KEY "$(random_token 64)" .env
+  replace_env AI_SECRET_KEY "$(random_token 64)" .env
   replace_env LMSPILOT_DEFAULT_ADMIN_PASSWORD "Lp-$(random_token 18)-A9!" .env
   replace_env POSTGRES_ADMIN_PASSWORD "$(random_token 24)" .env
   replace_env POSTGRES_SERVICE_PASSWORD "$(random_token 24)" .env
@@ -34,5 +36,10 @@ fi
 ./scripts/preflight.sh
 docker compose up -d --build
 ./scripts/smoke-test.sh
+if command -v python3 >/dev/null; then
+  ./scripts/start-operations-agent.sh || echo "Cảnh báo: chưa khởi động được operations agent; xem hướng dẫn trong docs/OPERATIONS_RUNBOOK.md" >&2
+else
+  echo "Cảnh báo: thiếu Python 3 nên operations agent chưa được khởi động." >&2
+fi
 
 echo "LMSPilot đã sẵn sàng: http://localhost:3000"

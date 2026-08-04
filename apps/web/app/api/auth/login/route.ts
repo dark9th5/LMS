@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import type { PortalUser } from "@/lib/types";
 import { encodeUserCookie } from "@/lib/session-cookie";
+import { isSameOriginMutation } from "@/lib/request-origin";
 
 function getGatewayUrl(): string {
   const envUrl = process.env.LMSPILOT_GATEWAY_URL;
@@ -77,15 +78,12 @@ async function fetchWithTimeout(
   try {
     for (const url of urlsToTry) {
       try {
-        console.log("[LOGIN ROUTE DEBUG] Fetching:", url);
         const res = await fetch(url, { ...init, signal: controller.signal });
         if (res.ok || res.status === 400 || res.status === 401) {
           return res;
         }
-        console.error("[LOGIN ROUTE DEBUG] Non-ok status from:", url, res.status);
         lastError = new Error(`HTTP ${res.status} from ${url}`);
       } catch (err) {
-        console.error("[LOGIN ROUTE DEBUG] Failed url:", url, err);
         lastError = err;
       }
     }
@@ -128,6 +126,17 @@ async function upstreamError(response: Response): Promise<NextResponse> {
 }
 
 export async function POST(request: Request) {
+  if (!isSameOriginMutation(request)) {
+    return noStoreJson(
+      {
+        ok: false,
+        code: "CROSS_SITE_REQUEST",
+        message: "Yêu cầu khác nguồn đã bị từ chối",
+      },
+      403,
+    );
+  }
+
   let credentials: { username?: unknown; password?: unknown };
 
   try {

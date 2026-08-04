@@ -1,0 +1,38 @@
+{
+  "schemaVersion": "1.0",
+  "source": {
+    "courseId": "11111111-1111-4111-8111-111111111111",
+    "documentVersionIds": ["22222222-2222-4222-8222-222222222222"],
+    "provider": "local-openai-compatible",
+    "model": "qwen3",
+    "generatedAt": "2026-08-03T02:00:00Z"
+  },
+  "language": "vi",
+  "title": "Kiểm tra kiến thức chương 1",
+  "questions": [
+    {
+      "externalId": "Q001",
+      "type": "SINGLE_CHOICE",
+      "stem": "Mục tiêu chính được trình bày trong chương là gì?",
+      "difficulty": "EASY",
+      "topic": "Mục tiêu",
+      "learningObjective": "Nhận biết mục tiêu của chương",
+      "points": 1,
+      "options": [
+        {"id": "A", "text": "Phương án đúng theo tài liệu"},
+        {"id": "B", "text": "Phương án nhiễu"}
+      ],
+      "correctOptionIds": ["A"],
+      "explanation": "Nội dung này được nêu trực tiếp trong phần mở đầu.",
+      "citations": [
+        {
+          "documentVersionId": "22222222-2222-4222-8222-222222222222",
+          "page": 1,
+          "section": "Mở đầu",
+          "quote": "Mục tiêu của chương..."
+        }
+      ],
+      "tags": ["chapter-1"]
+    }
+  ]
+}

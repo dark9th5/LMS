@@ -16,7 +16,7 @@ Get-Content .env | ForEach-Object {
     $envValues[$parts[0]] = $parts[1]
   }
 }
-$required = @('LMSPILOT_JWT_SECRET','LMSPILOT_INTERNAL_TOKEN','LMSPILOT_DEFAULT_ADMIN_PASSWORD','POSTGRES_ADMIN_PASSWORD','POSTGRES_SERVICE_PASSWORD','RABBITMQ_DEFAULT_PASS','REDIS_PASSWORD')
+$required = @('LMSPILOT_JWT_SECRET','LMSPILOT_INTERNAL_TOKEN','CONFIGURATION_SECRET_KEY','AI_SECRET_KEY','LMSPILOT_DEFAULT_ADMIN_PASSWORD','POSTGRES_ADMIN_PASSWORD','POSTGRES_SERVICE_PASSWORD','RABBITMQ_DEFAULT_PASS','REDIS_PASSWORD')
 foreach ($name in $required) {
   $value = [string]$envValues[$name]
   if ([string]::IsNullOrWhiteSpace($value)) { Fail "$name đang trống." }
@@ -24,6 +24,8 @@ foreach ($name in $required) {
 }
 if ($envValues['LMSPILOT_JWT_SECRET'].Length -lt 32) { Fail "LMSPILOT_JWT_SECRET phải có ít nhất 32 ký tự." }
 if ($envValues['LMSPILOT_INTERNAL_TOKEN'].Length -lt 32) { Fail "LMSPILOT_INTERNAL_TOKEN phải có ít nhất 32 ký tự." }
+if ($envValues['CONFIGURATION_SECRET_KEY'].Length -lt 32) { Fail "CONFIGURATION_SECRET_KEY phải có ít nhất 32 ký tự." }
+if ($envValues['AI_SECRET_KEY'].Length -lt 32) { Fail "AI_SECRET_KEY phải có ít nhất 32 ký tự." }
 
 docker compose config --quiet
 if ($LASTEXITCODE -ne 0) { Fail "docker-compose.yml hoặc .env không hợp lệ." }

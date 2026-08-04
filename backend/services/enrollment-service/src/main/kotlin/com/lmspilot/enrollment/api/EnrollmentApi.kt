@@ -8,6 +8,7 @@ import com.lmspilot.support.api.ApiException
 import com.lmspilot.support.events.DomainEventPublisher
 import com.lmspilot.support.security.CurrentUser
 import com.lmspilot.support.security.InternalTokenAuthorizer
+import com.lmspilot.support.security.ScopedAuthorizationClient
 import jakarta.validation.Valid
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.NotEmpty
@@ -36,7 +37,7 @@ data class EnrollmentResponse(val id: UUID, val classId: UUID, val courseId: UUI
 data class EnrollUsersRequest(val userIds: Set<UUID>, val dueAt: Instant? = null)
 data class EnrollResult(val created: List<EnrollmentResponse>, val existing: List<EnrollmentResponse>, val errors: Map<UUID, String>)
 data class CoursePublication(val courseId: UUID, val published: Boolean, val version: Int, val status: String)
-data class EnrollmentValidation(val enrollmentId: UUID, val classId: UUID, val courseId: UUID, val userId: UUID, val status: EnrollmentStatus, val dueAt: Instant?)
+data class EnrollmentValidation(val enrollmentId: UUID, val classId: UUID, val courseId: UUID, val courseVersion: Int, val userId: UUID, val status: EnrollmentStatus, val dueAt: Instant?)
 
 @Service
 class CoursePublicationClient(
@@ -56,11 +57,12 @@ class EnrollmentManagementService(
     private val enrollments: EnrollmentRepository,
     private val courseClient: CoursePublicationClient,
     private val events: DomainEventPublisher,
+    private val scopedAuthorization: ScopedAuthorizationClient,
 ) {
     @Transactional(readOnly = true)
     fun classes(): List<TrainingClassResponse> {
-        val source = if (isAdmin()) classes.findAll() else classes.findAllAssignedTo(CurrentUser.id())
-        return source.map { it.response() }
+        val source = if (isAdmin()) classes.findAll() else classes.findAll().filter(::inClassScope)
+        return source.sortedByDescending { it.createdAt }.map { it.response() }
     }
 
     @Transactional(readOnly = true)
@@ -133,14 +135,56 @@ class EnrollmentManagementService(
         .toSet()
 
     @Transactional(readOnly = true)
-    fun validateEnrollment(id: UUID): EnrollmentValidation {
-        val enrollment = enrollments.findById(id).orElseThrow { ApiException(HttpStatus.NOT_FOUND, "ENROLLMENT_NOT_FOUND", "Không tìm thấy ghi danh") }
-        return EnrollmentValidation(enrollment.id, enrollment.classId, enrollment.courseId, enrollment.userId, enrollment.status, enrollment.dueAt)
+    fun accessibleCourseVersions(userId: UUID, courseId: UUID): Set<Int> {
+        val activeEnrollments = enrollments.findAllByUserIdOrderByEnrolledAtDesc(userId)
+            .filter { it.courseId == courseId && it.status != EnrollmentStatus.CANCELLED }
+        if (activeEnrollments.isEmpty()) return emptySet()
+        val classById = classes.findAllById(activeEnrollments.map { it.classId }.toSet()).associateBy { it.id }
+        return activeEnrollments.mapNotNull { classById[it.classId]?.courseVersion }.toSet()
     }
 
-    private fun isAdmin() = CurrentUser.roles().contains("ADMIN")
+    @Transactional(readOnly = true)
+    fun validateEnrollment(id: UUID): EnrollmentValidation {
+        val enrollment = enrollments.findById(id).orElseThrow { ApiException(HttpStatus.NOT_FOUND, "ENROLLMENT_NOT_FOUND", "Không tìm thấy ghi danh") }
+        val trainingClass = classes.findById(enrollment.classId).orElseThrow { classNotFound() }
+        return EnrollmentValidation(enrollment.id, enrollment.classId, enrollment.courseId, trainingClass.courseVersion, enrollment.userId, enrollment.status, enrollment.dueAt)
+    }
+
+    @Transactional(readOnly = true)
+    fun activeEnrollments(userId: UUID, courseId: UUID): List<EnrollmentValidation> {
+        val active = enrollments.findAllByUserIdOrderByEnrolledAtDesc(userId)
+            .filter { it.courseId == courseId && it.status != EnrollmentStatus.CANCELLED }
+        if (active.isEmpty()) return emptyList()
+        val classById = classes.findAllById(active.map { it.classId }.toSet()).associateBy { it.id }
+        return active.mapNotNull { enrollment ->
+            classById[enrollment.classId]?.let { trainingClass ->
+                EnrollmentValidation(
+                    enrollment.id,
+                    enrollment.classId,
+                    enrollment.courseId,
+                    trainingClass.courseVersion,
+                    enrollment.userId,
+                    enrollment.status,
+                    enrollment.dueAt,
+                )
+            }
+        }
+    }
+
+    private fun isAdmin() = CurrentUser.isSystemAdmin()
+    private fun inClassScope(trainingClass: TrainingClassEntity): Boolean {
+        if (isAdmin() || CurrentUser.id() in trainingClass.instructorIds || CurrentUser.id() == trainingClass.createdBy) return true
+        val permissions = setOf(
+            Permissions.CLASSES_READ, Permissions.CLASSES_WRITE, Permissions.CLASSES_MANAGE,
+            Permissions.ENROLLMENTS_WRITE, Permissions.COURSES_ASSIGN, Permissions.LIVE_SESSIONS_MANAGE,
+        )
+        return permissions.any { permission ->
+            permission in CurrentUser.authorities() && scopedAuthorization.allowed(permission, "COURSE", trainingClass.courseId)
+        }
+    }
+
     private fun requireClassScope(trainingClass: TrainingClassEntity) {
-        if (!isAdmin() && CurrentUser.id() !in trainingClass.instructorIds) {
+        if (!inClassScope(trainingClass)) {
             throw ApiException(HttpStatus.FORBIDDEN, "CLASS_OUT_OF_SCOPE", "Lớp ngoài phạm vi được phân công")
         }
     }
@@ -153,11 +197,11 @@ private fun EnrollmentEntity.response() = EnrollmentResponse(id, classId, course
 @RestController
 @RequestMapping("/api/v1/classes")
 class ClassController(private val service: EnrollmentManagementService) {
-    @GetMapping @PreAuthorize("hasAuthority('${Permissions.CLASSES_READ}')") fun list() = service.classes()
-    @GetMapping("/{id}") @PreAuthorize("hasAuthority('${Permissions.CLASSES_READ}')") fun get(@PathVariable id: UUID) = service.classDetail(id)
+    @GetMapping @PreAuthorize("hasAnyAuthority('${Permissions.CLASSES_READ}','${Permissions.CLASSES_MANAGE}','${Permissions.LIVE_SESSIONS_MANAGE}','${Permissions.COURSES_ASSIGN}')") fun list() = service.classes()
+    @GetMapping("/{id}") @PreAuthorize("hasAnyAuthority('${Permissions.CLASSES_READ}','${Permissions.CLASSES_MANAGE}','${Permissions.LIVE_SESSIONS_MANAGE}','${Permissions.COURSES_ASSIGN}')") fun get(@PathVariable id: UUID) = service.classDetail(id)
     @PostMapping @ResponseStatus(HttpStatus.CREATED) @PreAuthorize("hasAuthority('${Permissions.CLASSES_WRITE}')") fun create(@Valid @RequestBody input: CreateClassRequest) = service.createClass(input)
     @PostMapping("/{id}/enrollments") @PreAuthorize("hasAuthority('${Permissions.ENROLLMENTS_WRITE}')") fun enroll(@PathVariable id: UUID, @Valid @RequestBody input: EnrollUsersRequest, @RequestHeader("Idempotency-Key") key: String) = service.enroll(id, input, key)
-    @GetMapping("/{id}/enrollments") @PreAuthorize("hasAuthority('${Permissions.CLASSES_READ}')") fun enrollments(@PathVariable id: UUID) = service.classEnrollments(id)
+    @GetMapping("/{id}/enrollments") @PreAuthorize("hasAnyAuthority('${Permissions.CLASSES_READ}','${Permissions.CLASSES_MANAGE}','${Permissions.ENROLLMENTS_WRITE}')") fun enrollments(@PathVariable id: UUID) = service.classEnrollments(id)
 }
 
 @RestController
@@ -177,6 +221,16 @@ class InternalEnrollmentController(
     fun get(@PathVariable id: UUID, @RequestHeader("X-Service-Token", required = false) token: String?): EnrollmentValidation {
         internal.require(token)
         return service.validateEnrollment(id)
+    }
+
+    @GetMapping("/users/{userId}/courses/{courseId}")
+    fun activeForCourse(
+        @PathVariable userId: UUID,
+        @PathVariable courseId: UUID,
+        @RequestHeader("X-Service-Token", required = false) token: String?,
+    ): List<EnrollmentValidation> {
+        internal.require(token)
+        return service.activeEnrollments(userId, courseId)
     }
 }
 
@@ -203,5 +257,15 @@ class InternalClassScopeController(
     fun activeCourses(@PathVariable userId: UUID, @RequestHeader("X-Service-Token", required = false) token: String?): Set<UUID> {
         internal.require(token)
         return service.activeCourseIds(userId)
+    }
+
+    @GetMapping("/user/{userId}/courses/{courseId}/versions")
+    fun accessibleVersions(
+        @PathVariable userId: UUID,
+        @PathVariable courseId: UUID,
+        @RequestHeader("X-Service-Token", required = false) token: String?,
+    ): Set<Int> {
+        internal.require(token)
+        return service.accessibleCourseVersions(userId, courseId)
     }
 }

@@ -55,3 +55,8 @@ storage:
   root: ${FILE_STORAGE_ROOT:./data/files}
   max-size-bytes: ${FILE_MAX_SIZE_BYTES:209715200}
   allowed-content-types: ${FILE_ALLOWED_TYPES:application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,video/mp4,audio/mpeg,image/png,image/jpeg,text/plain,text/csv}
+
+file-editor:
+  public-base-url: ${FILE_EDITOR_PUBLIC_BASE_URL:http://localhost:8080}
+  onlyoffice-url: ${ONLYOFFICE_URL:http://localhost:8088}
+  session-minutes: ${FILE_EDIT_SESSION_MINUTES:120}

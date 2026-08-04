@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-const fs = require("fs");
 const path = require("path");
+
 let ts;
 try {
   ts = require("typescript");
@@ -11,42 +11,60 @@ try {
     "/opt/nvm/versions/node/v22.16.0/lib/node_modules/typescript",
   ];
   for (const candidate of candidates) {
-    try { ts = require(candidate); break; } catch { /* try next */ }
-  }
-}
-if (!ts) {
-  console.error("TypeScript is not installed. Run npm install in apps/web first.");
-  process.exit(2);
-}
-const root = path.resolve(__dirname, "../apps/web");
-const errors = [];
-function walk(dir) {
-  for (const name of fs.readdirSync(dir)) {
-    const file = path.join(dir, name);
-    const stat = fs.statSync(file);
-    if (stat.isDirectory()) {
-      if (!["node_modules", ".next"].includes(name)) walk(file);
-    } else if (/\.(ts|tsx)$/.test(file) && !file.endsWith(".d.ts")) {
-      const source = fs.readFileSync(file, "utf8");
-      const result = ts.transpileModule(source, {
-        fileName: file,
-        reportDiagnostics: true,
-        compilerOptions: {
-          target: ts.ScriptTarget.ES2022,
-          module: ts.ModuleKind.ESNext,
-          jsx: ts.JsxEmit.ReactJSX,
-        },
-      });
-      for (const diagnostic of result.diagnostics || []) {
-        const message = ts.flattenDiagnosticMessageText(diagnostic.messageText, "\n");
-        errors.push(`${path.relative(root, file)}: ${message}`);
-      }
+    try {
+      ts = require(candidate);
+      break;
+    } catch {
+      // Try the next well-known installation location.
     }
   }
 }
-walk(root);
-if (errors.length) {
-  console.error(errors.join("\n"));
+
+if (!ts) {
+  console.error("TypeScript is not installed. Run npm ci in apps/web first.");
+  process.exit(2);
+}
+
+const root = path.resolve(__dirname, "../apps/web");
+const configPath = path.join(root, "tsconfig.json");
+const configFile = ts.readConfigFile(configPath, ts.sys.readFile);
+
+if (configFile.error) {
+  console.error(ts.formatDiagnosticsWithColorAndContext([configFile.error], formatHost()));
   process.exit(1);
 }
-console.log("OK: TypeScript/TSX syntax validated.");
+
+const parsed = ts.parseJsonConfigFileContent(
+  configFile.config,
+  ts.sys,
+  root,
+  { noEmit: true, incremental: false },
+  configPath,
+);
+
+if (parsed.errors.length) {
+  console.error(ts.formatDiagnosticsWithColorAndContext(parsed.errors, formatHost()));
+  process.exit(1);
+}
+
+const program = ts.createProgram({
+  rootNames: parsed.fileNames,
+  options: parsed.options,
+  projectReferences: parsed.projectReferences,
+});
+const diagnostics = ts.getPreEmitDiagnostics(program);
+
+if (diagnostics.length) {
+  console.error(ts.formatDiagnosticsWithColorAndContext(diagnostics, formatHost()));
+  process.exit(1);
+}
+
+console.log(`OK: ${parsed.fileNames.length} TypeScript/TSX files passed semantic type checking.`);
+
+function formatHost() {
+  return {
+    getCanonicalFileName: (fileName) => fileName,
+    getCurrentDirectory: () => root,
+    getNewLine: () => ts.sys.newLine,
+  };
+}

@@ -25,6 +25,8 @@ export type Course = {
   categoryId?: string | null;
   status: CourseStatus;
   contentVersion: number;
+  publishedVersion: number;
+  hasUnpublishedChanges: boolean;
   publishedAt?: string | null;
   ownerId: string;
   lessons?: Lesson[];
@@ -72,6 +74,7 @@ export type LessonProgress = {
 export type CourseProgress = {
   enrollmentId: string;
   courseId: string;
+  courseVersion: number;
   userId: string;
   progressPercent: number;
   status: "NOT_STARTED" | "IN_PROGRESS" | "COMPLETED" | "OVERDUE";
@@ -123,6 +126,9 @@ export type Exam = {
   title: string;
   courseId?: string | null;
   lessonId?: string | null;
+  contextType?: "COURSE_QUIZ" | "COURSE_ASSIGNMENT" | "STANDALONE_EXAM" | "COMPETITION";
+  cohortId?: string | null;
+  autoGrade?: boolean;
   durationMinutes: number;
   opensAt?: string | null;
   closesAt?: string | null;
@@ -140,10 +146,16 @@ export type Exam = {
 export type ExamSession = {
   id: string;
   examId: string;
+  enrollmentId?: string | null;
+  courseId?: string | null;
+  lessonId?: string | null;
   attemptNo: number;
   status: "IN_PROGRESS" | "SUBMITTED" | "EXPIRED" | "GRADED";
   startedAt: string;
   expiresAt: string;
+  graceUntil?: string;
+  lastHeartbeatAt?: string;
+  suspiciousEventCount?: number;
   submittedAt?: string | null;
   answers: Record<string, unknown>;
   questions: ExamQuestion[];
@@ -153,16 +165,40 @@ export type Grade = {
   id: string;
   sessionId: string;
   examId: string;
+  enrollmentId?: string | null;
   courseId?: string | null;
+  lessonId?: string | null;
   userId: string;
   score: number;
   maxScore: number;
   percentage: number;
   passed: boolean;
   status: "PENDING_MANUAL" | "COMPLETED";
-  details: Array<{ questionId: string; type: string; awarded: number; maximum: number; requiresManual: boolean }>;
+  details: Array<{ questionId: string; type: string; prompt?: string; answer?: unknown; awarded: number; maximum: number; requiresManual: boolean }>;
   feedback?: string | null;
   updatedAt: string;
+};
+
+
+export type AssignmentSubmission = {
+  id: string;
+  enrollmentId: string;
+  classId: string;
+  courseId: string;
+  courseVersion: number;
+  lessonId: string;
+  userId: string;
+  attemptNumber: number;
+  fileId: string;
+  comment?: string | null;
+  submittedAt: string;
+  late: boolean;
+  status: "SUBMITTED" | "GRADED" | "RETURNED";
+  score?: number | null;
+  maxScore?: number | null;
+  feedback?: string | null;
+  gradedBy?: string | null;
+  gradedAt?: string | null;
 };
 
 export type StoredFile = {
@@ -199,9 +235,11 @@ export function formatDuration(minutes?: number | null): string {
 }
 
 export function roleLabel(roles: string[]): string {
+  if (!roles.length) return "Người dùng";
   if (roles.includes("ADMIN")) return "Quản trị viên";
   if (roles.includes("INSTRUCTOR")) return "Giảng viên";
-  return "Học viên";
+  if (roles.includes("LEARNER") || roles.includes("STUDENT")) return "Học viên";
+  return roles.join(" · ");
 }
 
 export function primaryRole(roles: string[]): "ADMIN" | "INSTRUCTOR" | "STUDENT" {

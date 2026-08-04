@@ -1,0 +1,16 @@
+services:
+  onlyoffice:
+    image: onlyoffice/documentserver:8.3
+    profiles: [document-editor]
+    restart: unless-stopped
+    networks: [lmspilot]
+    environment:
+      JWT_ENABLED: "false"
+    volumes:
+      - onlyoffice_data:/var/www/onlyoffice/Data
+  file-storage-service:
+    environment:
+      ONLYOFFICE_URL: http://onlyoffice:80
+      FILE_EDITOR_PUBLIC_BASE_URL: ${LMSPILOT_GATEWAY_PUBLIC_URL:-http://api-gateway:8080}
+volumes:
+  onlyoffice_data:

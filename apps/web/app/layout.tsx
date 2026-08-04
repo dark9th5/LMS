@@ -1,4 +1,37 @@
-import type { Metadata } from "next";
+import type { CSSProperties, ReactNode } from "react";
+import type { Metadata, Viewport } from "next";
+import { brandingStyle, getPublicBranding } from "@/lib/branding";
 import "./globals.css";
-export const metadata:Metadata={title:"LMSPilot – Hệ thống quản lý học tập",description:"LMS On-Premise cho tổ chức"};
-export default function RootLayout({children}:{children:React.ReactNode}){return <html lang="vi"><body>{children}</body></html>}
+import "./astral-v3.css";
+
+export async function generateMetadata(): Promise<Metadata> {
+  const branding = await getPublicBranding();
+  return {
+    title: {
+      default: `${branding.systemName} · Học viện Huyền Tri`,
+      template: `%s · ${branding.systemName}`,
+    },
+    description:
+      branding.introduction ||
+      "Nền tảng quản trị học tập, kỳ thi và tri thức nội bộ.",
+    icons: { icon: branding.faviconUrl || "/mystic-mark.svg" },
+  };
+}
+
+export const viewport: Viewport = {
+  colorScheme: "dark",
+  themeColor: "#080611",
+};
+
+export default async function RootLayout({
+  children,
+}: {
+  children: ReactNode;
+}) {
+  const branding = await getPublicBranding();
+  return (
+    <html lang="vi" suppressHydrationWarning>
+      <body style={brandingStyle(branding) as CSSProperties}>{children}</body>
+    </html>
+  );
+}

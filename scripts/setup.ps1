@@ -15,6 +15,8 @@ if (-not (Test-Path .env)) {
   $values = @{
     LMSPILOT_JWT_SECRET = New-Token 64
     LMSPILOT_INTERNAL_TOKEN = New-Token 56
+    CONFIGURATION_SECRET_KEY = New-Token 64
+    AI_SECRET_KEY = New-Token 64
     LMSPILOT_DEFAULT_ADMIN_PASSWORD = "Lp-$(New-Token 18)-A9!"
     POSTGRES_ADMIN_PASSWORD = New-Token 24
     POSTGRES_SERVICE_PASSWORD = New-Token 24
@@ -36,4 +38,5 @@ if (-not (Test-Path .env)) {
 & "$PSScriptRoot\preflight.ps1"
 docker compose up -d --build
 & "$PSScriptRoot\smoke-test.ps1"
+try { & "$PSScriptRoot\start-operations-agent.ps1" } catch { Write-Warning "Operations agent chưa chạy: $($_.Exception.Message)" }
 Write-Host "LMSPilot đã sẵn sàng: http://localhost:3000"

@@ -14,7 +14,7 @@ set -a
 source .env
 set +a
 
-for name in LMSPILOT_JWT_SECRET LMSPILOT_INTERNAL_TOKEN LMSPILOT_DEFAULT_ADMIN_PASSWORD POSTGRES_ADMIN_PASSWORD POSTGRES_SERVICE_PASSWORD RABBITMQ_DEFAULT_PASS REDIS_PASSWORD; do
+for name in LMSPILOT_JWT_SECRET LMSPILOT_INTERNAL_TOKEN CONFIGURATION_SECRET_KEY AI_SECRET_KEY LMSPILOT_DEFAULT_ADMIN_PASSWORD POSTGRES_ADMIN_PASSWORD POSTGRES_SERVICE_PASSWORD RABBITMQ_DEFAULT_PASS REDIS_PASSWORD; do
   value="${!name:-}"
   [[ -n "$value" ]] || fail "$name đang trống."
   case "$value" in
@@ -23,6 +23,8 @@ for name in LMSPILOT_JWT_SECRET LMSPILOT_INTERNAL_TOKEN LMSPILOT_DEFAULT_ADMIN_P
 done
 [[ ${#LMSPILOT_JWT_SECRET} -ge 32 ]] || fail "LMSPILOT_JWT_SECRET phải có ít nhất 32 ký tự."
 [[ ${#LMSPILOT_INTERNAL_TOKEN} -ge 32 ]] || fail "LMSPILOT_INTERNAL_TOKEN phải có ít nhất 32 ký tự."
+[[ ${#CONFIGURATION_SECRET_KEY} -ge 32 ]] || fail "CONFIGURATION_SECRET_KEY phải có ít nhất 32 ký tự."
+[[ ${#AI_SECRET_KEY} -ge 32 ]] || fail "AI_SECRET_KEY phải có ít nhất 32 ký tự."
 
 docker compose config --quiet || fail "docker-compose.yml hoặc .env không hợp lệ."
 
