@@ -38,7 +38,7 @@ class DevelopmentSeed(
 
     private fun ensureUser(id: UUID, code: String, username: String, fullName: String, role: RoleEntity, accountType: AccountType = AccountType.USER, protectedAccount: Boolean = false) {
         if (users.findByUsernameIgnoreCase(username) == null) {
-            users.save(UserAccountEntity(id = id, code = code, username = username, fullName = fullName, passwordHash = encoder.encode(password), roles = mutableSetOf(role), accountType = accountType, protectedAccount = protectedAccount, mustChangePassword = !protectedAccount, passwordChangedAt = java.time.Instant.now()))
+            users.save(UserAccountEntity(id = id, code = code, username = username, fullName = fullName, passwordHash = encoder.encode(password), roles = mutableSetOf(role), accountType = accountType, protectedAccount = protectedAccount, mustChangePassword = false, passwordChangedAt = java.time.Instant.now()))
         }
     }
 }
