@@ -55,7 +55,7 @@ class CompetitionLeaderboardEntity(
     @Id @Column(name = "competition_id") var competitionId: UUID = UUID.randomUUID(),
     @Id @Column(name = "user_id") var userId: UUID = UUID.randomUUID(),
     @Column(name = "attempt_id", nullable = false) var attemptId: UUID = UUID.randomUUID(),
-    @Column(nullable = false) var score: Double = 0.0,
+    @Column(columnDefinition = "numeric(10,4)", nullable = false) var score: Double = 0.0,
     @Column(name = "duration_ms", nullable = false) var durationMs: Long = 0,
     @Column(name = "submitted_at", nullable = false) var submittedAt: Instant = Instant.now(),
     @Column var rank: Int? = null,
