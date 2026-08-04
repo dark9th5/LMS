@@ -185,7 +185,7 @@ class BrandingAssetService(
         return ResponseEntity.ok()
             .contentType(contentType)
             .cacheControl(CacheControl.noCache())
-            .header(HttpHeaders.X_CONTENT_TYPE_OPTIONS, "nosniff")
+            .header("X-Content-Type-Options", "nosniff")
             .body(upstream.body ?: ByteArray(0))
     }
 }

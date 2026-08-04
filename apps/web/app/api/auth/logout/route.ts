@@ -23,7 +23,10 @@ export async function POST(request: NextRequest) {
   }
 
   // Preserve the LAN hostname/IP used by the browser without trusting a client-supplied redirect origin.
-  const response = NextResponse.redirect(new URL("/login", request.nextUrl.origin), 303);
+  const host = request.headers.get("x-forwarded-host") ?? request.headers.get("host");
+  const proto = request.headers.get("x-forwarded-proto") ?? "http";
+  const baseUrl = host ? `${proto}://${host}` : (process.env.LMSPILOT_PUBLIC_URL ?? request.nextUrl.origin);
+  const response = NextResponse.redirect(new URL("/login", baseUrl), 303);
   response.cookies.set("lmspilot_access", "", { path: "/", maxAge: 0 });
   response.cookies.set("lmspilot_user", "", { path: "/", maxAge: 0 });
   response.cookies.set("lmspilot_refresh", "", { path: "/", maxAge: 0 });

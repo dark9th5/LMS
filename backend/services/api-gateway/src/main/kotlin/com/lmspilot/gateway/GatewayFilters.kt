@@ -69,7 +69,7 @@ class MustChangePasswordFilter : GlobalFilter {
         return ReactiveSecurityContextHolder.getContext()
             .mapNotNull { it.authentication as? org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken }
             .flatMap { authentication ->
-                if (authentication.token.getClaimAsBoolean("mustChangePassword") != true) return@flatMap chain.filter(exchange)
+                if (authentication?.token?.getClaimAsBoolean("mustChangePassword") != true) return@flatMap chain.filter(exchange)
                 val response = exchange.response
                 response.statusCode = org.springframework.http.HttpStatus.PRECONDITION_REQUIRED
                 response.headers.contentType = org.springframework.http.MediaType.APPLICATION_JSON

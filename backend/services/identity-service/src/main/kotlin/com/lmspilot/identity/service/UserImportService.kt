@@ -379,7 +379,7 @@ class UserImportService(
         val indexes = resolveIndexes(data.headers, mapping)
         val roleCatalog = roles.findAll().associateBy { it.code.uppercase(Locale.ROOT) }
         val referencedUnits = data.rows.mapNotNull { raw ->
-            raw.value(indexes.organizationUnitId).trim().takeIf(String::isNotBlank)?.let { runCatching(UUID::fromString).getOrNull() }
+            raw.value(indexes.organizationUnitId).trim().takeIf(String::isNotBlank)?.let { str -> runCatching { UUID.fromString(str) }.getOrNull() }
         }.toSet()
         val activeUnits = organization.existingActiveUnitIds(referencedUnits)
         val seenCodes = mutableMapOf<String, Int>()
@@ -391,8 +391,8 @@ class UserImportService(
             val fullName = raw.value(indexes.fullName).trim()
             val email = raw.value(indexes.email).trim().ifBlank { null }
             val password = raw.value(indexes.password).ifBlank { mapping.defaultPassword.orEmpty() }
-            val organizationUnitId = raw.value(indexes.organizationUnitId).trim().takeIf(String::isNotBlank)?.let {
-                runCatching(UUID::fromString).getOrElse { errors += "organizationUnitId không phải UUID hợp lệ"; null }
+            val organizationUnitId = raw.value(indexes.organizationUnitId).trim().takeIf(String::isNotBlank)?.let { str ->
+                runCatching { UUID.fromString(str) }.getOrElse { errors += "organizationUnitId không phải UUID hợp lệ"; null }
             }
             if (organizationUnitId != null && organizationUnitId !in activeUnits) {
                 errors += "Đơn vị không tồn tại hoặc đã ngừng hoạt động"

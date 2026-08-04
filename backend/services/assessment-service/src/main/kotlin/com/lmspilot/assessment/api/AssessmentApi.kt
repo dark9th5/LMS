@@ -382,7 +382,7 @@ class AssessmentManagementService(
         }
         val allowedQuestionIds = examQuestions.findAllByExamIdOrderBySortOrderAsc(session.examId).map { it.questionId }.toSet()
         val submittedQuestionIds = input.answers.keys.map { key ->
-            runCatching(UUID::fromString).getOrElse {
+            runCatching { UUID.fromString(key) }.getOrElse {
                 throw ApiException(HttpStatus.BAD_REQUEST, "INVALID_ANSWER_KEY", "Mã câu hỏi trong đáp án không hợp lệ")
             }
         }
