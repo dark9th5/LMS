@@ -52,16 +52,6 @@ function number(value: unknown): number {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
-function date(value: unknown): string {
-  if (!value) return "Chưa có dữ liệu";
-  const parsed = new Date(String(value));
-  if (Number.isNaN(parsed.getTime())) return "Chưa có dữ liệu";
-  return new Intl.DateTimeFormat("vi-VN", {
-    dateStyle: "short",
-    timeStyle: "short",
-  }).format(parsed);
-}
-
 function relativeTime(value: string): string {
   const timestamp = new Date(value).getTime();
   if (!Number.isFinite(timestamp)) return "";
@@ -137,7 +127,7 @@ export function Dashboard({ user }: { user: PortalUser }) {
       });
       if (courses.length === 0 && rows.length === 0)
         setWarning(
-          "Chưa có khóa học được ghi danh hoặc service dữ liệu đang khởi động.",
+          "Chưa có khóa học được ghi danh hoặc hệ thống đang khởi tạo dữ liệu.",
         );
     } else {
       const [report, rowsRaw, classesRaw, gradesRaw, usersRaw] =
@@ -166,7 +156,7 @@ export function Dashboard({ user }: { user: PortalUser }) {
       });
       if (!report)
         setWarning(
-          "Read model báo cáo chưa sẵn sàng; các số liệu còn lại vẫn được hiển thị.",
+          "Dữ liệu báo cáo chưa sẵn sàng; các chỉ số nghiệp vụ khác vẫn được hiển thị đầy đủ.",
         );
     }
     setLoading(false);
@@ -245,22 +235,6 @@ export function Dashboard({ user }: { user: PortalUser }) {
     state.report?.inProgress ?? metrics.inProgressRows,
   );
   const notStarted = Math.max(0, totalRows - completed - overdue - inProgress);
-  const completedPercent = totalRows
-    ? Math.round((completed * 100) / totalRows)
-    : 0;
-  const inProgressPercent = totalRows
-    ? Math.round((inProgress * 100) / totalRows)
-    : 0;
-  const overduePercent = totalRows
-    ? Math.round((overdue * 100) / totalRows)
-    : 0;
-  const notStartedPercent = Math.max(
-    0,
-    100 - completedPercent - inProgressPercent - overduePercent,
-  );
-  const donutStyle = {
-    background: `conic-gradient(var(--ui-success) 0 ${completedPercent}%,var(--ui-primary) ${completedPercent}% ${completedPercent + inProgressPercent}%,var(--ui-border-strong) ${completedPercent + inProgressPercent}% ${100 - overduePercent}%,var(--ui-warning) ${100 - overduePercent}% 100%)`,
-  };
 
   const kpis = isStudent
     ? [
@@ -288,7 +262,7 @@ export function Dashboard({ user }: { user: PortalUser }) {
         {
           icon: "certificate" as IconName,
           value: String(state.certificates.length),
-          label: "Chứng chỉ cá nhân",
+          label: "Chứng chỉ đã nhận",
           delta: `${state.notifications.unread} thông báo mới`,
         },
       ]
@@ -300,7 +274,7 @@ export function Dashboard({ user }: { user: PortalUser }) {
               ? state.users.length
               : (state.report?.enrolled ?? state.rows.length),
           ),
-          label: isAdmin ? "Tài khoản người dùng" : "Học viên trong phạm vi",
+          label: isAdmin ? "Tài khoản hệ thống" : "Học viên trong phạm vi",
           delta: `${state.report?.enrolled ?? state.rows.length} lượt ghi danh`,
         },
         {
@@ -312,444 +286,272 @@ export function Dashboard({ user }: { user: PortalUser }) {
         {
           icon: "class" as IconName,
           value: String(metrics.activeClasses),
-          label: "Lớp đang mở",
+          label: "Lớp học đang mở",
           delta: `${state.classes.length} lớp trong phạm vi`,
         },
         {
           icon: "grade" as IconName,
           value: String(metrics.pendingGrades),
-          label: "Bài chờ chấm",
+          label: "Bài chờ chấm điểm",
           delta: overdue ? `${overdue} lượt học quá hạn` : "Không có quá hạn",
           warning: metrics.pendingGrades > 0 || overdue > 0,
         },
       ];
 
-  const quickActions = isStudent
+  const primaryActions = isStudent
     ? [
-        {
-          href: "/learning",
-          icon: "learn" as IconName,
-          label: "Tiếp tục học",
-          hint: "Mở hành trình gần nhất",
-        },
-        {
-          href: "/exams",
-          icon: "exam" as IconName,
-          label: "Kỳ thi",
-          hint: "Xem thử thách đang mở",
-        },
-        {
-          href: "/results",
-          icon: "grade" as IconName,
-          label: "Kết quả",
-          hint: "Điểm số và phản hồi",
-        },
+        { href: "/learning", label: "Học tập của tôi", icon: "learn" as IconName },
+        { href: "/exams", label: "Bài kiểm tra", icon: "exam" as IconName },
       ]
     : [
-        {
-          href: "/courses",
-          icon: "book" as IconName,
-          label: "Kiến tạo khóa học",
-          hint: "Quản lý nội dung đào tạo",
-        },
-        {
-          href: "/classes",
-          icon: "class" as IconName,
-          label: "Điều phối lớp",
-          hint: "Lịch, giảng viên, học viên",
-        },
-        {
-          href: "/grading",
-          icon: "grade" as IconName,
-          label: "Chấm điểm",
-          hint: "Xử lý hàng chờ đánh giá",
-        },
+        { href: "/courses", label: "Quản lý khóa học", icon: "book" as IconName },
+        { href: "/grading", label: "Chấm điểm bài thi", icon: "grade" as IconName },
       ];
 
   return (
-    <>
-      <section className="welcome cosmic-dashboard-hero">
-        <div className="dashboard-starfield" aria-hidden="true">
-          <i />
-          <i />
-          <i />
-          <i />
-          <span>✧</span>
-        </div>
-        <div className="welcome-copy">
-          <div className="welcome-coordinate">
-            <span>
-              LEARNING MANAGEMENT / {isStudent ? "MY LEARNING" : "OPERATIONS"}
-            </span>
-            <b>ACTIVE</b>
-          </div>
-          <span className="eyebrow">TRUNG TÂM HỌC TẬP</span>
-          <h1>
-            Chào, {user.fullName}
-            <em>— sẵn sàng cho hôm nay.</em>
-          </h1>
+    <div className="unified-dashboard">
+      {/* Header Section */}
+      <header className="unified-dashboard-header">
+        <div className="unified-dashboard-header-text">
+          <h1>Tổng quan</h1>
+          <h2>Xin chào, {user.fullName}</h2>
           <p>
             {isStudent
-              ? "Tiếp tục khóa học được giao, theo dõi tiến độ và kết quả cá nhân trong một hành trình liền mạch."
-              : "Quan sát toàn cảnh đào tạo, phát hiện điểm nghẽn và mở đúng công cụ trong phạm vi bạn được trao quyền."}
-          </p>
-          <div className="welcome-actions">
-            {quickActions.slice(0, 2).map((item, index) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={index === 0 ? "button primary" : "button secondary"}
-              >
-                <Icon name={item.icon} />
-                {item.label}
-                <Icon name="arrow" size={16} />
-              </Link>
-            ))}
-          </div>
-          <div className="welcome-signals">
-            <span>
-              <i />
-              Dữ liệu nghiệp vụ trực tiếp
-            </span>
-            <span>
-              <i />
-              Công việc đúng theo quyền
-            </span>
-            <span>
-              <i />
-              Không dùng số liệu giả lập
-            </span>
-          </div>
-        </div>
-        <div
-          className="dashboard-progress-art"
-          aria-label={`Tiến độ trung bình ${Math.round(metrics.average)}%`}
-        >
-          <div className="progress-coordinates" aria-hidden="true">
-            <span>SYNC</span>
-            <span>68°</span>
-            <span>LIVE</span>
-          </div>
-          <div
-            className="progress-disc"
-            style={{
-              background: `conic-gradient(var(--ui-primary) 0 ${Math.round(metrics.average)}%,var(--ui-border) ${Math.round(metrics.average)}% 100%)`,
-            }}
-          >
-            <div>
-              <small>TIẾN ĐỘ</small>
-              <strong>
-                {Math.round(metrics.average)}
-                <b>%</b>
-              </strong>
-              <span>trung bình</span>
-            </div>
-          </div>
-          <i className="progress-loop ring-a" />
-          <i className="progress-loop ring-b" />
-          <i className="progress-loop ring-c" />
-        </div>
-        <aside className="hero-metrics">
-          <span>
-            <small>Ghi danh</small>
-            <strong>{totalRows}</strong>
-            <i
-              style={{ width: `${Math.min(100, Math.max(8, totalRows * 4))}%` }}
-            />
-          </span>
-          <span>
-            <small>Hoàn thành</small>
-            <strong>{completed}</strong>
-            <i style={{ width: `${Math.max(8, completedPercent)}%` }} />
-          </span>
-          <span className={overdue ? "danger" : ""}>
-            <small>Quá hạn</small>
-            <strong>{overdue}</strong>
-            <i style={{ width: `${Math.max(8, overduePercent)}%` }} />
-          </span>
-        </aside>
-      </section>
-
-      {warning && (
-        <div className="dashboard-warning">
-          {warning}
-          <button onClick={() => void load()}>Tải lại</button>
-        </div>
-      )}
-      <div className="dashboard-section-heading">
-        <div>
-          <span>01 · DỮ LIỆU TỔNG HỢP</span>
-          <h2>Trạng thái đào tạo hôm nay</h2>
-        </div>
-        <p>Số liệu tổng hợp theo quyền truy cập hiện tại</p>
-      </div>
-      <section className="kpi-grid">
-        {kpis.map((item, index) => (
-          <Kpi key={item.label} {...item} loading={loading} index={index + 1} />
-        ))}
-      </section>
-
-      <section className="dashboard-route-deck">
-        <div className="route-deck-copy">
-          <span>02 · MÔ-ĐUN ƯU TIÊN</span>
-          <h2>Truy cập nhanh công việc</h2>
-          <p>
-            Những tác vụ được dùng nhiều nhất, đặt ngay tại trung tâm điều hành.
+              ? "Theo dõi tiến độ học tập, tham gia bài kiểm tra và cập nhật thông báo mới nhất."
+              : "Quản lý hoạt động đào tạo, theo dõi các chỉ số vận hành và xử lý công việc ưu tiên."}
           </p>
         </div>
-        <div className="route-deck-links">
-          {quickActions.map((item, index) => (
-            <Link href={item.href} key={item.href}>
-              <span>{String(index + 1).padStart(2, "0")}</span>
-              <i>
-                <Icon name={item.icon} />
-              </i>
-              <div>
-                <strong>{item.label}</strong>
-                <small>{item.hint}</small>
-              </div>
-              <Icon name="arrow" />
+        <div className="unified-dashboard-header-actions">
+          {primaryActions.slice(0, 2).map((action, index) => (
+            <Link
+              key={action.href}
+              href={action.href}
+              className={
+                index === 0
+                  ? "unified-dashboard-btn unified-dashboard-btn-primary"
+                  : "unified-dashboard-btn unified-dashboard-btn-secondary"
+              }
+            >
+              <Icon name={action.icon} size={18} />
+              <span>{action.label}</span>
             </Link>
           ))}
         </div>
+      </header>
+
+      {/* Warning Notice if read model is initializing */}
+      {warning && (
+        <div className="unified-dashboard-warning">
+          <span>{warning}</span>
+          <button type="button" onClick={() => void load()}>
+            Tải lại
+          </button>
+        </div>
+      )}
+
+      {/* KPI Cards Grid */}
+      <section className="unified-dashboard-kpis">
+        {kpis.map((kpi) => (
+          <div
+            key={kpi.label}
+            className={`unified-dashboard-kpi-card ${kpi.warning ? "is-warning" : ""}`}
+          >
+            <div className="unified-dashboard-kpi-header">
+              <span className="unified-dashboard-kpi-icon">
+                <Icon name={kpi.icon} size={20} />
+              </span>
+              <span className="unified-dashboard-kpi-value">
+                {loading ? "…" : kpi.value}
+              </span>
+            </div>
+            <div className="unified-dashboard-kpi-body">
+              <span className="unified-dashboard-kpi-label">{kpi.label}</span>
+              <span className="unified-dashboard-kpi-delta">
+                {loading ? "Đang cập nhật…" : kpi.delta}
+              </span>
+            </div>
+          </div>
+        ))}
       </section>
 
-      <div className="dashboard-section-heading">
-        <div>
-          <span>03 · DỮ LIỆU ĐÀO TẠO</span>
-          <h2>Biến thiên học tập</h2>
-        </div>
-        <p>Cập nhật từ Learning và Reporting Service</p>
-      </div>
-
-      <section className="dashboard-grid">
-        <article className="panel chart-panel">
-          <PanelTitle
-            title="Tiến độ khóa học"
-            subtitle={
-              progressRows.length
-                ? "Các ghi danh gần nhất"
-                : "Chưa có dữ liệu tiến độ"
-            }
-          />
-          {progressRows.length ? (
-            <div className="bars">
-              {progressRows.map((row, index) => {
-                const value = Math.max(
-                  0,
-                  Math.min(100, number(row.progressPercent)),
-                );
-                return (
-                  <div
-                    className="bar-col"
-                    key={String(row.enrollmentId ?? row.id ?? index)}
-                    title={courseNames.get(String(row.courseId)) ?? "Khóa học"}
-                  >
-                    <div className="bar-track">
-                      <div style={{ height: `${value}%` }} className="bar-fill">
-                        <span>{Math.round(value)}%</span>
+      {/* Grid of Main Dashboard Panels */}
+      <section className="unified-dashboard-grid">
+        {/* Panel 1: Course Progress */}
+        <article className="unified-dashboard-card">
+          <div className="unified-dashboard-card-header">
+            <h3>Tiến độ khóa học gần đây</h3>
+            <p>
+              {progressRows.length
+                ? "Tiến độ học tập ghi nhận từ hệ thống"
+                : "Chưa có tiến độ học tập nào"}
+            </p>
+          </div>
+          <div className="unified-dashboard-card-body">
+            {progressRows.length ? (
+              <div className="unified-dashboard-progress-list">
+                {progressRows.map((row, index) => {
+                  const pct = Math.max(
+                    0,
+                    Math.min(100, number(row.progressPercent)),
+                  );
+                  const courseName =
+                    courseNames.get(String(row.courseId)) ??
+                    `Khóa học ${index + 1}`;
+                  return (
+                    <div
+                      key={String(row.enrollmentId ?? row.id ?? index)}
+                      className="unified-dashboard-progress-item"
+                    >
+                      <div className="unified-dashboard-progress-info">
+                        <span className="unified-dashboard-progress-name">
+                          {courseName}
+                        </span>
+                        <span className="unified-dashboard-progress-pct">
+                          {Math.round(pct)}%
+                        </span>
+                      </div>
+                      <div className="unified-dashboard-progress-bar">
+                        <div
+                          className="unified-dashboard-progress-fill"
+                          style={{ width: `${pct}%` }}
+                        />
                       </div>
                     </div>
-                    <small>
-                      {(
-                        courseNames.get(String(row.courseId)) ??
-                        `KH ${index + 1}`
-                      ).slice(0, 8)}
-                    </small>
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            <EmptyPanel text="Dữ liệu sẽ xuất hiện sau khi học viên được ghi danh." />
-          )}
-          <div className="legend">
-            <span>
-              <i className="legend-primary" />
-              Tiến độ đã ghi nhận
-            </span>
-            <span>
-              <i />
-              Dữ liệu từ Learning/Reporting Service
-            </span>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="unified-dashboard-empty">
+                Chưa có dữ liệu tiến độ.
+              </p>
+            )}
           </div>
         </article>
 
-        <article className="panel">
-          <PanelTitle
-            title="Trạng thái học tập"
-            subtitle={isStudent ? "Cá nhân" : "Trong phạm vi quyền"}
-          />
-          <div className="donut-wrap">
-            <div className="donut" style={donutStyle}>
-              <div>
-                <b>{totalRows}</b>
-                <small>Tổng ghi danh</small>
+        {/* Panel 2: Training Status Breakdown */}
+        <article className="unified-dashboard-card">
+          <div className="unified-dashboard-card-header">
+            <h3>Trạng thái đào tạo</h3>
+            <p>Thống kê lượt học trong phạm vi</p>
+          </div>
+          <div className="unified-dashboard-card-body">
+            <div className="unified-dashboard-stat-summary">
+              <div className="unified-dashboard-stat-row">
+                <span className="unified-dashboard-stat-label">Tổng số lượt ghi danh</span>
+                <span className="unified-dashboard-stat-val">{totalRows}</span>
               </div>
-            </div>
-            <div className="donut-legend">
-              <div>
-                <i className="c1" />
-                <span>Đã hoàn thành</span>
-                <b>{completed}</b>
+              <div className="unified-dashboard-stat-row">
+                <span className="unified-dashboard-stat-label">Đã hoàn thành</span>
+                <span className="unified-dashboard-stat-val is-success">{completed}</span>
               </div>
-              <div>
-                <i className="c2" />
-                <span>Đang học</span>
-                <b>{inProgress}</b>
+              <div className="unified-dashboard-stat-row">
+                <span className="unified-dashboard-stat-label">Đang học</span>
+                <span className="unified-dashboard-stat-val is-primary">{inProgress}</span>
               </div>
-              <div>
-                <i className="c3" />
-                <span>Chưa bắt đầu</span>
-                <b>{notStarted}</b>
+              <div className="unified-dashboard-stat-row">
+                <span className="unified-dashboard-stat-label">Chưa bắt đầu</span>
+                <span className="unified-dashboard-stat-val">{notStarted}</span>
               </div>
-              <div>
-                <i className="c4" />
-                <span>Quá hạn</span>
-                <b>{overdue}</b>
+              <div className="unified-dashboard-stat-row">
+                <span className="unified-dashboard-stat-label">Quá hạn</span>
+                <span className="unified-dashboard-stat-val is-danger">{overdue}</span>
               </div>
             </div>
           </div>
         </article>
 
-        <article className="panel wide">
-          <PanelTitle
-            title="Thông báo gần đây"
-            subtitle={`${state.notifications.unread} thông báo chưa đọc`}
-          />
-          {state.notifications.items.length ? (
-            <div className="activity-list">
-              {state.notifications.items.slice(0, 4).map((item, index) => (
-                <div className="activity" key={item.id}>
-                  <span className={`activity-icon a${(index % 4) + 1}`}>
-                    <Icon
-                      name={
-                        item.title.includes("Chứng chỉ")
-                          ? "certificate"
-                          : item.title.includes("kiểm tra")
-                            ? "exam"
-                            : "bell"
-                      }
-                    />
-                  </span>
-                  <div>
-                    <b>{item.title}</b>
-                    <p>{item.body}</p>
+        {/* Panel 3: Notifications */}
+        <article className="unified-dashboard-card">
+          <div className="unified-dashboard-card-header">
+            <h3>Thông báo gần đây</h3>
+            <p>{state.notifications.unread} thông báo chưa đọc</p>
+          </div>
+          <div className="unified-dashboard-card-body">
+            {state.notifications.items.length ? (
+              <div className="unified-dashboard-notification-list">
+                {state.notifications.items.slice(0, 5).map((item) => (
+                  <div key={item.id} className="unified-dashboard-notification-item">
+                    <div className="unified-dashboard-notification-icon">
+                      <Icon
+                        name={
+                          item.title.includes("Chứng chỉ")
+                            ? "certificate"
+                            : item.title.includes("kiểm tra")
+                              ? "exam"
+                              : "bell"
+                        }
+                        size={16}
+                      />
+                    </div>
+                    <div className="unified-dashboard-notification-content">
+                      <div className="unified-dashboard-notification-title">
+                        {item.title}
+                      </div>
+                      <div className="unified-dashboard-notification-body">
+                        {item.body}
+                      </div>
+                      <div className="unified-dashboard-notification-time">
+                        {relativeTime(item.createdAt)}
+                      </div>
+                    </div>
                   </div>
-                  <time>{relativeTime(item.createdAt)}</time>
+                ))}
+              </div>
+            ) : (
+              <p className="unified-dashboard-empty">
+                Không có thông báo mới.
+              </p>
+            )}
+          </div>
+        </article>
+
+        {/* Panel 4: Pending Tasks / Items requiring action */}
+        <article className="unified-dashboard-card">
+          <div className="unified-dashboard-card-header">
+            <h3>Nhiệm vụ cần xử lý</h3>
+            <p>Các công việc và phản hồi ưu tiên</p>
+          </div>
+          <div className="unified-dashboard-card-body">
+            <div className="unified-dashboard-task-list">
+              <div className="unified-dashboard-task-item">
+                <div className="unified-dashboard-task-info">
+                  <strong>{overdue}</strong>
+                  <span>{isStudent ? "Khóa học quá hạn" : "Lượt học quá hạn"}</span>
                 </div>
-              ))}
-            </div>
-          ) : (
-            <EmptyPanel text="Chưa có thông báo nghiệp vụ mới." />
-          )}
-        </article>
-
-        <article className="panel">
-          <PanelTitle
-            title="Cần chú ý"
-            subtitle={
-              state.report?.lastSynchronizedAt
-                ? `Đồng bộ ${date(state.report.lastSynchronizedAt)}`
-                : "Dữ liệu hiện tại"
-            }
-          />
-          <div className="attention">
-            <div>
-              <span className={`attention-num ${overdue ? "red" : "blue"}`}>
-                {overdue}
-              </span>
-              <p>{isStudent ? "Khóa học quá hạn" : "Lượt học quá hạn"}</p>
-              <Link href={isStudent ? "/learning" : "/reports"}>
-                Xem chi tiết <Icon name="arrow" size={15} />
-              </Link>
-            </div>
-            <div>
-              <span
-                className={`attention-num ${metrics.pendingGrades ? "orange" : "blue"}`}
-              >
-                {metrics.pendingGrades}
-              </span>
-              <p>Bài tự luận chờ chấm</p>
-              {isStudent ? (
-                <span className="attention-note">Theo dõi kết quả</span>
-              ) : (
-                <Link href="/grading">
-                  Mở hàng chờ <Icon name="arrow" size={15} />
+                <Link
+                  href={isStudent ? "/learning" : "/reports"}
+                  className="unified-dashboard-link"
+                >
+                  Xem danh sách
                 </Link>
-              )}
-            </div>
-            <div>
-              <span className="attention-num blue">
-                {state.notifications.unread}
-              </span>
-              <p>Thông báo chưa đọc</p>
-              <span className="attention-note">Trên thanh công cụ</span>
+              </div>
+
+              <div className="unified-dashboard-task-item">
+                <div className="unified-dashboard-task-info">
+                  <strong>{metrics.pendingGrades}</strong>
+                  <span>Bài thi tự luận chờ chấm</span>
+                </div>
+                {isStudent ? (
+                  <span className="unified-dashboard-tag">Theo dõi kết quả</span>
+                ) : (
+                  <Link href="/grading" className="unified-dashboard-link">
+                    Mở hàng chờ
+                  </Link>
+                )}
+              </div>
+
+              <div className="unified-dashboard-task-item">
+                <div className="unified-dashboard-task-info">
+                  <strong>{state.notifications.unread}</strong>
+                  <span>Thông báo chưa đọc</span>
+                </div>
+                <span className="unified-dashboard-tag">Xem ở thanh công cụ</span>
+              </div>
             </div>
           </div>
         </article>
       </section>
-    </>
+    </div>
   );
 }
 
-function Kpi({
-  icon,
-  value,
-  label,
-  delta,
-  warning,
-  loading,
-  index,
-}: {
-  icon: IconName;
-  value: string;
-  label: string;
-  delta: string;
-  warning?: boolean;
-  loading: boolean;
-  index: number;
-}) {
-  return (
-    <article className={`kpi ${warning ? "kpi-warning" : ""}`}>
-      <span className="kpi-index">{String(index).padStart(2, "0")}</span>
-      <div className={`kpi-icon ${warning ? "warn" : ""}`}>
-        <Icon name={icon} />
-        <i />
-      </div>
-      <div className="kpi-copy">
-        <small>LIVE METRIC</small>
-        <strong>{loading ? "…" : value}</strong>
-        <span>{label}</span>
-        <em className={warning ? "warning" : ""}>
-          {loading ? "Đang đồng bộ" : delta}
-        </em>
-      </div>
-      <div className="kpi-signal" aria-hidden="true">
-        <i />
-        <i />
-        <i />
-        <i />
-        <i />
-      </div>
-    </article>
-  );
-}
-function PanelTitle({ title, subtitle }: { title: string; subtitle: string }) {
-  return (
-    <div className="panel-title">
-      <div>
-        <h2>{title}</h2>
-        <p>{subtitle}</p>
-      </div>
-    </div>
-  );
-}
-function EmptyPanel({ text }: { text: string }) {
-  return (
-    <div className="empty-panel">
-      <Icon name="book" />
-      <p>{text}</p>
-    </div>
-  );
-}
