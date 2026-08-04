@@ -84,7 +84,7 @@ const emptyMapping: Mapping = {
   roleCodesColumn: null,
   passwordColumn: null,
   statusColumn: null,
-  defaultRoleCodes: ["LEARNER"],
+  defaultRoleCodes: ["BASIC_USER"],
   defaultPassword: null,
   mode: "CREATE_ONLY",
   failurePolicy: "PARTIAL",
@@ -210,7 +210,7 @@ export function UserImportWizard() {
         title="Nhập tài khoản hàng loạt"
         description="Đọc CSV/XLSX, ánh xạ cột, kiểm tra từng dòng và nhập idempotent theo chính sách đã chọn."
       />
-      <section className="realm-panel import-step">
+      <section className="workspace-panel import-step">
         <header>
           <span>1</span>
           <div>
@@ -248,7 +248,7 @@ export function UserImportWizard() {
         </label>
       </section>
       {inspection && (
-        <section className="realm-panel import-step">
+        <section className="workspace-panel import-step">
           <header>
             <span>2</span>
             <div>
@@ -342,7 +342,7 @@ export function UserImportWizard() {
                       .filter(Boolean),
                   })
                 }
-                placeholder="LEARNER hoặc INSTRUCTOR, LEARNER"
+                placeholder="BASIC_USER hoặc COURSE_AUTHOR, TRAINING_MANAGER"
               />
               <small>
                 Dùng mã role, phân tách bằng dấu phẩy. Hỗ trợ cả role tùy chỉnh.
@@ -426,7 +426,7 @@ export function UserImportWizard() {
         </section>
       )}
       {preview && (
-        <section className="realm-panel import-step">
+        <section className="workspace-panel import-step">
           <header>
             <span>3</span>
             <div>
@@ -491,7 +491,7 @@ export function UserImportWizard() {
         </section>
       )}
       {result && (
-        <section className="realm-panel import-step">
+        <section className="workspace-panel import-step">
           <header>
             <span>4</span>
             <div>

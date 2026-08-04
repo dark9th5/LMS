@@ -249,7 +249,9 @@ class AssignmentSubmissionService(
     }
 
     private fun canManageClass(classId: UUID): Boolean = CurrentUser.isSystemAdmin() ||
-        "ADMIN" in CurrentUser.roles() || classId in enrollments.assignedClassIds(CurrentUser.id())
+        Permissions.ASSESSMENTS_GRADE in CurrentUser.authorities() ||
+        Permissions.GRADING_MANAGE in CurrentUser.authorities() ||
+        classId in enrollments.assignedClassIds(CurrentUser.id())
 
     private fun digest(value: String): String = MessageDigest.getInstance("SHA-256")
         .digest(value.toByteArray(StandardCharsets.UTF_8))

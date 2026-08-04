@@ -53,4 +53,5 @@ object CurrentUser {
     fun accountType(): String = jwt().getClaimAsString("accountType") ?: "USER"
     fun isSystemAdmin(): Boolean = accountType() == "SYSTEM_ADMIN"
     fun authorities(): Set<String> = (jwt().getClaimAsStringList("permissions") ?: emptyList()).toSet()
+    fun globalAuthorities(): Set<String> = (jwt().getClaimAsStringList("globalPermissions") ?: emptyList()).toSet()
 }

@@ -1,6 +1,8 @@
 package com.lmspilot.identity.service
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.lmspilot.contracts.PermissionCatalog as SharedPermissionCatalog
+import com.lmspilot.contracts.PermissionRisk
 import com.lmspilot.contracts.Permissions
 import com.lmspilot.identity.api.*
 import com.lmspilot.identity.domain.*
@@ -37,11 +39,25 @@ class AuthorizationService(
         val knownPermissions = permissionCatalog()
         val createdGrants = mutableListOf<AuthorizationGrantEntity>()
         val createdRoles = mutableListOf<ScopedRoleAssignmentEntity>()
+        var duplicateAssignments = 0
         for (user in foundUsers) {
+            val existingDirect = grants.findAllByPrincipalTypeAndPrincipalId(PrincipalType.USER, user.id)
+            val existingRoles = roleAssignments.findAllByUserId(user.id)
             for (grant in input.grants) {
                 if (grant.roleCode != null) {
                     val role = roles.findByCodeIgnoreCase(grant.roleCode)
-                        ?: throw ApiException(HttpStatus.BAD_REQUEST, "ROLE_NOT_FOUND", "Vai trò ${grant.roleCode} không tồn tại")
+                        ?: throw ApiException(HttpStatus.BAD_REQUEST, "ROLE_NOT_FOUND", "Gói quyền ${grant.roleCode} không tồn tại")
+                    if (compatiblePermissions(role, grant.scopeType).isEmpty()) {
+                        throw ApiException(HttpStatus.BAD_REQUEST, "PROFILE_SCOPE_EMPTY", "Gói quyền ${grant.roleCode} không có quyền nào dùng được ở phạm vi ${grant.scopeType}")
+                    }
+                    val duplicate = existingRoles.any {
+                        it.role.id == role.id && it.scopeType == grant.scopeType && it.scopeId == grant.scopeId &&
+                            it.effect == grant.effect && it.validFrom == grant.validFrom && it.validUntil == grant.validUntil
+                    }
+                    if (duplicate) {
+                        duplicateAssignments++
+                        continue
+                    }
                     createdRoles += roleAssignments.save(
                         ScopedRoleAssignmentEntity(
                             userId = user.id,
@@ -58,6 +74,15 @@ class AuthorizationService(
                     val permission = grant.permissionCode!!
                     if (permission !in knownPermissions) {
                         throw ApiException(HttpStatus.BAD_REQUEST, "UNKNOWN_PERMISSION", "Quyền không hợp lệ: $permission")
+                    }
+                    validatePermissionScope(permission, grant.scopeType)
+                    val duplicate = existingDirect.any {
+                        it.permissionCode == permission && it.scopeType == grant.scopeType && it.scopeId == grant.scopeId &&
+                            it.effect == grant.effect && it.validFrom == grant.validFrom && it.validUntil == grant.validUntil
+                    }
+                    if (duplicate) {
+                        duplicateAssignments++
+                        continue
                     }
                     createdGrants += grants.save(
                         AuthorizationGrantEntity(
@@ -79,6 +104,7 @@ class AuthorizationService(
             operationId = input.operationId,
             permissionGrants = createdGrants.map { it.response() },
             roleAssignments = createdRoles.map { it.response() },
+            duplicateAssignments = duplicateAssignments,
         )
         bulkOperations.save(
             BulkOperationEntity(
@@ -89,6 +115,72 @@ class AuthorizationService(
             )
         )
         return response
+    }
+
+    @Transactional(readOnly = true)
+    fun previewBulk(input: BulkGrantPreviewRequest): BulkGrantPreviewResponse {
+        val foundUsers = users.findAllById(input.userIds)
+        if (foundUsers.size != input.userIds.size) {
+            throw ApiException(HttpStatus.BAD_REQUEST, "USER_NOT_FOUND", "Một hoặc nhiều người dùng không tồn tại")
+        }
+        val knownPermissions = permissionCatalog()
+        var assignmentsToCreate = 0
+        var duplicateAssignments = 0
+        val critical = mutableSetOf<String>()
+        val previews = foundUsers.map { user ->
+            val existingDirect = grants.findAllByPrincipalTypeAndPrincipalId(PrincipalType.USER, user.id)
+            val existingRoles = roleAssignments.findAllByUserId(user.id)
+            val added = mutableSetOf<String>()
+            val already = mutableSetOf<String>()
+            val denied = mutableSetOf<String>()
+            val excluded = mutableSetOf<String>()
+            input.grants.forEach { grant ->
+                val permissions = if (grant.roleCode != null) {
+                    val role = roles.findByCodeIgnoreCase(grant.roleCode)
+                        ?: throw ApiException(HttpStatus.BAD_REQUEST, "ROLE_NOT_FOUND", "Gói quyền ${grant.roleCode} không tồn tại")
+                    val compatible = compatiblePermissions(role, grant.scopeType)
+                    if (compatible.isEmpty()) {
+                        throw ApiException(HttpStatus.BAD_REQUEST, "PROFILE_SCOPE_EMPTY", "Gói quyền ${grant.roleCode} không có quyền nào dùng được ở phạm vi ${grant.scopeType}")
+                    }
+                    excluded += role.permissions - compatible
+                    val duplicate = existingRoles.any {
+                        it.role.id == role.id && it.scopeType == grant.scopeType && it.scopeId == grant.scopeId &&
+                            it.effect == grant.effect && it.validFrom == grant.validFrom && it.validUntil == grant.validUntil
+                    }
+                    if (duplicate) duplicateAssignments++ else assignmentsToCreate++
+                    compatible
+                } else {
+                    val permission = grant.permissionCode!!
+                    if (permission !in knownPermissions) {
+                        throw ApiException(HttpStatus.BAD_REQUEST, "UNKNOWN_PERMISSION", "Quyền không hợp lệ: $permission")
+                    }
+                    validatePermissionScope(permission, grant.scopeType)
+                    val duplicate = existingDirect.any {
+                        it.permissionCode == permission && it.scopeType == grant.scopeType && it.scopeId == grant.scopeId &&
+                            it.effect == grant.effect && it.validFrom == grant.validFrom && it.validUntil == grant.validUntil
+                    }
+                    if (duplicate) duplicateAssignments++ else assignmentsToCreate++
+                    setOf(permission)
+                }
+                permissions.filterTo(critical) { SharedPermissionCatalog.find(it)?.risk == PermissionRisk.CRITICAL }
+                val effective = effective(user.id, grant.scopeType, grant.scopeId)
+                if (grant.effect == GrantEffect.DENY) {
+                    denied += permissions
+                } else {
+                    already += permissions.intersect(effective.allowed)
+                    denied += permissions.intersect(effective.denied)
+                    added += permissions - effective.allowed - effective.denied
+                }
+            }
+            UserGrantPreview(user.id, user.fullName, added, already, denied, excluded)
+        }
+        return BulkGrantPreviewResponse(
+            affectedUsers = foundUsers.size,
+            assignmentsToCreate = assignmentsToCreate,
+            duplicateAssignments = duplicateAssignments,
+            criticalPermissions = critical,
+            users = previews,
+        )
     }
 
     @Transactional
@@ -121,15 +213,34 @@ class AuthorizationService(
             (from == null || !from.isAfter(now)) && (until == null || until.isAfter(now))
         }
         val direct = grants.findAllByPrincipalTypeAndPrincipalId(PrincipalType.USER, user.id)
-            .filter { active(it.validFrom, it.validUntil) }
+            .filter { active(it.validFrom, it.validUntil) && permissionAllowedAt(it.permissionCode, it.scopeType) }
         val scopedRoles = roleAssignments.findAllByUserId(user.id)
             .filter { active(it.validFrom, it.validUntil) }
         val allowed = user.roles.flatMap { it.permissions }.toSet() +
             direct.filter { it.effect == GrantEffect.ALLOW }.map { it.permissionCode } +
-            scopedRoles.filter { it.effect == GrantEffect.ALLOW }.flatMap { it.role.permissions }
+            scopedRoles.filter { it.effect == GrantEffect.ALLOW }.flatMap { compatiblePermissions(it.role, it.scopeType) }
         val systemDenied = direct.filter { it.scopeType == ScopeType.SYSTEM && it.effect == GrantEffect.DENY }.map { it.permissionCode }.toSet() +
-            scopedRoles.filter { it.scopeType == ScopeType.SYSTEM && it.effect == GrantEffect.DENY }.flatMap { it.role.permissions }.toSet()
+            scopedRoles.filter { it.scopeType == ScopeType.SYSTEM && it.effect == GrantEffect.DENY }.flatMap { compatiblePermissions(it.role, it.scopeType) }.toSet()
         return allowed - systemDenied
+    }
+
+    /** Permissions that are actually global, used by APIs offering a SYSTEM scope. */
+    @Transactional(readOnly = true)
+    fun globalPermissionsForToken(user: UserAccountEntity): Set<String> {
+        if (user.accountType == AccountType.SYSTEM_ADMIN) return permissionCatalog()
+        val now = Instant.now()
+        fun active(from: Instant?, until: Instant?) =
+            (from == null || !from.isAfter(now)) && (until == null || until.isAfter(now))
+        val direct = grants.findAllByPrincipalTypeAndPrincipalId(PrincipalType.USER, user.id)
+            .filter { it.scopeType == ScopeType.SYSTEM && active(it.validFrom, it.validUntil) }
+        val systemRoles = roleAssignments.findAllByUserId(user.id)
+            .filter { it.scopeType == ScopeType.SYSTEM && active(it.validFrom, it.validUntil) }
+        val allowed = user.roles.flatMap { it.permissions }.toSet() +
+            direct.filter { it.effect == GrantEffect.ALLOW }.map { it.permissionCode } +
+            systemRoles.filter { it.effect == GrantEffect.ALLOW }.flatMap { compatiblePermissions(it.role, ScopeType.SYSTEM) }
+        val denied = direct.filter { it.effect == GrantEffect.DENY }.map { it.permissionCode }.toSet() +
+            systemRoles.filter { it.effect == GrantEffect.DENY }.flatMap { compatiblePermissions(it.role, ScopeType.SYSTEM) }.toSet()
+        return allowed - denied
     }
 
     @Transactional(readOnly = true)
@@ -156,13 +267,13 @@ class AuthorizationService(
         }
 
         val direct = grants.findAllByPrincipalTypeAndPrincipalIdIn(PrincipalType.USER, listOf(user.id))
-            .filter { inScope(it.scopeType, it.scopeId) && active(it.validFrom, it.validUntil) }
+            .filter { permissionAllowedAt(it.permissionCode, it.scopeType) && inScope(it.scopeType, it.scopeId) && active(it.validFrom, it.validUntil) }
         val scopedRoles = roleAssignments.findAllByUserId(user.id)
             .filter { inScope(it.scopeType, it.scopeId) && active(it.validFrom, it.validUntil) }
 
         val base = user.roles.flatMap { it.permissions }.toSet()
-        val roleAllowed = scopedRoles.filter { it.effect == GrantEffect.ALLOW }.flatMap { it.role.permissions }.toSet()
-        val roleDenied = scopedRoles.filter { it.effect == GrantEffect.DENY }.flatMap { it.role.permissions }.toSet()
+        val roleAllowed = scopedRoles.filter { it.effect == GrantEffect.ALLOW }.flatMap { compatiblePermissions(it.role, it.scopeType) }.toSet()
+        val roleDenied = scopedRoles.filter { it.effect == GrantEffect.DENY }.flatMap { compatiblePermissions(it.role, it.scopeType) }.toSet()
         val permissionAllowed = direct.filter { it.effect == GrantEffect.ALLOW }.map { it.permissionCode }.toSet()
         val permissionDenied = direct.filter { it.effect == GrantEffect.DENY }.map { it.permissionCode }.toSet()
         val denied = roleDenied + permissionDenied
@@ -170,6 +281,73 @@ class AuthorizationService(
         return EffectivePermissionResponse(user.id, scopeType, scopeId, allowed, denied)
     }
 
+
+    @Transactional(readOnly = true)
+    fun explain(userId: UUID, scopeType: ScopeType, scopeId: UUID?): AuthorizationExplanationResponse {
+        validateScope(scopeType, scopeId)
+        val user = users.findById(userId).orElseThrow {
+            ApiException(HttpStatus.NOT_FOUND, "USER_NOT_FOUND", "Không tìm thấy người dùng")
+        }
+        val now = Instant.now()
+        val applicableUnitIds = organizationScopes.applicableUnitIds(scopeType, scopeId)
+        fun active(from: Instant?, until: Instant?) =
+            (from == null || !from.isAfter(now)) && (until == null || until.isAfter(now))
+        fun applicable(type: ScopeType, id: UUID?): Boolean = when {
+            type == ScopeType.SYSTEM -> true
+            scopeType in OrganizationScopeClient.ORGANIZATION_SCOPES && type in OrganizationScopeClient.ORGANIZATION_SCOPES ->
+                id != null && id in applicableUnitIds
+            else -> type == scopeType && id == scopeId
+        }
+
+        val sources = mutableListOf<PermissionSourceResponse>()
+        if (user.accountType == AccountType.SYSTEM_ADMIN) {
+            permissionCatalog().forEach { permission ->
+                sources += PermissionSourceResponse(
+                    permission, "SYSTEM_ADMIN", user.id, "Quản trị hệ thống", GrantEffect.ALLOW,
+                    ScopeType.SYSTEM, null, null, null, true, true,
+                )
+            }
+        }
+        user.roles.forEach { role ->
+            role.permissions.forEach { permission ->
+                sources += PermissionSourceResponse(
+                    permissionCode = permission,
+                    sourceType = "BASE_PROFILE",
+                    sourceId = role.id,
+                    sourceLabel = role.name,
+                    effect = GrantEffect.ALLOW,
+                    scopeType = ScopeType.SYSTEM,
+                    scopeId = null,
+                    validFrom = null,
+                    validUntil = null,
+                    active = true,
+                    applicable = true,
+                )
+            }
+        }
+        grants.findAllByPrincipalTypeAndPrincipalId(PrincipalType.USER, userId).forEach { grant ->
+            sources += PermissionSourceResponse(
+                grant.permissionCode, "PERMISSION", grant.id, grant.permissionCode, grant.effect,
+                grant.scopeType, grant.scopeId, grant.validFrom, grant.validUntil,
+                active(grant.validFrom, grant.validUntil),
+                applicable(grant.scopeType, grant.scopeId) && permissionAllowedAt(grant.permissionCode, grant.scopeType),
+            )
+        }
+        roleAssignments.findAllByUserId(userId).forEach { assignment ->
+            assignment.role.permissions.forEach { permission ->
+                sources += PermissionSourceResponse(
+                    permission, "SCOPED_PROFILE", assignment.id, assignment.role.name, assignment.effect,
+                    assignment.scopeType, assignment.scopeId, assignment.validFrom, assignment.validUntil,
+                    active(assignment.validFrom, assignment.validUntil),
+                    applicable(assignment.scopeType, assignment.scopeId) && permissionAllowedAt(permission, assignment.scopeType),
+                )
+            }
+        }
+        return AuthorizationExplanationResponse(
+            effective = effective(userId, scopeType, scopeId),
+            sources = sources.sortedWith(compareBy({ it.permissionCode }, { it.effect.name }, { it.sourceLabel })),
+        )
+    }
 
     @Transactional(readOnly = true)
     fun capabilities(userId: UUID): Set<String> {
@@ -181,7 +359,7 @@ class AuthorizationService(
 
     /**
      * Exact resource authorization used by other services after the coarse JWT gate.
-     * Base account roles are intentionally excluded: an INSTRUCTOR may own or be
+     * Base profile assignments are intentionally excluded: a course author may own or be
      * assigned to resources, but the role alone must not unlock every course/exam.
      * Explicit SYSTEM and matching scoped grants/roles are evaluated, with DENY
      * taking precedence.
@@ -204,9 +382,9 @@ class AuthorizationService(
             else -> type == scopeType && id == scopeId
         }
         val direct = grants.findAllByPrincipalTypeAndPrincipalId(PrincipalType.USER, userId)
-            .filter { it.permissionCode == permission && inScope(it.scopeType, it.scopeId) && active(it.validFrom, it.validUntil) }
+            .filter { it.permissionCode == permission && permissionAllowedAt(permission, it.scopeType) && inScope(it.scopeType, it.scopeId) && active(it.validFrom, it.validUntil) }
         val assignedRoles = roleAssignments.findAllByUserId(userId)
-            .filter { permission in it.role.permissions && inScope(it.scopeType, it.scopeId) && active(it.validFrom, it.validUntil) }
+            .filter { permission in it.role.permissions && permissionAllowedAt(permission, it.scopeType) && inScope(it.scopeType, it.scopeId) && active(it.validFrom, it.validUntil) }
         val denied = direct.any { it.effect == GrantEffect.DENY } || assignedRoles.any { it.effect == GrantEffect.DENY }
         val allowed = direct.any { it.effect == GrantEffect.ALLOW } || assignedRoles.any { it.effect == GrantEffect.ALLOW }
         return allowed && !denied
@@ -230,9 +408,9 @@ class AuthorizationService(
             (from == null || !from.isAfter(now)) && (until == null || until.isAfter(now))
 
         val direct = grants.findAllByPrincipalTypeAndPrincipalId(PrincipalType.USER, userId)
-            .filter { it.scopeType == scopeType && it.scopeId != null && it.permissionCode == permission && active(it.validFrom, it.validUntil) }
+            .filter { it.scopeType == scopeType && it.scopeId != null && it.permissionCode == permission && permissionAllowedAt(permission, it.scopeType) && active(it.validFrom, it.validUntil) }
         val assignedRoles = roleAssignments.findAllByUserId(userId)
-            .filter { it.scopeType == scopeType && it.scopeId != null && permission in it.role.permissions && active(it.validFrom, it.validUntil) }
+            .filter { it.scopeType == scopeType && it.scopeId != null && permission in it.role.permissions && permissionAllowedAt(permission, it.scopeType) && active(it.validFrom, it.validUntil) }
         val allowed = direct.filter { it.effect == GrantEffect.ALLOW }.mapNotNull { it.scopeId }.toSet() +
             assignedRoles.filter { it.effect == GrantEffect.ALLOW }.mapNotNull { it.scopeId }
         val denied = direct.filter { it.effect == GrantEffect.DENY }.mapNotNull { it.scopeId }.toSet() +
@@ -251,16 +429,31 @@ class AuthorizationService(
         )
     }
 
+    private fun permissionAllowedAt(permission: String, scopeType: ScopeType): Boolean =
+        SharedPermissionCatalog.find(permission)?.allowedScopes?.contains(scopeType.name) == true
+
+    private fun compatiblePermissions(role: RoleEntity, scopeType: ScopeType): Set<String> =
+        role.permissions.filterTo(mutableSetOf()) { permissionAllowedAt(it, scopeType) }
+
+    private fun validatePermissionScope(permission: String, scopeType: ScopeType) {
+        val definition = SharedPermissionCatalog.find(permission)
+            ?: throw ApiException(HttpStatus.BAD_REQUEST, "UNKNOWN_PERMISSION", "Quyền không hợp lệ: $permission")
+        if (scopeType.name !in definition.allowedScopes) {
+            throw ApiException(
+                HttpStatus.BAD_REQUEST,
+                "PERMISSION_SCOPE_NOT_ALLOWED",
+                "Quyền ${definition.label} không được cấp ở phạm vi $scopeType",
+            )
+        }
+    }
+
     private fun validateScope(scopeType: ScopeType, scopeId: UUID?) {
         if ((scopeType == ScopeType.SYSTEM) != (scopeId == null)) {
             throw ApiException(HttpStatus.BAD_REQUEST, "INVALID_SCOPE", "scopeId không hợp lệ với scopeType")
         }
     }
 
-    private fun permissionCatalog(): Set<String> = Permissions::class.java.declaredFields
-        .filter { java.lang.reflect.Modifier.isStatic(it.modifiers) }
-        .mapNotNull { runCatching { it.get(null) as? String }.getOrNull() }
-        .toSet()
+    private fun permissionCatalog(): Set<String> = SharedPermissionCatalog.codes()
 }
 
 private fun AuthorizationGrantEntity.response() = GrantResponse(

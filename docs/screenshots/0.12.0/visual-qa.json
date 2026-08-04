@@ -1,0 +1,29 @@
+{
+  "screenshots": [
+    "01-login-desktop.png",
+    "02-dashboard-desktop.png",
+    "02b-dashboard-full.png",
+    "03-courses-desktop.png",
+    "03b-courses-full.png",
+    "04-classes-desktop.png",
+    "05-exams-desktop.png",
+    "06-learning-desktop.png",
+    "07-learning-mobile.png",
+    "07b-learning-mobile-full.png",
+    "08-login-mobile-full.png",
+    "09-theme-studio-desktop.png",
+    "09b-theme-studio-full.png",
+    "10-theme-01-cosmic-observatory.png",
+    "10-theme-02-quantum-cyan.png",
+    "10-theme-03-lunar-silver.png",
+    "10-theme-04-aurora-research.png",
+    "10-theme-05-mars-expedition.png",
+    "10-theme-06-abyssal-ocean.png",
+    "10-theme-07-biosphere-lab.png",
+    "10-theme-08-solar-archive.png",
+    "10-theme-09-neo-academia.png",
+    "10-theme-10-mono-terminal.png"
+  ],
+  "pageErrors": [],
+  "serverErrors": ""
+}

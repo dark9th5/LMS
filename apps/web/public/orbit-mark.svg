@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <radialGradient id="planet" cx="34%" cy="28%" r="72%">
+      <stop stop-color="#9cf5ff"/>
+      <stop offset=".46" stop-color="#42bff5"/>
+      <stop offset="1" stop-color="#4058d8"/>
+    </radialGradient>
+    <linearGradient id="frame" x1="8" y1="6" x2="58" y2="61">
+      <stop stop-color="#121f38"/>
+      <stop offset="1" stop-color="#050a14"/>
+    </linearGradient>
+  </defs>
+  <rect x="1" y="1" width="62" height="62" rx="17" fill="url(#frame)" stroke="#75e8ff" stroke-opacity=".42"/>
+  <circle cx="32" cy="31" r="11" fill="url(#planet)"/>
+  <ellipse cx="32" cy="31" rx="24" ry="8" fill="none" stroke="#d9f8ff" stroke-width="2.5" transform="rotate(-18 32 31)"/>
+  <circle cx="49" cy="22" r="2.5" fill="#b19cff"/>
+  <circle cx="18" cy="47" r="1.8" fill="#75e8ff"/>
+</svg>

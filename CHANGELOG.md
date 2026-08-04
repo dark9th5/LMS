@@ -1,5 +1,70 @@
 # Changelog
 
+## 0.15.0 - 2026-08-04
+
+### Permission-first authorization
+
+- Chuyển account model về `SYSTEM_ADMIN` và `USER`; loại bỏ role-name gating khỏi các service nghiệp vụ.
+- Thêm catalog metadata cho 93 permission và 10 gói quyền theo công việc.
+- Thêm preview, giải thích nguồn quyền, phát hiện cấp trùng, thu hồi từng assignment và kiểm tra scope hợp lệ.
+- Thêm claim `globalPermissions` để phân biệt quyền toàn hệ thống với capability theo phạm vi.
+- Cập nhật frontend quản trị, danh sách người phụ trách lớp, ghi danh và import tài khoản theo permission/gói quyền mới.
+
+### Verification
+
+- 127 test Python đạt; platform-contracts compile bằng Kotlin compiler; 62 tệp TS/TSX parse không lỗi cú pháp.
+- Full npm/Gradle/Docker verification chưa chạy được trong môi trường đóng gói; xem `TEST_RESULTS_CLS_0.15.0.md`.
+
+## 0.14.0 - 2026-08-04
+
+- Thêm Sắc màu Cân bằng (`soft-spectrum`) làm theme mặc định: giữ bố cục đa sắc tươi sáng nhưng giảm độ bão hòa, dùng coral/rose/aqua/violet/lime/yellow mềm hơn và tăng surface trung tính để giảm mỏi mắt.
+- Tách sidebar khỏi toàn bộ accent đa sắc: rail navy–graphite đơn sắc, group toggle/icon/count/mục con cùng một hệ xám, active state trắng ngà; các lớp `accent-cyan/indigo/violet` bị override đồng nhất.
+- Phủ Soft Spectrum lên dashboard hero, KPI, quick route, page header, login, summary, khóa học, lớp, learning và kỳ thi; sửa các selector Cosmic cũ gây card tối hoặc chữ thiếu tương phản.
+- Thay `enterprise-blue` bằng `soft-spectrum` nhưng giữ tổng số 10 theme; Theme Studio preview phản ánh đúng rail đơn sắc và content color blocking.
+- Thêm Flyway V6: đổi default/allowlist, map dữ liệu cũ, chỉ thay hai palette mặc định đã biết và giữ palette do khách hàng tùy chỉnh; neutralize seed “Học viện Huyền Tri” nếu chưa từng đổi tên.
+- Progress ring nhận CSS theme token thay vì hard-code; giao diện vẫn self-contained, responsive và reduced-motion.
+- Chromium production render 23 capture và contact sheet, không có page/console/server error; bổ sung 5 regression test, nâng tổng suite lên 121 test.
+
+## 0.13.0 - 2026-08-04
+
+- Thay catalog 0.12 thiên về không gian/fantasy bằng 10 cá tính độc lập cho doanh nghiệp, trường học và tổ chức: Doanh nghiệp Hiện đại, Điều hành Cao cấp, Học viện Di sản, Trường học Năng động, Tổ chức Tin cậy, Xưởng Sáng tạo, Giáo dục Xanh, Tạp chí Cổ điển, Tối giản An nhiên và Trung tâm Công nghệ.
+- Mỗi theme có typography, hình học, mật độ, surface, sidebar, hero, KPI và ngôn ngữ thị giác riêng; loại bỏ scenery sao/quỹ đạo/nebula khỏi runtime hiện hành thay vì chỉ thay palette.
+- Rút sidebar thành accordion hai tầng permission-aware với ba nhóm Học tập, Đánh giá và Quản trị; tự mở nhóm chứa route hiện tại, chỉ mở một nhóm và giữ đầy đủ `aria-expanded`/`aria-controls`.
+- Chuyển default sang `enterprise-blue`; thêm Flyway V5 để ánh xạ 10 khóa cũ sang catalog mới, cập nhật database default và constraint allowlist mà không sửa migration lịch sử.
+- Trung hòa copy runtime để phù hợp nhiều loại tổ chức, đồng thời giữ nguyên API, scoped RBAC, trạng thái dữ liệu thật, command palette và luồng lưu branding.
+- Sửa lỗi compositor Chromium của bề mặt Giáo dục Xanh trên trang dài; production visual QA tạo 23 ảnh không có page/console/server error cùng contact sheet 10 theme.
+- Bổ sung 5 regression test cho catalog đa đối tượng, accordion theo quyền, khác biệt cấu trúc và copy trung tính; toàn bộ suite đạt 116 test, TypeScript và Next.js production build đều đạt.
+
+## 0.12.0 - 2026-08-04
+
+- Thêm Theme Studio trong trang quản trị với 10 preset hoàn chỉnh thuộc bốn nhóm Không gian, Khoa học, Học thuật và Tối giản; hỗ trợ tìm kiếm, lọc dark/light, xem thử toàn trang, hoàn tác và áp dụng toàn hệ thống.
+- Mở rộng branding contract bằng `themeKey`, validation allowlist và Flyway `V4`; theme được lưu thật ở Configuration Service thay vì localStorage hoặc fixture giao diện.
+- Đồng bộ theme qua SSR root layout và public branding để login, portal và admin dùng đúng giao diện ngay từ HTML đầu tiên; vẫn cho phép tùy chỉnh palette thương hiệu riêng.
+- Xây registry type-safe và hệ token đa theme cho màu, typography, hình học, radius, shadow, atmosphere, shell, hero, KPI, bảng, form, modal và trạng thái; không dùng asset/font/CDN ngoài.
+- Bổ sung 2 theme sáng có điều chỉnh tương phản chuyên biệt cùng 8 theme tối; sửa specificity cho KPI, quick route, topbar và hero metric qua visual QA.
+- Chromium production render 23 ảnh, gồm gallery Theme Studio, 10 dashboard theme, desktop và mobile; không ghi nhận page/console/server error.
+- Bổ sung 7 Theme Studio contract/UI test; toàn bộ suite đạt 111 test, TypeScript và Next.js production build đều đạt.
+
+## 0.11.0 - 2026-08-04
+
+- Thay Spectrum OS bão hòa màu bằng Cosmic Research UI: nền deep-space gần đen, phân lớp graphite, xanh lam dữ liệu, cyan telemetry, violet chiều sâu và amber/coral chỉ dành cho trạng thái có ý nghĩa.
+- Đổi toàn bộ identity runtime sang `CosmicShell`, `CosmicField` và biểu tượng quỹ đạo; loại bỏ tên, selector và asset Spectrum/Chromatic/Prism khỏi giao diện đang chạy.
+- Xây lại login như đài quan sát tri thức; đổi dashboard thành mission control; khóa học, lớp, học tập và kỳ thi thành các module nghiên cứu/quỹ đạo nhất quán.
+- Phủ material tối mới lên form, bảng, modal, detail/player và workspace quản trị trong khi giữ nguyên API, scoped RBAC, state thật và command palette theo quyền.
+- Sửa responsive thực ở journey mobile: chuyển lưới hai cột sang một cột, khôi phục nhịp đọc tiêu đề, số liệu và mastery orbit ở màn hình 390 px.
+- Render production bằng Chromium và chụp lại 11 ảnh desktop/mobile; không có JavaScript/page/console/server error trong lượt chụp.
+- Bộ 8 Cosmic UI regression test cùng toàn bộ suite 104 test, TypeScript và Next.js production build đều đạt trước khi đóng gói.
+
+## 0.10.0 - 2026-08-04
+
+- Loại bỏ hoàn toàn Astral Academy V3: xóa stylesheet, shell, nền, logo và ngôn ngữ fantasy của 0.9.0; thay bằng Spectrum OS được xây dựng lại từ số 0.
+- Dựng nhận diện chromatic mới với nền sáng, rail điều hướng tối, typography editorial cỡ lớn, bento bất đối xứng, hình khối đồ họa và bảng màu coral/pink/violet/blue/cyan/lime/yellow.
+- Viết lại login, đổi mật khẩu, shell, command palette, page header, dashboard, khóa học, lớp, hành trình học và kỳ thi; phủ material system mới lên detail/player/form/table/modal/admin workspace.
+- Giữ nguyên API, RBAC, trạng thái tải/lỗi/rỗng và luồng dữ liệu thật; command palette tiếp tục lọc route theo quyền và hỗ trợ `Ctrl/Cmd + K`/`Escape`.
+- Bổ sung responsive cho sáu dải màn hình, reduced motion, high contrast, focus-visible, scrollbar keyboard-safe và asset CSS/SVG tự chứa không cần CDN.
+- Render build production bằng Chromium thực, chụp 11 ảnh desktop/mobile với fixture QA cô lập; không có JavaScript/page/console error trong ma trận đã chụp.
+- Thay bộ regression UI cũ bằng 8 Spectrum OS contract test; tổng suite vẫn đạt 104 test, TypeScript và Next.js production build đạt.
+
 ## 0.9.0 - 2026-08-04
 
 - Tái thiết kế toàn bộ portal thành Astral Academy V3 với hệ token, chiều sâu không gian, typography, glass surface, bản đồ thiên thể và chuyển động có chủ đích.

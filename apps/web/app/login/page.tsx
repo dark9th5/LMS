@@ -1,9 +1,9 @@
 import { redirect } from "next/navigation";
-import { getUser } from "@/lib/session";
-import { landingForUser } from "@/lib/authorization";
-import { MysticBackdrop } from "@/components/MysticBackdrop";
-import { LoginForm } from "./LoginForm";
+import { CosmicField } from "@/components/CosmicField";
 import { getPublicBranding } from "@/lib/branding";
+import { landingForUser } from "@/lib/authorization";
+import { getUser } from "@/lib/session";
+import { LoginForm } from "./LoginForm";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -17,119 +17,103 @@ export default async function Login() {
     : "";
 
   return (
-    <div className="login-page mystic-login-page">
-      <MysticBackdrop />
-      <section className="login-visual mystic-login-visual">
-        <header className="login-visual-head">
+    <main className="cosmic-login-page">
+      <CosmicField />
+      <section className="login-showcase">
+        <header className="login-brandbar">
           <div className="login-brand">
-            <span className="brand-mark large rune-mark">
-              <i>L</i>
-              <b aria-hidden="true" />
+            <span className="mission-mark" aria-hidden="true">
+              <i />
+              <b />
+              <em />
             </span>
             <span>
               <b>{branding.systemName}</b>
-              <small>HỌC VIỆN HUYỀN TRI · CLS</small>
+              <small>LEARNING MANAGEMENT PLATFORM · 2026</small>
             </span>
           </div>
-          <div className="login-edition">
-            <span>PRIVATE REALM</span>
-            <b>MMXXVI</b>
-          </div>
+          <span className="login-live">
+            <i /> SYSTEM ONLINE
+          </span>
         </header>
-        <div className="login-visual-frame">
-          <div className="visual-copy">
-            <div className="login-coordinate">
-              <i /> REALM 07 · KNOWLEDGE ASCENDS <b />
-            </div>
-            <span className="eyebrow light">
-              NƠI TRI THỨC TRỞ THÀNH SỨC MẠNH
-            </span>
-            <h1>
-              Mỗi khóa học là một cánh cổng.
-              <em>Mỗi thành tựu là một vì sao.</em>
-            </h1>
-            <p>
-              {branding.introduction ||
-                "Một không gian học tập sâu, tĩnh và cuốn hút—nơi tổ chức kiến tạo năng lực, kết nối con người và lưu giữ hành trình phát triển."}
-            </p>
-            <div className="login-manifesto">
-              <span>✦</span>
-              <p>
-                “Kiến thức không chỉ được truyền đạt. Nó được khám phá, thử
-                thách và khắc ghi.”
-              </p>
-            </div>
+
+        <div className="login-hero-copy">
+          <span className="login-kicker">WELCOME TO YOUR LEARNING SPACE</span>
+          <h1>
+            <span>HỌC HỎI.</span>
+            <span>PHÁT TRIỂN.</span>
+            <span>BỨT PHÁ.</span>
+          </h1>
+          <p>
+            {branding.introduction ||
+              "Không gian học tập và phát triển dành cho mọi thành viên trong tổ chức."}
+          </p>
+        </div>
+
+        <div className="learning-sculpture" aria-hidden="true">
+          <div className="sculpture-core">
+            <span>72%</span>
+            <small>PROGRESS</small>
           </div>
-          <div className="portal-observatory" aria-hidden="true">
-            <div className="observatory-axis axis-x" />
-            <div className="observatory-axis axis-y" />
-            <div className="arcane-gate">
-              <span className="gate-ring ring-one" />
-              <span className="gate-ring ring-two" />
-              <span className="gate-ring ring-three" />
-              <span className="gate-ring ring-four" />
-              <span className="gate-core">✦</span>
-            </div>
-            <span className="orbit-label label-one">LEARN</span>
-            <span className="orbit-label label-two">CREATE</span>
-            <span className="orbit-label label-three">ASCEND</span>
-            <span className="observatory-code">
-              AETHER NETWORK
-              <br />
-              NODE 001
-            </span>
-          </div>
-          <div className="realm-features">
-            <span>
-              <i>01</i>
-              <b>Học tập thích ứng</b>
-              <small>Tiến độ, lộ trình và báo cáo cá nhân</small>
-              <em>EXPLORE</em>
-            </span>
-            <span>
-              <i>02</i>
-              <b>Thử thách công bằng</b>
-              <small>Kỳ thi, xếp hạng và phần thưởng</small>
-              <em>CHALLENGE</em>
-            </span>
-            <span>
-              <i>03</i>
-              <b>Vận hành tự chủ</b>
-              <small>Dữ liệu nằm trong hạ tầng của bạn</small>
-              <em>CONTROL</em>
-            </span>
+          <i className="sculpture-orbit orbit-one" />
+          <i className="sculpture-orbit orbit-two" />
+          <i className="sculpture-orbit orbit-three" />
+          <span className="floating-card card-course">
+            <b>12</b>
+            <small>MODULES</small>
+          </span>
+          <span className="floating-card card-streak">
+            <b>08</b>
+            <small>ACTIVE DAYS</small>
+          </span>
+          <span className="floating-card card-skill">
+            <b>AI</b>
+            <small>RESEARCH LAB</small>
+          </span>
+        </div>
+
+        <div className="login-feature-ticker" aria-hidden="true">
+          <div>
+            <span>KNOWLEDGE MODULES</span>
+            <i>◉</i>
+            <span>TRAINING CLASSES</span>
+            <i>◉</i>
+            <span>AI ASSISTANT</span>
+            <i>◉</i>
+            <span>LIVE LEARNING</span>
+            <i>◉</i>
+            <span>KNOWLEDGE MODULES</span>
+            <i>◉</i>
           </div>
         </div>
-        <footer className="visual-stats">
+
+        <footer className="login-proof">
           <div>
-            <small>01</small>
             <b>100%</b>
-            <span>Dữ liệu On-Premise</span>
+            <span>Dữ liệu nội bộ</span>
           </div>
           <div>
-            <small>02</small>
-            <b>AI</b>
-            <span>Local hoặc API riêng</span>
+            <b>19</b>
+            <span>Dịch vụ nghiệp vụ</span>
           </div>
           <div>
-            <small>03</small>
             <b>RBAC</b>
-            <span>Quyền theo từng phạm vi</span>
+            <span>Quyền theo phạm vi</span>
           </div>
-          <p>CLS · SECURE LEARNING INFRASTRUCTURE</p>
+          <p>LEARN · PRACTICE · GROW ↗</p>
         </footer>
       </section>
-      <aside className="login-side mystic-login-side">
-        <div className="login-side-index">
-          <span>ACCESS CHAMBER</span>
-          <b>04 / 08</b>
+
+      <aside className="login-access">
+        <div className="login-access-index">
+          <span>SECURE ACCESS</span>
+          <b>01 / 01</b>
         </div>
         <LoginForm demoEnabled={demoEnabled} demoPassword={demoPassword} />
-        <p className="login-footer">
-          <span>✦</span>
-          {branding.systemName} · Học viện Huyền Tri · Phiên bản CLS
+        <p className="login-access-footer">
+          <span>●</span> Kết nối được mã hóa · Không đăng ký công khai
         </p>
       </aside>
-    </div>
+    </main>
   );
 }

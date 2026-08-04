@@ -316,7 +316,8 @@ class CompetitionService(
     }
 
     private fun manageable(exam: ExamEntity, permission: String): Boolean =
-        CurrentUser.isSystemAdmin() || "ADMIN" in CurrentUser.roles() || exam.ownerId == CurrentUser.id() ||
+        CurrentUser.isSystemAdmin() || permission in CurrentUser.authorities() ||
+            Permissions.COMPETITIONS_MANAGE in CurrentUser.authorities() || exam.ownerId == CurrentUser.id() ||
             scopedAuthorization.allowed(permission, "EXAM", exam.id) ||
             scopedAuthorization.allowed(Permissions.COMPETITIONS_MANAGE, "EXAM", exam.id)
 

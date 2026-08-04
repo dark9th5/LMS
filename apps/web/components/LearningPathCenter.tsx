@@ -303,7 +303,7 @@ export function LearningPathCenter({ user }: { user: PortalUser }) {
           </button>
         }
       />
-      <div className="realm-tabs path-tabs">
+      <div className="workspace-tabs path-tabs">
         {canRead && (
           <button
             className={tab === "mine" ? "active" : ""}

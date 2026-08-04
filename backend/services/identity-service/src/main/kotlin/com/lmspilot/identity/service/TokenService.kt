@@ -29,6 +29,7 @@ class TokenService(
         val expiry = now.plus(accessTtl)
         val roles = user.roles.map { it.code }.toSet()
         val permissions = authorization.permissionsForToken(user)
+        val globalPermissions = authorization.globalPermissionsForToken(user)
         val claims = JwtClaimsSet.builder()
             .issuer("lmspilot-identity")
             .issuedAt(now)
@@ -41,6 +42,7 @@ class TokenService(
             .claim("mustChangePassword", user.mustChangePassword)
             .claim("roles", roles)
             .claim("permissions", permissions)
+            .claim("globalPermissions", globalPermissions)
             .build()
         val token = jwtEncoder.encode(
             JwtEncoderParameters.from(JwsHeader.with(MacAlgorithm.HS256).build(), claims),

@@ -158,7 +158,7 @@ Thứ hạng được sắp theo điểm giảm dần, thời gian làm tăng d�
 - `PUT /api/v1/external-services/{id}`
 - `POST /api/v1/external-services/{id}/test`
 
-Branding gồm tên hệ thống, nội dung giới thiệu, logo, favicon, ảnh nền, màu chính/phụ, màu nền và màu chữ và custom domain. Secret của tích hợp được mã hóa bằng `CONFIGURATION_SECRET_KEY` và không được trả ngược dưới dạng rõ.
+Branding gồm tên hệ thống, nội dung giới thiệu, logo, favicon, ảnh nền, màu chính/phụ, màu nền, màu chữ, custom domain và `themeKey`. `themeKey` chỉ nhận 10 preset đã đăng ký; portal đọc public branding ở SSR, còn thay đổi dùng `PUT /api/v1/branding` có phân quyền. Secret của tích hợp được mã hóa bằng `CONFIGURATION_SECRET_KEY` và không được trả ngược dưới dạng rõ.
 
 ## 6. Tin tức
 

@@ -1,0 +1,839 @@
+/* LMSPilot Soft Spectrum · 0.14.0
+   Bright multi-colour content with a strictly monochrome navigation rail. */
+
+html[data-theme="soft-spectrum"] {
+  color-scheme: light;
+  --preset-page: #f6f3ef;
+  --preset-surface: #fffdf9;
+  --preset-surface-raised: #eee9e4;
+  --preset-sidebar: #191b28;
+  --preset-primary: #b95547;
+  --preset-secondary: #5967b8;
+  --preset-text: #20232e;
+  --preset-muted: #707383;
+  --preset-sidebar-text: #f5f3ef;
+  --preset-success: #357a59;
+  --preset-warning: #956817;
+  --preset-danger: #ae4051;
+  --preset-radius: 18px;
+  --preset-control-radius: 11px;
+  --preset-grid-size: 58px;
+  --preset-display-font: "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
+  --preset-shadow: 0 16px 38px rgba(43, 39, 52, 0.1);
+  --preset-ambient-one: #e8927e;
+  --preset-ambient-two: #9490db;
+  --spectrum-coral: #e8927e;
+  --spectrum-rose: #e8a1bb;
+  --spectrum-aqua: #77c7cc;
+  --spectrum-violet: #9490db;
+  --spectrum-lime: #b7cf83;
+  --spectrum-yellow: #e8c96e;
+  --spectrum-green: #65a986;
+  --spectrum-ink: #242733;
+  --spectrum-rail: #191b28;
+  --spectrum-rail-raised: #222532;
+  --spectrum-rail-hover: #2a2d3b;
+}
+
+html[data-theme="soft-spectrum"] body {
+  --progress-accent: var(--spectrum-aqua);
+  --progress-track: rgba(255, 253, 249, 0.48);
+}
+
+html[data-theme="soft-spectrum"] .cosmic-field {
+  background:
+    radial-gradient(circle at 91% 3%, rgba(119, 199, 204, 0.11), transparent 25%),
+    radial-gradient(circle at 60% 92%, rgba(232, 161, 187, 0.08), transparent 30%),
+    var(--theme-page);
+}
+
+html[data-theme="soft-spectrum"] .cosmic-grid {
+  opacity: 0.055;
+  mask-image: linear-gradient(to bottom, black, transparent 72%);
+}
+
+/* Monochrome sidebar: group accents never leak into the table of contents. */
+html[data-theme="soft-spectrum"] .cosmic-sidebar {
+  border-right-color: rgba(255, 255, 255, 0.08);
+  background: var(--spectrum-rail);
+  color: #f5f3ef;
+  box-shadow: 12px 0 36px rgba(25, 27, 40, 0.13);
+}
+
+html[data-theme="soft-spectrum"] .cosmic-brand,
+html[data-theme="soft-spectrum"] .cosmic-brand strong,
+html[data-theme="soft-spectrum"] .sidebar-user strong,
+html[data-theme="soft-spectrum"] .sidebar-command strong {
+  color: #f7f5f1;
+}
+
+html[data-theme="soft-spectrum"] .cosmic-brand small,
+html[data-theme="soft-spectrum"] .sidebar-user small,
+html[data-theme="soft-spectrum"] .sidebar-command small {
+  color: #9296a6;
+}
+
+html[data-theme="soft-spectrum"] .mission-mark {
+  border-color: rgba(255, 255, 255, 0.28);
+  background: #222532;
+}
+
+html[data-theme="soft-spectrum"] .mission-mark i {
+  background: #f4f1eb;
+}
+
+html[data-theme="soft-spectrum"] .mission-mark em {
+  background: #9397a8;
+  box-shadow: none;
+}
+
+html[data-theme="soft-spectrum"] .sidebar-live-card,
+html[data-theme="soft-spectrum"] .sidebar-command,
+html[data-theme="soft-spectrum"] .sidebar-user {
+  border-color: rgba(255, 255, 255, 0.09);
+  background: var(--spectrum-rail-raised);
+  color: #e7e5e1;
+}
+
+html[data-theme="soft-spectrum"] .sidebar-live-card small {
+  color: #8e92a1;
+}
+
+html[data-theme="soft-spectrum"] .sidebar-live-card > i {
+  border-color: rgba(255, 255, 255, 0.08);
+  opacity: 0.42;
+}
+
+html[data-theme="soft-spectrum"] .nav-group-toggle,
+html[data-theme="soft-spectrum"] .accent-cyan .nav-group-toggle,
+html[data-theme="soft-spectrum"] .accent-indigo .nav-group-toggle,
+html[data-theme="soft-spectrum"] .accent-violet .nav-group-toggle {
+  border-color: rgba(255, 255, 255, 0.08);
+  background: var(--spectrum-rail-raised);
+  color: #c9cbd3;
+  box-shadow: none;
+}
+
+html[data-theme="soft-spectrum"] .nav-group-toggle:hover,
+html[data-theme="soft-spectrum"] .nav-group.expanded .nav-group-toggle,
+html[data-theme="soft-spectrum"] .accent-cyan.expanded .nav-group-toggle,
+html[data-theme="soft-spectrum"] .accent-indigo.expanded .nav-group-toggle,
+html[data-theme="soft-spectrum"] .accent-violet.expanded .nav-group-toggle {
+  border-color: rgba(255, 255, 255, 0.16);
+  background: var(--spectrum-rail-hover);
+  color: #ffffff;
+}
+
+html[data-theme="soft-spectrum"] .nav-group-main-icon,
+html[data-theme="soft-spectrum"] .nav-group-count {
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  background: #303342;
+  color: #d9d9df;
+}
+
+html[data-theme="soft-spectrum"] .nav-group-copy small {
+  color: #858999;
+}
+
+html[data-theme="soft-spectrum"] .nav-group-items-inner {
+  border-left-color: rgba(255, 255, 255, 0.11);
+}
+
+html[data-theme="soft-spectrum"] .nav-link,
+html[data-theme="soft-spectrum"] .accent-cyan .nav-link,
+html[data-theme="soft-spectrum"] .accent-indigo .nav-link,
+html[data-theme="soft-spectrum"] .accent-violet .nav-link {
+  border-color: transparent;
+  background: transparent;
+  color: #aeb1bd;
+  box-shadow: none;
+}
+
+html[data-theme="soft-spectrum"] .nav-link:hover {
+  border-color: rgba(255, 255, 255, 0.07);
+  background: #252836;
+  color: #f5f3ef;
+}
+
+html[data-theme="soft-spectrum"] .nav-link.active,
+html[data-theme="soft-spectrum"] .accent-cyan .nav-link.active,
+html[data-theme="soft-spectrum"] .accent-indigo .nav-link.active,
+html[data-theme="soft-spectrum"] .accent-violet .nav-link.active {
+  border-color: #f0ede7;
+  background: #f0ede7;
+  color: #20232e;
+  box-shadow: none;
+}
+
+html[data-theme="soft-spectrum"] .nav-icon,
+html[data-theme="soft-spectrum"] .nav-link.active .nav-icon,
+html[data-theme="soft-spectrum"] .accent-cyan .nav-icon,
+html[data-theme="soft-spectrum"] .accent-indigo .nav-icon,
+html[data-theme="soft-spectrum"] .accent-violet .nav-icon {
+  border-color: rgba(255, 255, 255, 0.08);
+  background: #2e3140;
+  color: #c7c9d2;
+}
+
+html[data-theme="soft-spectrum"] .nav-link.active .nav-icon {
+  border-color: #d7d4ce;
+  background: #dedbd5;
+  color: #20232e;
+}
+
+html[data-theme="soft-spectrum"] .nav-arrow {
+  color: currentColor;
+}
+
+html[data-theme="soft-spectrum"] .sidebar-command kbd,
+html[data-theme="soft-spectrum"] .sidebar-user .icon-button {
+  border-color: rgba(255, 255, 255, 0.12);
+  background: #2e3140;
+  color: #d7d8de;
+}
+
+/* Calm chrome gives the colourful content enough visual room. */
+html[data-theme="soft-spectrum"] .cosmic-topbar,
+html[data-theme="soft-spectrum"] .mobile-topbar {
+  border-color: rgba(32, 35, 46, 0.09);
+  background: rgba(255, 253, 249, 0.92);
+  box-shadow: 0 8px 26px rgba(43, 39, 52, 0.06);
+}
+
+html[data-theme="soft-spectrum"] .topbar-command,
+html[data-theme="soft-spectrum"] .notification-trigger,
+html[data-theme="soft-spectrum"] .cosmic-topbar .cosmic-avatar {
+  border-color: rgba(32, 35, 46, 0.13);
+  background: #fffdf9;
+}
+
+html[data-theme="soft-spectrum"] .content-ribbon {
+  color: #686b79;
+}
+
+/* The reference's colour blocking, softened and made readable. */
+html[data-theme="soft-spectrum"] .cosmic-dashboard-hero {
+  min-height: 500px;
+  border: 1.5px solid #343744;
+  border-radius: 28px;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.08)),
+    radial-gradient(circle at 78% 17%, var(--spectrum-yellow) 0 8%, transparent 8.3%),
+    radial-gradient(circle at 70% 31%, var(--spectrum-aqua) 0 18%, transparent 18.3%),
+    linear-gradient(
+      128deg,
+      var(--spectrum-coral) 0 43%,
+      var(--spectrum-rose) 43% 69%,
+      var(--spectrum-violet) 69%
+    );
+  color: var(--spectrum-ink);
+  box-shadow: 0 18px 42px rgba(50, 46, 61, 0.16);
+}
+
+html[data-theme="soft-spectrum"] .cosmic-dashboard-hero::before {
+  display: block;
+  background:
+    linear-gradient(105deg, rgba(255, 255, 255, 0.12), transparent 48%),
+    radial-gradient(circle at 91% 82%, rgba(255, 255, 255, 0.2) 0 5%, transparent 5.3%);
+  opacity: 1;
+  mask-image: none;
+  pointer-events: none;
+}
+
+html[data-theme="soft-spectrum"] .welcome-copy h1 {
+  color: #20232e;
+  font-family: "Arial Black", "Segoe UI Variable", sans-serif;
+  text-shadow: 0 2px rgba(255, 255, 255, 0.2);
+}
+
+html[data-theme="soft-spectrum"] .welcome-copy h1 em {
+  color: #343846;
+  font-family: "Segoe UI Variable", "Segoe UI", sans-serif;
+}
+
+html[data-theme="soft-spectrum"] .welcome-copy > p {
+  color: rgba(32, 35, 46, 0.78);
+  font-weight: 560;
+}
+
+html[data-theme="soft-spectrum"] .welcome-coordinate {
+  border-color: rgba(32, 35, 46, 0.28);
+  background: rgba(255, 253, 249, 0.82);
+  color: #30333f;
+}
+
+html[data-theme="soft-spectrum"] .welcome-coordinate b {
+  background: #e7f1d1;
+  color: #3f6647;
+}
+
+html[data-theme="soft-spectrum"] .welcome-copy > .eyebrow {
+  border-color: rgba(32, 35, 46, 0.24);
+  background: #f4dda0;
+  color: #4f421f;
+}
+
+html[data-theme="soft-spectrum"] .welcome-actions .button.primary {
+  border-color: #252836;
+  background: #252836;
+  color: #fffdf9;
+  box-shadow: 0 9px 22px rgba(37, 40, 54, 0.2);
+}
+
+html[data-theme="soft-spectrum"] .welcome-actions .button.secondary {
+  border-color: rgba(32, 35, 46, 0.45);
+  background: rgba(255, 253, 249, 0.86);
+  color: #252836;
+}
+
+html[data-theme="soft-spectrum"] .welcome-signals span {
+  color: rgba(32, 35, 46, 0.72);
+}
+
+html[data-theme="soft-spectrum"] .welcome-signals i {
+  border-color: #29303a;
+  background: #e8f2d4;
+  box-shadow: none;
+}
+
+html[data-theme="soft-spectrum"] .dashboard-progress-art {
+  filter: drop-shadow(0 18px 28px rgba(42, 41, 55, 0.18));
+}
+
+html[data-theme="soft-spectrum"] .progress-disc {
+  border: 2px solid #30333e;
+  box-shadow: 0 15px 30px rgba(45, 45, 60, 0.17);
+}
+
+html[data-theme="soft-spectrum"] .progress-disc > div {
+  border: 1.5px solid #343744;
+  background: #fffdf9;
+  color: #20232e;
+  box-shadow: inset 0 0 28px rgba(119, 199, 204, 0.08);
+}
+
+html[data-theme="soft-spectrum"] .progress-disc small,
+html[data-theme="soft-spectrum"] .progress-disc span {
+  color: #707383;
+}
+
+html[data-theme="soft-spectrum"] .hero-metrics > span {
+  border: 1px solid rgba(32, 35, 46, 0.25);
+  background: rgba(255, 253, 249, 0.76);
+  color: #20232e;
+  box-shadow: 0 6px 16px rgba(44, 42, 53, 0.08);
+  backdrop-filter: blur(8px);
+}
+
+html[data-theme="soft-spectrum"] .hero-metrics > span:nth-child(2) {
+  background: rgba(244, 239, 248, 0.82);
+}
+
+html[data-theme="soft-spectrum"] .hero-metrics > span.danger {
+  border-color: rgba(174, 64, 81, 0.26);
+  background: rgba(250, 231, 234, 0.84);
+}
+
+html[data-theme="soft-spectrum"] .hero-metrics small {
+  color: #707383;
+}
+
+html[data-theme="soft-spectrum"] .hero-metrics span > i {
+  border-color: #30333e;
+  background: var(--spectrum-violet);
+}
+
+html[data-theme="soft-spectrum"] .hero-metrics .danger i {
+  background: #c95c6b;
+}
+
+/* Supporting heroes carry colour in smaller, quieter areas. */
+html[data-theme="soft-spectrum"] .cosmic-page-header,
+html[data-theme="soft-spectrum"] .workspace-hero,
+html[data-theme="soft-spectrum"] .advanced-hero,
+html[data-theme="soft-spectrum"] .journey-hero {
+  border-color: rgba(32, 35, 46, 0.2);
+  background:
+    radial-gradient(circle at 90% 20%, rgba(232, 201, 110, 0.5) 0 7%, transparent 7.3%),
+    linear-gradient(118deg, #fffdf9 0 61%, #f4dbe4 61% 79%, #dcebed 79%);
+  box-shadow: 0 15px 36px rgba(43, 39, 52, 0.09);
+}
+
+html[data-theme="soft-spectrum"] .login-showcase {
+  background:
+    radial-gradient(circle at 75% 21%, rgba(232, 201, 110, 0.68) 0 7%, transparent 7.3%),
+    radial-gradient(circle at 74% 47%, rgba(119, 199, 204, 0.5) 0 18%, transparent 18.3%),
+    linear-gradient(132deg, #eaa18f 0 46%, #e9afc4 46% 70%, #aaa7df 70%);
+}
+
+html[data-theme="soft-spectrum"] .login-access,
+html[data-theme="soft-spectrum"] .cosmic-login-card {
+  background: rgba(255, 253, 249, 0.94);
+}
+
+/* Pastel data cards retain energy without turning the full viewport neon. */
+html[data-theme="soft-spectrum"] .kpi-grid > .kpi,
+html[data-theme="soft-spectrum"] .kpi-grid > .kpi:nth-child(1) {
+  border: 1.5px solid #363946;
+  background: #edf4df;
+  box-shadow: 4px 5px 0 rgba(43, 46, 58, 0.12);
+}
+
+html[data-theme="soft-spectrum"] .kpi-grid > .kpi:nth-child(2) {
+  background: #dff2f3;
+}
+
+html[data-theme="soft-spectrum"] .kpi-grid > .kpi:nth-child(3) {
+  background: #f8edcf;
+}
+
+html[data-theme="soft-spectrum"] .kpi-grid > .kpi:nth-child(4) {
+  background: #ece8f7;
+}
+
+html[data-theme="soft-spectrum"] .kpi-grid > .kpi:hover {
+  transform: translateY(-3px);
+  box-shadow: 6px 8px 0 rgba(43, 46, 58, 0.14);
+}
+
+html[data-theme="soft-spectrum"] .kpi-icon,
+html[data-theme="soft-spectrum"] .kpi-icon.warn {
+  border: 1.5px solid #363946;
+  background: rgba(255, 253, 249, 0.88);
+  color: #3f7653;
+  box-shadow: 2px 3px 0 rgba(43, 46, 58, 0.11);
+}
+
+html[data-theme="soft-spectrum"] .kpi:nth-child(2) .kpi-icon {
+  color: #2c7d84;
+}
+
+html[data-theme="soft-spectrum"] .kpi:nth-child(3) .kpi-icon {
+  color: #8a681d;
+}
+
+html[data-theme="soft-spectrum"] .kpi:nth-child(4) .kpi-icon {
+  color: #6259a6;
+}
+
+html[data-theme="soft-spectrum"] .kpi-copy small,
+html[data-theme="soft-spectrum"] .kpi-copy em,
+html[data-theme="soft-spectrum"] .kpi-index {
+  color: #666978;
+}
+
+html[data-theme="soft-spectrum"] .dashboard-section-heading span,
+html[data-theme="soft-spectrum"] .route-deck-copy > span {
+  color: #a64e43;
+}
+
+html[data-theme="soft-spectrum"] .dashboard-route-deck {
+  border: 1.5px solid #30333e;
+  background: #222530;
+  color: #fffdf9;
+  box-shadow: 7px 8px 0 rgba(119, 199, 204, 0.4);
+}
+
+html[data-theme="soft-spectrum"] .route-deck-copy h2 {
+  color: #fffdf9;
+}
+
+html[data-theme="soft-spectrum"] .route-deck-copy p {
+  color: #aeb1bd;
+}
+
+html[data-theme="soft-spectrum"] .route-deck-links > a {
+  border-color: rgba(255, 255, 255, 0.58);
+  background: #7773c6;
+  color: #ffffff;
+}
+
+html[data-theme="soft-spectrum"] .route-deck-links > a:nth-child(2) {
+  border-color: rgba(255, 255, 255, 0.58);
+  background: #ce725f;
+  color: #ffffff;
+}
+
+html[data-theme="soft-spectrum"] .route-deck-links > a:nth-child(3) {
+  border-color: rgba(255, 255, 255, 0.58);
+  background: #4f9271;
+  color: #ffffff;
+}
+
+html[data-theme="soft-spectrum"] .route-deck-links > a > span,
+html[data-theme="soft-spectrum"] .route-deck-links small,
+html[data-theme="soft-spectrum"] .route-deck-links > a:nth-child(2) > span,
+html[data-theme="soft-spectrum"] .route-deck-links > a:nth-child(3) > span {
+  color: rgba(255, 255, 255, 0.74);
+}
+
+html[data-theme="soft-spectrum"] .route-deck-links > a > i {
+  border-color: #30333e;
+  background: #fffdf9;
+  color: #282b36;
+}
+
+html[data-theme="soft-spectrum"] .panel,
+html[data-theme="soft-spectrum"] .workspace-panel,
+html[data-theme="soft-spectrum"] .advanced-panel,
+html[data-theme="soft-spectrum"] .course-card,
+html[data-theme="soft-spectrum"] .learning-card,
+html[data-theme="soft-spectrum"] .exam-card {
+  background: rgba(255, 253, 249, 0.94);
+}
+
+html[data-theme="soft-spectrum"] .summary-card,
+html[data-theme="soft-spectrum"] .summary-card:nth-child(2),
+html[data-theme="soft-spectrum"] .summary-card:nth-child(3) {
+  border: 1px solid rgba(32, 35, 46, 0.2);
+  background: #f8eee9;
+  color: #20232e;
+  box-shadow: 0 10px 25px rgba(43, 39, 52, 0.08);
+}
+
+html[data-theme="soft-spectrum"] .summary-card:nth-child(2) {
+  background: #e7f1f2;
+}
+
+html[data-theme="soft-spectrum"] .summary-card:nth-child(3) {
+  background: #eeebf7;
+}
+
+html[data-theme="soft-spectrum"] .summary-card::before,
+html[data-theme="soft-spectrum"] .summary-card:nth-child(2)::before,
+html[data-theme="soft-spectrum"] .summary-card:nth-child(3)::before {
+  background: #b95547;
+}
+
+html[data-theme="soft-spectrum"] .summary-card:nth-child(2)::before {
+  background: #3f858b;
+}
+
+html[data-theme="soft-spectrum"] .summary-card:nth-child(3)::before {
+  background: #655eaa;
+}
+
+html[data-theme="soft-spectrum"] .summary-card strong,
+html[data-theme="soft-spectrum"] .summary-card > div span {
+  color: #20232e;
+}
+
+html[data-theme="soft-spectrum"] .summary-card > div small,
+html[data-theme="soft-spectrum"] .summary-index,
+html[data-theme="soft-spectrum"] .summary-card > em {
+  color: #707383;
+}
+
+html[data-theme="soft-spectrum"] .summary-glyph {
+  border: 1px solid rgba(32, 35, 46, 0.22);
+  background: rgba(255, 253, 249, 0.78);
+  color: #b95547;
+  box-shadow: none;
+}
+
+html[data-theme="soft-spectrum"] .course-card,
+html[data-theme="soft-spectrum"] .learning-card,
+html[data-theme="soft-spectrum"] .exam-card,
+html[data-theme="soft-spectrum"] .learning-path-card {
+  border: 1px solid rgba(32, 35, 46, 0.22);
+  background: #fffdf9;
+  color: #20232e;
+  box-shadow: 0 13px 30px rgba(43, 39, 52, 0.09);
+}
+
+html[data-theme="soft-spectrum"] .course-card:hover,
+html[data-theme="soft-spectrum"] .learning-card:hover,
+html[data-theme="soft-spectrum"] .exam-card:hover,
+html[data-theme="soft-spectrum"] .learning-path-card:hover {
+  border-color: rgba(32, 35, 46, 0.32);
+  transform: translateY(-4px);
+  box-shadow: 0 18px 36px rgba(43, 39, 52, 0.13);
+}
+
+html[data-theme="soft-spectrum"] .course-cover,
+html[data-theme="soft-spectrum"] .learning-cover,
+html[data-theme="soft-spectrum"] .course-cover.cover-1,
+html[data-theme="soft-spectrum"] .learning-cover.cover-1,
+html[data-theme="soft-spectrum"] .course-cover.cover-2,
+html[data-theme="soft-spectrum"] .learning-cover.cover-2,
+html[data-theme="soft-spectrum"] .course-cover.cover-3,
+html[data-theme="soft-spectrum"] .learning-cover.cover-3,
+html[data-theme="soft-spectrum"] .course-cover.cover-4,
+html[data-theme="soft-spectrum"] .learning-cover.cover-4 {
+  border-bottom-color: rgba(32, 35, 46, 0.22);
+  background:
+    radial-gradient(circle at 74% 54%, rgba(255, 253, 249, 0.35) 0 17%, transparent 17.4%),
+    linear-gradient(135deg, #e8927e, #e8a1bb);
+}
+
+html[data-theme="soft-spectrum"] .course-cover.cover-1,
+html[data-theme="soft-spectrum"] .learning-cover.cover-1 {
+  background:
+    radial-gradient(circle at 74% 54%, rgba(255, 253, 249, 0.35) 0 17%, transparent 17.4%),
+    linear-gradient(135deg, #77c7cc, #8ca7d9);
+}
+
+html[data-theme="soft-spectrum"] .course-cover.cover-2,
+html[data-theme="soft-spectrum"] .learning-cover.cover-2 {
+  background:
+    radial-gradient(circle at 74% 54%, rgba(255, 253, 249, 0.36) 0 17%, transparent 17.4%),
+    linear-gradient(135deg, #b7cf83, #e8c96e);
+}
+
+html[data-theme="soft-spectrum"] .course-cover.cover-3,
+html[data-theme="soft-spectrum"] .learning-cover.cover-3 {
+  background:
+    radial-gradient(circle at 74% 54%, rgba(255, 253, 249, 0.32) 0 17%, transparent 17.4%),
+    linear-gradient(135deg, #9490db, #d4a2ca);
+}
+
+html[data-theme="soft-spectrum"] .course-cover.cover-4,
+html[data-theme="soft-spectrum"] .learning-cover.cover-4 {
+  background:
+    radial-gradient(circle at 74% 54%, rgba(255, 253, 249, 0.32) 0 17%, transparent 17.4%),
+    linear-gradient(135deg, #e8c96e, #e8927e);
+}
+
+html[data-theme="soft-spectrum"] .course-color-shapes i,
+html[data-theme="soft-spectrum"] .learning-color-shapes i,
+html[data-theme="soft-spectrum"] .exam-color-shapes i {
+  border-color: rgba(32, 35, 46, 0.32);
+}
+
+html[data-theme="soft-spectrum"] .course-color-shapes i:first-child,
+html[data-theme="soft-spectrum"] .learning-color-shapes i:first-child,
+html[data-theme="soft-spectrum"] .exam-color-shapes i:first-child {
+  background: rgba(255, 253, 249, 0.55);
+  box-shadow: none;
+}
+
+html[data-theme="soft-spectrum"] .course-color-shapes i:nth-child(2),
+html[data-theme="soft-spectrum"] .learning-color-shapes i:nth-child(2),
+html[data-theme="soft-spectrum"] .exam-color-shapes i:nth-child(2) {
+  border-color: rgba(32, 35, 46, 0.18);
+  background: rgba(255, 253, 249, 0.13);
+}
+
+html[data-theme="soft-spectrum"] .course-color-shapes span,
+html[data-theme="soft-spectrum"] .learning-color-shapes span,
+html[data-theme="soft-spectrum"] .exam-color-shapes span {
+  color: rgba(32, 35, 46, 0.5);
+}
+
+html[data-theme="soft-spectrum"] .course-code,
+html[data-theme="soft-spectrum"] .learning-code,
+html[data-theme="soft-spectrum"] .exam-sequence {
+  border-color: rgba(32, 35, 46, 0.32);
+  background: rgba(255, 253, 249, 0.78);
+  color: #30333f;
+}
+
+html[data-theme="soft-spectrum"] .course-volume,
+html[data-theme="soft-spectrum"] .course-cover > small,
+html[data-theme="soft-spectrum"] .learning-cover > small {
+  color: rgba(32, 35, 46, 0.7);
+}
+
+html[data-theme="soft-spectrum"] .course-symbol,
+html[data-theme="soft-spectrum"] .learning-symbol,
+html[data-theme="soft-spectrum"] .exam-card-icon {
+  border-color: rgba(32, 35, 46, 0.36);
+  background: rgba(255, 253, 249, 0.88);
+  color: #b95547;
+  box-shadow: 4px 5px 0 rgba(43, 46, 58, 0.13);
+}
+
+html[data-theme="soft-spectrum"] .course-symbol i,
+html[data-theme="soft-spectrum"] .learning-symbol i,
+html[data-theme="soft-spectrum"] .exam-card-icon i,
+html[data-theme="soft-spectrum"] .exam-card-icon b {
+  border-color: rgba(32, 35, 46, 0.24);
+}
+
+html[data-theme="soft-spectrum"] .course-card-body h2,
+html[data-theme="soft-spectrum"] .learning-card-body h2,
+html[data-theme="soft-spectrum"] .exam-card-body h2 {
+  color: #20232e;
+}
+
+html[data-theme="soft-spectrum"] .course-card-body > p,
+html[data-theme="soft-spectrum"] .learning-card-body > p,
+html[data-theme="soft-spectrum"] .exam-card-body > p,
+html[data-theme="soft-spectrum"] .course-card-top,
+html[data-theme="soft-spectrum"] .learning-card-status,
+html[data-theme="soft-spectrum"] .exam-card-body > div:first-child {
+  color: #707383;
+}
+
+html[data-theme="soft-spectrum"] .course-meta span {
+  border-color: rgba(32, 35, 46, 0.13);
+  background: #faf7f3;
+  color: #707383;
+}
+
+html[data-theme="soft-spectrum"] .course-meta svg {
+  color: #b95547;
+}
+
+html[data-theme="soft-spectrum"] .course-card-footer,
+html[data-theme="soft-spectrum"] .learning-action,
+html[data-theme="soft-spectrum"] .exam-open {
+  border-color: rgba(32, 35, 46, 0.16);
+  background: #f0ece7;
+  color: #20232e;
+}
+
+html[data-theme="soft-spectrum"] .course-card-footer small,
+html[data-theme="soft-spectrum"] .learning-action small,
+html[data-theme="soft-spectrum"] .exam-open small {
+  color: #a64e43;
+}
+
+html[data-theme="soft-spectrum"] .course-card-footer > i,
+html[data-theme="soft-spectrum"] .learning-action > i,
+html[data-theme="soft-spectrum"] .exam-open > i {
+  border-color: rgba(32, 35, 46, 0.24);
+  background: #e3eff0;
+  color: #315f65;
+}
+
+html[data-theme="soft-spectrum"] .data-list-item,
+html[data-theme="soft-spectrum"] .data-list-item:nth-child(4n + 1),
+html[data-theme="soft-spectrum"] .data-list-item:nth-child(4n + 2),
+html[data-theme="soft-spectrum"] .data-list-item:nth-child(4n + 3),
+html[data-theme="soft-spectrum"] .data-list-item:nth-child(4n) {
+  border: 1px solid rgba(32, 35, 46, 0.2);
+  background: #eeeaf6;
+  color: #20232e;
+  box-shadow: 0 9px 22px rgba(43, 39, 52, 0.08);
+}
+
+html[data-theme="soft-spectrum"] .data-list-item:nth-child(4n + 2) {
+  background: #e5f1f2;
+}
+
+html[data-theme="soft-spectrum"] .data-list-item:nth-child(4n + 3) {
+  background: #eff3e2;
+}
+
+html[data-theme="soft-spectrum"] .data-list-item:nth-child(4n) {
+  background: #f7ebe6;
+}
+
+html[data-theme="soft-spectrum"] .data-list-item:hover {
+  border-color: rgba(32, 35, 46, 0.32);
+  transform: translateX(3px);
+  box-shadow: 0 13px 28px rgba(43, 39, 52, 0.12);
+}
+
+html[data-theme="soft-spectrum"] .class-number-block {
+  border-color: rgba(32, 35, 46, 0.3);
+  background: #666faa;
+  color: #fffdf9;
+  box-shadow: 3px 4px 0 rgba(43, 46, 58, 0.12);
+}
+
+html[data-theme="soft-spectrum"] .class-number-block i {
+  border-color: rgba(32, 35, 46, 0.22);
+}
+
+html[data-theme="soft-spectrum"] .list-main strong {
+  color: #20232e;
+}
+
+html[data-theme="soft-spectrum"] .list-main > p,
+html[data-theme="soft-spectrum"] .list-meta span {
+  color: #666978;
+}
+
+html[data-theme="soft-spectrum"] .list-main > p i {
+  background: #b95547;
+}
+
+html[data-theme="soft-spectrum"] .list-meta svg,
+html[data-theme="soft-spectrum"] .list-entry svg {
+  color: #5967a4;
+}
+
+html[data-theme="soft-spectrum"] .list-entry small {
+  color: #a64e43;
+}
+
+html[data-theme="soft-spectrum"] .exam-card-scene,
+html[data-theme="soft-spectrum"] .exam-card:nth-child(3n + 2) .exam-card-scene,
+html[data-theme="soft-spectrum"] .exam-card:nth-child(3n + 3) .exam-card-scene {
+  border-color: rgba(32, 35, 46, 0.2);
+  background:
+    radial-gradient(circle at 77% 56%, rgba(255, 253, 249, 0.5) 0 18%, transparent 18.4%),
+    radial-gradient(circle at 77% 56%, rgba(148, 144, 219, 0.28) 0 34%, transparent 34.4%),
+    #f1e6e4;
+}
+
+html[data-theme="soft-spectrum"] .exam-card:nth-child(3n + 2) .exam-card-scene {
+  background:
+    radial-gradient(circle at 77% 56%, rgba(255, 253, 249, 0.5) 0 18%, transparent 18.4%),
+    radial-gradient(circle at 77% 56%, rgba(89, 103, 184, 0.22) 0 34%, transparent 34.4%),
+    #dfeef0;
+}
+
+html[data-theme="soft-spectrum"] .exam-card:nth-child(3n + 3) .exam-card-scene {
+  background:
+    radial-gradient(circle at 77% 56%, rgba(255, 253, 249, 0.5) 0 18%, transparent 18.4%),
+    radial-gradient(circle at 77% 56%, rgba(232, 161, 187, 0.3) 0 34%, transparent 34.4%),
+    #ece8f6;
+}
+
+html[data-theme="soft-spectrum"] .exam-card-score,
+html[data-theme="soft-spectrum"] .exam-card-score small {
+  color: #343744;
+}
+
+html[data-theme="soft-spectrum"] .exam-card-body dl > div,
+html[data-theme="soft-spectrum"] .question-preview,
+html[data-theme="soft-spectrum"] .question-picker {
+  border-color: rgba(32, 35, 46, 0.13);
+  background: #f1ede8;
+  color: #20232e;
+}
+
+html[data-theme="soft-spectrum"] .exam-card-body dt,
+html[data-theme="soft-spectrum"] .question-preview p {
+  color: #707383;
+}
+
+/* Theme Studio preview mirrors the monochrome rail and soft colour blocking. */
+.theme-card-visual[data-preview-theme="soft-spectrum"] {
+  background:
+    radial-gradient(circle at 84% 18%, #e8c96e 0 7%, transparent 7.5%),
+    linear-gradient(128deg, #e8927e 0 43%, #e8a1bb 43% 69%, #9490db 69%);
+}
+
+.theme-card-visual[data-preview-theme="soft-spectrum"] .theme-preview-rail {
+  background: #191b28;
+}
+
+.theme-card-visual[data-preview-theme="soft-spectrum"] .theme-preview-rail i,
+.theme-card-visual[data-preview-theme="soft-spectrum"] .theme-preview-rail span {
+  background: #4a4d5b;
+}
+
+.theme-card-visual[data-preview-theme="soft-spectrum"] .theme-preview-hero,
+.theme-card-visual[data-preview-theme="soft-spectrum"] .theme-preview-card {
+  border-color: rgba(32, 35, 46, 0.3);
+  background: rgba(255, 253, 249, 0.8);
+}
+
+@media (max-width: 900px) {
+  html[data-theme="soft-spectrum"] .cosmic-dashboard-hero {
+    min-height: 0;
+    background:
+      linear-gradient(rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.1)),
+      linear-gradient(145deg, var(--spectrum-coral), var(--spectrum-rose) 64%, var(--spectrum-violet));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-theme="soft-spectrum"] .kpi-grid > .kpi:hover {
+    transform: none;
+  }
+}

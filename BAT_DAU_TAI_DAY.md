@@ -1,10 +1,10 @@
-# BẮT ĐẦU TẠI ĐÂY — LMSPilot CLS 0.9.0
+# BẮT ĐẦU TẠI ĐÂY — LMSPilot CLS 0.15.0
 
 Đây là repository đầy đủ; không cần áp overlay.
 
 ## 1. Giải nén an toàn
 
-Giải nén `LMS-CLS-complete-0.9.0.zip` vào thư mục mới, không ghi đè repository đang chạy. Nếu muốn thay code trong repository Git hiện có, tạo branch/tag dự phòng và giữ nguyên thư mục `.git`.
+Giải nén `LMS-CLS-complete-0.15.0.zip` vào thư mục mới, không ghi đè repository đang chạy. Nếu muốn thay code trong repository Git hiện có, tạo branch/tag dự phòng và giữ nguyên thư mục `.git`.
 
 ## 2. Yêu cầu
 
@@ -55,4 +55,4 @@ docker compose logs --tail=200
 
 Windows dùng các lệnh Docker tương tự và `scripts\preflight.ps1`, `scripts\test-static.ps1`.
 
-Đọc tiếp: `README.md`, `DELIVERY_STATUS.md`, `docs/UI_UX_REDESIGN_0.9.0.md`, `docs/BUILD_VERIFICATION_0.9.0.md`, `docs/AUDIT_0.8.2.md`, `docs/BA_CLS_TRACEABILITY_0.8.2.md`, `docs/OPERATIONS_RUNBOOK.md`.
+Đăng nhập bằng System Admin, mở `Thiết lập thương hiệu → Theme Studio` để xem thử hoặc áp dụng 10 theme. `Sắc màu Cân bằng` là default; sidebar chỉ dùng navy–xám–trắng và vẫn mở ba nhóm Học tập/Đánh giá/Quản trị theo quyền. Đọc trước `docs/PERMISSION_FIRST_0.15.0.md`, sau đó xem `README.md`, `DELIVERY_STATUS.md`, `docs/SOFT_SPECTRUM_0.14.0.md`, `docs/BUILD_VERIFICATION_0.14.0.md`, `docs/AUDIT_0.8.2.md`, `docs/BA_CLS_TRACEABILITY_0.8.2.md`, `docs/OPERATIONS_RUNBOOK.md`.

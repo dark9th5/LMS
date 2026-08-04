@@ -280,7 +280,8 @@ class FileStorageService(
 
     private fun hasAdministrativeFileAccess(): Boolean =
         CurrentUser.isSystemAdmin() ||
-            "ADMIN" in CurrentUser.roles() ||
+            Permissions.FILES_EDIT in CurrentUser.authorities() ||
+            Permissions.FILES_PUBLISH in CurrentUser.authorities() ||
             Permissions.OPERATIONS_MANAGE in CurrentUser.authorities()
 
     private fun checkedPath(storageKey: String): Path {

@@ -1,26 +1,42 @@
-# LMSPilot CLS 0.9.0
+# LMSPilot CLS 0.15.0
 
-LMSPilot CLS là nền tảng quản lý học tập on-premise cho doanh nghiệp, trường học và trung tâm đào tạo. Source này hợp nhất repository LMSPilot gốc, tài liệu BA/URD 48 trang và các yêu cầu mở rộng: phân quyền theo phạm vi, lộ trình học tập, bài thi độc lập, cuộc thi, AI sinh câu hỏi, tài liệu có phiên bản, tùy biến thương hiệu và giao diện “Học viện Huyền Tri”.
+LMSPilot CLS là nền tảng quản lý học tập on-premise cho doanh nghiệp, trường học và trung tâm đào tạo. Source này hợp nhất repository LMSPilot gốc, tài liệu BA/URD 48 trang và các yêu cầu mở rộng: phân quyền theo phạm vi, lộ trình học tập, bài thi độc lập, cuộc thi, AI sinh câu hỏi, tài liệu có phiên bản, tùy biến thương hiệu và Theme Studio đa giao diện.
 
 > Trạng thái: **full-source release candidate**. Đây là repository đầy đủ, không phải overlay. Cần chạy build, Docker smoke test và UAT trên hạ tầng đích trước production.
 
-## Trải nghiệm Astral Academy V3
+## Permission-first 0.15
 
-- Giao diện được tái thiết kế toàn diện thành một học viện số có chiều sâu: nền thiên thể nhiều lớp, bản đồ chòm sao, kính mờ có kiểm soát và hệ phân cấp nội dung rõ ràng.
-- Shell điều hướng nổi, top bar theo ngữ cảnh, chỉ báo hệ thống và **Command Atlas** (`Ctrl/Cmd + K`) chỉ hiển thị các đích người dùng có quyền truy cập.
-- Login, dashboard, khóa học, lớp học, lộ trình, kỳ thi, đổi mật khẩu và các trung tâm quản trị đều dùng chung một hệ design token, component và trạng thái tương tác.
+- Tài khoản chỉ có hai loại: `SYSTEM_ADMIN` được bảo vệ và `USER`; không còn dùng `ADMIN/INSTRUCTOR/LEARNER` làm loại người dùng hay điều kiện mở tính năng.
+- Role được đổi nghĩa thành **gói quyền có thể ghép**. Hệ thống tự tạo 10 gói mẫu theo công việc: `BASIC_USER`, `COURSE_AUTHOR`, `TRAINING_MANAGER`, `EXAM_MANAGER`, `GRADER`, `ORGANIZATION_MANAGER`, `COMMUNICATIONS_EDITOR`, `ACCOUNT_MANAGER`, `ACCESS_ADMINISTRATOR`, `PLATFORM_CUSTOMIZER`.
+- Mỗi permission có tên tiếng Việt, mô tả, nhóm nghiệp vụ, mức rủi ro và danh sách phạm vi hợp lệ. Gói quyền được cấp theo `SYSTEM`, chi nhánh, phòng ban, nhóm, khóa học hoặc kỳ thi.
+- Console quản trị hỗ trợ chọn hàng loạt, xem trước quyền mới/quyền trùng/quyền bị DENY/quyền không áp dụng ở phạm vi, cảnh báo quyền `CRITICAL`, đặt thời hạn, giải thích nguồn quyền và thu hồi đúng từng lần cấp.
+- Backend service không còn quyết định truy cập bằng tên role. JWT tách capability dùng cho coarse gate và `globalPermissions` dùng cho thao tác phạm vi `SYSTEM`; kiểm tra tài nguyên cụ thể vẫn thực hiện tại service.
+- Danh sách người phụ trách lớp và người có thể ghi danh được lọc theo permission thực tế, nên một tài khoản có thể đồng thời học, biên soạn, chấm điểm và quản lý thi.
+
+Chi tiết kiến trúc và luồng nâng cấp: `docs/PERMISSION_FIRST_0.15.0.md`.
+
+## Soft Spectrum 0.14
+
+- Giao diện mặc định mới là **Sắc màu Cân bằng (`soft-spectrum`)**: giữ energy, color blocking và cá tính tươi sáng của Spectrum nhưng giảm saturation, tăng khoảng nghỉ và dùng pastel cho dữ liệu diện tích lớn.
+- Sidebar accordion được khóa vào một palette navy–graphite–xám–trắng. Ba nhóm **Học tập / Đánh giá / Quản trị**, icon, count và trạng thái active không còn pha cyan/indigo/violet; chỉ màu trạng thái nghiệp vụ được phép xuất hiện.
+- Hero, KPI, summary, catalog khóa học, danh sách lớp, kỳ thi, login và page header dùng coral/rose/aqua/violet/lime/yellow đã tiết chế; chữ và control giữ tương phản rõ.
+- Admin vẫn có thể tìm, lọc, xem thử, hoàn tác và áp dụng một trong **10 cá tính giao diện** tại `Thiết lập thương hiệu → Theme Studio`; chín theme còn lại được giữ nguyên.
+- Theme được lưu thật vào Configuration Service bằng `themeKey`; SSR đọc public branding để chọn theme ngay từ HTML đầu tiên.
+- Flyway V6 ánh xạ `enterprise-blue` sang `soft-spectrum`, chỉ thay palette cũ nếu khớp đúng một default chưa tùy chỉnh và trung hòa seed fantasy cũ; custom branding được bảo toàn.
+- Mỗi preset thay cả palette, typography, geometry, radius, shadow, density, sidebar, hero, KPI, form, bảng và trạng thái; đây không chỉ là thay màu chủ đạo.
+- Sidebar tiếp tục lọc mục con theo quyền, tự mở nhóm chứa route hiện tại và chỉ mở tối đa một nhóm.
+- **Command palette** (`Ctrl/Cmd + K`) và các liên kết con tiếp tục chỉ hiển thị đích người dùng được phép truy cập.
 - Bố cục thích ứng từ màn hình rộng đến điện thoại; có focus-visible, tương phản cao tùy hệ điều hành và chế độ giảm chuyển động.
 - Toàn bộ hiệu ứng thị giác dùng CSS/SVG nội bộ, không phụ thuộc CDN hình ảnh hoặc font bên ngoài; dynamic branding vẫn được giữ nguyên.
 
-Chi tiết thiết kế và phạm vi thay đổi: `docs/UI_UX_REDESIGN_0.9.0.md`.
+Chi tiết thiết kế, migration và ảnh render: `docs/SOFT_SPECTRUM_0.14.0.md`. Tài liệu 0.13 trở về trước được giữ như lịch sử migration.
 
 ## Mô hình tài khoản và quyền
 
 - Account type chỉ gồm `SYSTEM_ADMIN` và `USER`.
-- `ADMIN`, `INSTRUCTOR`, `LEARNER` là ba role mặc định; Admin có thể tạo role tùy chỉnh.
-- Một tài khoản có thể nhận nhiều role/quyền đồng thời.
-- Quyền có hiệu lực theo `SYSTEM`, chi nhánh, phòng ban, nhóm, khóa học, lớp hoặc kỳ thi.
-- `DENY` ưu tiên hơn `ALLOW`; Gateway và service đều kiểm tra quyền.
+- Gói quyền không phải loại tài khoản; một USER có thể nhận nhiều gói theo công việc và nhiều permission riêng lẻ.
+- Quyền có hiệu lực theo `SYSTEM`, chi nhánh, phòng ban, nhóm, khóa học hoặc kỳ thi; permission không tương thích sẽ bị loại khỏi gói ở phạm vi đó.
+- `DENY` ưu tiên hơn `ALLOW`; quyền toàn hệ thống và quyền theo tài nguyên được phân biệt trong token và tại service.
 - Không có đăng ký công khai; quản trị viên tạo tài khoản đơn lẻ hoặc hàng loạt.
 - Tài khoản quản trị bootstrap được bảo vệ và luôn có đường đăng nhập local dự phòng.
 
@@ -74,7 +90,7 @@ Chi tiết thiết kế và phạm vi thay đổi: `docs/UI_UX_REDESIGN_0.9.0.md
 ### License, vận hành và tùy biến
 
 - License offline ký Ed25519, machine/org binding, giới hạn active user, feature entitlement, grace period và read-only mode.
-- Branding động: tên, giới thiệu, logo, favicon, màu sắc, ảnh nền và tên miền.
+- Branding động: tên, giới thiệu, logo, favicon, màu sắc, ảnh nền, tên miền và 10 theme có thể đổi tại runtime.
 - Registry dịch vụ ngoài có secret mã hóa, enable/disable, health/probe và timeout.
 - Health dashboard, Prometheus/Grafana profile, correlation ID và service inventory.
 - Backup/restore scripts; operation schedule; host agent có claim token, heartbeat, lease và command allowlist.
@@ -110,7 +126,7 @@ Sau đó mở `http://localhost:3000`. Mật khẩu demo nằm trong `.env`, bi�
 ./scripts/preflight.sh
 ```
 
-Bản 0.9.0 đạt **104/104** static/contract/UI regression tests, semantic TypeScript typecheck trên 65 file, Next.js production build và `npm audit` 0 vulnerability. Backend Gradle và Docker E2E chưa chạy được vì host chỉ có Java 17, không tải được Gradle distribution và không có Docker Engine. Xem `DELIVERY_STATUS.md`, `docs/UI_UX_REDESIGN_0.9.0.md`, `docs/BUILD_VERIFICATION_0.9.0.md`, `docs/AUDIT_0.8.2.md` và `docs/BA_CLS_TRACEABILITY_0.8.2.md`.
+Bản 0.15.0 đạt **127/127** static/contract/UI regression tests và toàn bộ 62 tệp TypeScript/TSX được TypeScript compiler parse không có lỗi cú pháp. `platform-contracts` mới đã được biên dịch riêng bằng Kotlin compiler. Môi trường đóng gói không tải được một dependency npm từ registry nội bộ và không tải được Gradle distribution, nên chưa thể xác nhận lại Next production build hay toàn bộ backend compile cho thay đổi 0.15. Docker E2E cũng chưa chạy. Xem `TEST_RESULTS_CLS_0.15.0.md`, `DELIVERY_STATUS.md` và `docs/PERMISSION_FIRST_0.15.0.md`.
 
 ## Cấu trúc
 

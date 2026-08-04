@@ -18,12 +18,15 @@ export function PageHeader({
   actions?: React.ReactNode;
 }) {
   return (
-    <header className="page-header celestial-page-header">
-      <div className="page-header-map" aria-hidden="true">
+    <header className="page-header cosmic-page-header">
+      <div className="page-header-orbit" aria-hidden="true">
         <i />
         <i />
-        <i />
-        <span>✦</span>
+        <span />
+      </div>
+      <div className="page-header-index" aria-hidden="true">
+        <span>LP</span>
+        <b>↗</b>
       </div>
       <div className="page-heading">
         {backHref ? (
@@ -36,23 +39,24 @@ export function PageHeader({
           </Link>
         ) : icon ? (
           <span className="page-heading-icon">
-            <Icon name={icon} />
-            <i aria-hidden="true" />
+            <Icon name={icon} size={28} />
           </span>
         ) : null}
         <div className="page-heading-copy">
-          {eyebrow && (
-            <span className="section-eyebrow">
-              <i /> {eyebrow} <b />
-            </span>
-          )}
+          {eyebrow && <span className="section-eyebrow">{eyebrow}</span>}
           <h1>{title}</h1>
           {description && <p>{description}</p>}
-          <div className="page-coordinate" aria-hidden="true">
-            <span>CLS · KNOWLEDGE REALM</span>
-            <i />
+          <div className="header-tags" aria-hidden="true">
+            <span>DỮ LIỆU TRỰC TIẾP</span>
+            <span>ĐÚNG PHẠM VI</span>
+            <span>BẢO MẬT NỘI BỘ</span>
           </div>
         </div>
+      </div>
+      <div className="page-header-sculpture" aria-hidden="true">
+        <span />
+        <i />
+        <b />
       </div>
       {actions && <div className="page-actions">{actions}</div>}
     </header>

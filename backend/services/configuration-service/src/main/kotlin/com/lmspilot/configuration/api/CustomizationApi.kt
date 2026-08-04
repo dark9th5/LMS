@@ -36,6 +36,7 @@ import javax.crypto.spec.SecretKeySpec
 
 private const val DEFAULT_PROFILE = "default"
 private const val COLOR_PATTERN = "^#[0-9A-Fa-f]{6}([0-9A-Fa-f]{2})?$"
+private const val THEME_PATTERN = "^(soft-spectrum|executive-midnight|heritage-academy|bright-school|civic-trust|creative-pop|nature-learning|editorial-burgundy|minimal-calm|digital-grid)$"
 
 data class BrandingRequest(
     @field:NotBlank @field:Size(max = 240) val systemName: String,
@@ -43,6 +44,7 @@ data class BrandingRequest(
     val logoFileId: UUID? = null,
     val faviconFileId: UUID? = null,
     val backgroundFileId: UUID? = null,
+    @field:Pattern(regexp = THEME_PATTERN) val themeKey: String = "soft-spectrum",
     @field:Pattern(regexp = COLOR_PATTERN) val primaryColor: String,
     @field:Pattern(regexp = COLOR_PATTERN) val secondaryColor: String,
     @field:Pattern(regexp = COLOR_PATTERN) val backgroundColor: String,
@@ -60,6 +62,7 @@ data class BrandingResponse(
     val logoUrl: String?,
     val faviconUrl: String?,
     val backgroundUrl: String?,
+    val themeKey: String,
     val primaryColor: String,
     val secondaryColor: String,
     val backgroundColor: String,
@@ -126,6 +129,7 @@ class BrandingService(private val repository: BrandingProfileRepository) {
         entity.logoFileId = input.logoFileId
         entity.faviconFileId = input.faviconFileId
         entity.backgroundFileId = input.backgroundFileId
+        entity.themeKey = input.themeKey
         entity.primaryColor = input.primaryColor.uppercase()
         entity.secondaryColor = input.secondaryColor.uppercase()
         entity.backgroundColor = input.backgroundColor.uppercase()
@@ -150,6 +154,7 @@ private fun BrandingProfileEntity.response() = BrandingResponse(
     logoUrl = logoFileId?.let { "/public/v1/branding/assets/logo" },
     faviconUrl = faviconFileId?.let { "/public/v1/branding/assets/favicon" },
     backgroundUrl = backgroundFileId?.let { "/public/v1/branding/assets/background" },
+    themeKey = themeKey,
     primaryColor = primaryColor,
     secondaryColor = secondaryColor,
     backgroundColor = backgroundColor,

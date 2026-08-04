@@ -1,44 +1,40 @@
-# Trạng thái triển khai LMSPilot CLS 0.9.0
+# Trạng thái triển khai LMSPilot CLS 0.15.0
 
-Đây là source tree đầy đủ; các thay đổi nằm trực tiếp trong frontend, backend, migrations, scripts, tests và docs.
+Đây là source tree đầy đủ; thay đổi nằm trực tiếp trong frontend, backend, contracts, scripts, tests và docs.
 
-## Đã triển khai trong source
+## Trọng tâm 0.15
 
-- Account model `SYSTEM_ADMIN`/`USER`, protected bootstrap admin, no public registration.
-- Default/custom roles, multi-role, scoped `ALLOW/DENY`, bulk account/grant/revoke.
-- Password policy, forced password change, lockout và session management.
-- Cơ cấu tổ chức nhiều cấp và membership nhiều đơn vị.
-- CSV/XLSX import với mapping/preview/row errors/upsert/atomic-partial/idempotency.
-- License offline: signature, binding, capacity, features, grace và read-only.
-- LDAP bind tùy chọn với local admin fallback.
-- Khóa học/lớp/ghi danh/live session, immutable course version và pinned progress.
-- Learning path nhiều chặng, sequential unlock, assignment theo user/đơn vị và auto-enroll.
-- Learning progress, xAPI LRS, course discussions và competency framework.
-- Assignment submission, scoped grading queue, return-for-revision và server-verified completion.
-- Quiz/course test, standalone exam, competition, leaderboard/reward; exam gắn exact enrollment.
-- Exam autosave/resume/heartbeat/grace, shuffle, objective/manual grading, score strategy, grade history và appeal.
-- AI local/API, JSON Schema, provenance, review/import.
-- File version, DOCX edit session/callback và PDF revision/annotation.
-- Dynamic branding, news sanitizer/attachment ACL và optional external-service/Redis profiles.
-- KPI/reporting read model, scheduled export.
-- Notification template, due reminder scheduler, in-app/email outbox retry/lease/dead state.
-- Certificate templates, issue/revoke/reissue/verification.
-- Audit, operation schedules, backup/restore và allowlisted host agent.
-- Astral Academy V3 có permission-first navigation, Command Atlas, responsive đa dải, high-contrast và reduced motion.
+- Account type chỉ còn `SYSTEM_ADMIN` và `USER`; không có đăng ký công khai.
+- Role được dùng như gói quyền có thể ghép, không còn là loại người dùng.
+- 93 permission có metadata tiếng Việt, risk và allowed scope; 10 gói hệ thống được bootstrap và read-only.
+- Bulk grant có preview, phát hiện trùng, cảnh báo quyền nhạy cảm, thời hạn và lọc permission không phù hợp scope.
+- Có API/UI giải thích nguồn quyền và thu hồi đúng từng assignment.
+- JWT tách `permissions` và `globalPermissions`; API phạm vi SYSTEM kiểm claim toàn cục.
+- Business services không còn access gate dựa trên tên `ADMIN/INSTRUCTOR/LEARNER`.
+- FE điều hướng, quản lý lớp, ghi danh, import và console quyền dùng permission hiệu lực.
 
-## Đã kiểm tra trong môi trường tạo bản
+## Năng lực đã có trong source
 
-- Repository validator: 13 JSON, 28 YAML, 19 service, 18 Flyway service.
-- 104/104 static/contract/UI regression tests.
-- Semantic TypeScript, clean npm ci, Next production build, shell syntax, route/migration/internal-token/secret checks.
-- npm audit: 0 vulnerability.
-- Operations-agent allowlist tests.
-- Archive cuối được giải nén và chạy lại validator/test.
+- Khóa học/lớp/ghi danh, tiến độ ghim version, deadline và lộ trình học tập.
+- Quiz, bài kiểm tra trong khóa, bài thi độc lập, competition, leaderboard và reward.
+- Auto-grade câu khách quan, hàng chờ chấm tự luận, lịch sử điểm và phúc khảo.
+- AI local hoặc OpenAI-compatible API, JSON Schema chung, provenance, review/import.
+- File version, DOCX edit session/callback, PDF revision/annotation.
+- Branding/theme runtime, news, reporting, notification, certificate, license và integrations.
+- Import CSV/XLSX, tổ chức nhiều cấp, LDAP tùy chọn, audit và vận hành.
 
-## Chưa thể xác nhận tại đây
+## Xác minh 0.15
 
-- Full Gradle compile/test do không tải được Gradle distribution/dependency.
-- Docker Compose E2E vì không có Docker Engine.
-- Browser E2E, load test, pentest, restore/update drill và UAT khách hàng.
+- Repository validator: PASS.
+- Python regression: **127 passed, 2 subtests passed**.
+- Permission catalog Kotlin compile: PASS.
+- TypeScript/TSX syntax parse: 62 tệp, 0 lỗi.
+- Shell syntax và role-gate scans: PASS.
 
-Chi tiết: `../UI_UX_REDESIGN_0.9.0.md`, `../BUILD_VERIFICATION_0.9.0.md`, `../AUDIT_0.8.2.md`, `../BA_CLS_TRACEABILITY_0.8.2.md` và root `DELIVERY_STATUS.md`.
+## Chưa xác minh tại đây
+
+- Full semantic TypeScript/Next build do registry dependency 404.
+- Full Gradle build/test do distribution/dependency không tải được.
+- Docker integration, browser E2E thật, load/security/restore drill và UAT.
+
+Chi tiết: `../PERMISSION_FIRST_0.15.0.md`, `../../TEST_RESULTS_CLS_0.15.0.md`, `../SOFT_SPECTRUM_0.14.0.md` (lịch sử giao diện) và root `DELIVERY_STATUS.md`.

@@ -162,7 +162,9 @@ class OrganizationMembershipService(
             candidates.any { scopedAuthorization.allowed(Permissions.ORGANIZATION_MANAGE, it, unit.id) }
     }
 
-    private fun isGlobal(permission: String): Boolean = CurrentUser.isSystemAdmin() || "ADMIN" in CurrentUser.roles() ||
+    private fun isGlobal(permission: String): Boolean = CurrentUser.isSystemAdmin() ||
+        permission in CurrentUser.authorities() ||
+        Permissions.ORGANIZATION_MANAGE in CurrentUser.authorities() ||
         scopedAuthorization.allowed(permission, "SYSTEM", null) ||
         scopedAuthorization.allowed(Permissions.ORGANIZATION_MANAGE, "SYSTEM", null)
 }

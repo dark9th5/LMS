@@ -361,30 +361,32 @@ export function Dashboard({ user }: { user: PortalUser }) {
         {
           href: "/grading",
           icon: "grade" as IconName,
-          label: "Mở điện chấm",
+          label: "Chấm điểm",
           hint: "Xử lý hàng chờ đánh giá",
         },
       ];
 
   return (
     <>
-      <section className="welcome command-welcome">
-        <div className="welcome-star-map" aria-hidden="true">
+      <section className="welcome cosmic-dashboard-hero">
+        <div className="dashboard-starfield" aria-hidden="true">
           <i />
           <i />
           <i />
           <i />
-          <span>✦</span>
+          <span>✧</span>
         </div>
         <div className="welcome-copy">
           <div className="welcome-coordinate">
-            <span>REALM COMMAND / {isStudent ? "LEARNER" : "OPERATIONS"}</span>
-            <b>LIVE</b>
+            <span>
+              LEARNING MANAGEMENT / {isStudent ? "MY LEARNING" : "OPERATIONS"}
+            </span>
+            <b>ACTIVE</b>
           </div>
-          <span className="eyebrow">TRUNG TÂM ĐIỀU HÀNH ĐÀO TẠO</span>
+          <span className="eyebrow">TRUNG TÂM HỌC TẬP</span>
           <h1>
-            Chào {user.fullName}
-            <em>— mọi tín hiệu tri thức đã hội tụ.</em>
+            Chào, {user.fullName}
+            <em>— sẵn sàng cho hôm nay.</em>
           </h1>
           <p>
             {isStudent
@@ -411,7 +413,7 @@ export function Dashboard({ user }: { user: PortalUser }) {
             </span>
             <span>
               <i />
-              Phân quyền theo phạm vi
+              Công việc đúng theo quyền
             </span>
             <span>
               <i />
@@ -420,18 +422,18 @@ export function Dashboard({ user }: { user: PortalUser }) {
           </div>
         </div>
         <div
-          className="welcome-orbit-wrap"
+          className="dashboard-progress-art"
           aria-label={`Tiến độ trung bình ${Math.round(metrics.average)}%`}
         >
-          <div className="orbit-notations" aria-hidden="true">
-            <span>α</span>
-            <span>07</span>
-            <span>∞</span>
+          <div className="progress-coordinates" aria-hidden="true">
+            <span>SYNC</span>
+            <span>68°</span>
+            <span>LIVE</span>
           </div>
           <div
-            className="welcome-orbit"
+            className="progress-disc"
             style={{
-              background: `conic-gradient(#72ead6 0 ${Math.round(metrics.average)}%,rgba(255,255,255,.07) ${Math.round(metrics.average)}% 100%)`,
+              background: `conic-gradient(var(--progress-accent, #72ead6) 0 ${Math.round(metrics.average)}%,var(--progress-track, rgba(255,255,255,.07)) ${Math.round(metrics.average)}% 100%)`,
             }}
           >
             <div>
@@ -443,11 +445,11 @@ export function Dashboard({ user }: { user: PortalUser }) {
               <span>trung bình</span>
             </div>
           </div>
-          <i className="orbit-ring ring-a" />
-          <i className="orbit-ring ring-b" />
-          <i className="orbit-ring ring-c" />
+          <i className="progress-loop ring-a" />
+          <i className="progress-loop ring-b" />
+          <i className="progress-loop ring-c" />
         </div>
-        <aside className="welcome-telemetry">
+        <aside className="hero-metrics">
           <span>
             <small>Ghi danh</small>
             <strong>{totalRows}</strong>
@@ -476,8 +478,8 @@ export function Dashboard({ user }: { user: PortalUser }) {
       )}
       <div className="dashboard-section-heading">
         <div>
-          <span>01 · TÍN HIỆU CỐT LÕI</span>
-          <h2>Nhịp vận hành hôm nay</h2>
+          <span>01 · DỮ LIỆU TỔNG HỢP</span>
+          <h2>Trạng thái đào tạo hôm nay</h2>
         </div>
         <p>Số liệu tổng hợp theo quyền truy cập hiện tại</p>
       </div>
@@ -489,8 +491,8 @@ export function Dashboard({ user }: { user: PortalUser }) {
 
       <section className="dashboard-route-deck">
         <div className="route-deck-copy">
-          <span>02 · LỐI ĐI ƯU TIÊN</span>
-          <h2>Mở nhanh không gian làm việc</h2>
+          <span>02 · MÔ-ĐUN ƯU TIÊN</span>
+          <h2>Truy cập nhanh công việc</h2>
           <p>
             Những tác vụ được dùng nhiều nhất, đặt ngay tại trung tâm điều hành.
           </p>
@@ -514,8 +516,8 @@ export function Dashboard({ user }: { user: PortalUser }) {
 
       <div className="dashboard-section-heading">
         <div>
-          <span>03 · TINH ĐỒ DỮ LIỆU</span>
-          <h2>Diễn biến học tập</h2>
+          <span>03 · DỮ LIỆU ĐÀO TẠO</span>
+          <h2>Biến thiên học tập</h2>
         </div>
         <p>Cập nhật từ Learning và Reporting Service</p>
       </div>
@@ -716,7 +718,7 @@ function Kpi({
         <i />
       </div>
       <div className="kpi-copy">
-        <small>REALM METRIC</small>
+        <small>LIVE METRIC</small>
         <strong>{loading ? "…" : value}</strong>
         <span>{label}</span>
         <em className={warning ? "warning" : ""}>

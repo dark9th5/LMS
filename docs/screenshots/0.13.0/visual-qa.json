@@ -1,0 +1,29 @@
+{
+  "screenshots": [
+    "01-login-desktop.png",
+    "02-dashboard-desktop.png",
+    "02b-dashboard-full.png",
+    "03-courses-desktop.png",
+    "03b-courses-full.png",
+    "04-classes-desktop.png",
+    "05-exams-desktop.png",
+    "06-learning-desktop.png",
+    "07-learning-mobile.png",
+    "07b-learning-mobile-full.png",
+    "08-login-mobile-full.png",
+    "09-theme-studio-desktop.png",
+    "09b-theme-studio-full.png",
+    "10-theme-01-enterprise-blue.png",
+    "10-theme-02-executive-midnight.png",
+    "10-theme-03-heritage-academy.png",
+    "10-theme-04-bright-school.png",
+    "10-theme-05-civic-trust.png",
+    "10-theme-06-creative-pop.png",
+    "10-theme-07-nature-learning.png",
+    "10-theme-08-editorial-burgundy.png",
+    "10-theme-09-minimal-calm.png",
+    "10-theme-10-digital-grid.png"
+  ],
+  "pageErrors": [],
+  "serverErrors": ""
+}

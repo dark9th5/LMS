@@ -489,7 +489,7 @@ class CourseManagementService(
 
     private fun canManageCourses() = CurrentUser.authorities().any { it in courseManagementPermissions }
 
-    private fun isGlobalAdministrator() = CurrentUser.isSystemAdmin() || "ADMIN" in CurrentUser.roles()
+    private fun isGlobalAdministrator() = CurrentUser.isSystemAdmin()
 
     private fun requireCategoryPermission() {
         val allowed = isGlobalAdministrator() || Permissions.COURSE_CATEGORIES_MANAGE in CurrentUser.authorities() || scopedAuthorization.allowed(Permissions.COURSE_CATEGORIES_MANAGE, "SYSTEM", null)
@@ -497,7 +497,9 @@ class CourseManagementService(
     }
 
     private fun requireCourseCreationPermission() {
-        val allowed = isGlobalAdministrator() || "INSTRUCTOR" in CurrentUser.roles() ||
+        val allowed = isGlobalAdministrator() ||
+            Permissions.COURSES_CREATE in CurrentUser.authorities() ||
+            Permissions.COURSES_WRITE in CurrentUser.authorities() ||
             scopedAuthorization.allowed(Permissions.COURSES_CREATE, "SYSTEM", null) ||
             scopedAuthorization.allowed(Permissions.COURSES_WRITE, "SYSTEM", null)
         if (!allowed) {

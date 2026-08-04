@@ -126,7 +126,8 @@ class KpiReportingService(
     }
 
     private fun validateScope(scope: ReportScope) {
-        if (scope == ReportScope.SYSTEM && !CurrentUser.isSystemAdmin() && "ADMIN" !in CurrentUser.roles()) {
+        if (scope == ReportScope.SYSTEM && !CurrentUser.isSystemAdmin() &&
+            Permissions.REPORTS_KPI_READ !in CurrentUser.globalAuthorities() && Permissions.REPORTS_READ_SCOPE !in CurrentUser.globalAuthorities()) {
             throw ApiException(HttpStatus.FORBIDDEN, "REPORT_SCOPE_DENIED", "Chỉ quản trị hệ thống được xem KPI toàn hệ thống")
         }
         if (scope == ReportScope.ASSIGNED && Permissions.REPORTS_KPI_READ !in CurrentUser.authorities() && Permissions.REPORTS_READ_SCOPE !in CurrentUser.authorities() && Permissions.REPORTS_READ !in CurrentUser.authorities()) {

@@ -1,6 +1,9 @@
 package com.lmspilot.identity.api
 
-import com.lmspilot.contracts.DefaultRolePermissions
+import com.lmspilot.contracts.AccessProfileDefinition
+import com.lmspilot.contracts.DefaultAccessProfiles
+import com.lmspilot.contracts.PermissionCatalog
+import com.lmspilot.contracts.PermissionDefinition
 import com.lmspilot.contracts.Permissions
 import com.lmspilot.identity.service.AuthorizationService
 import org.springframework.security.access.prepost.PreAuthorize
@@ -10,12 +13,14 @@ import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
-import java.lang.reflect.Modifier
 import java.util.UUID
 
 data class PermissionCatalogResponse(
     val permissions: List<String>,
     val groups: Map<String, List<String>>,
+    val definitions: List<PermissionDefinition>,
+    val profiles: List<AccessProfileDefinition>,
+    /** Compatibility field for older clients. New UI uses profiles. */
     val defaultRoles: Map<String, Set<String>>,
 )
 
@@ -25,19 +30,16 @@ class AuthorizationCatalogController(private val authorization: AuthorizationSer
     @GetMapping("/catalog")
     @PreAuthorize("hasAnyAuthority('${Permissions.ROLES_READ}','${Permissions.AUTHORIZATION_GRANT}','${Permissions.USERS_READ}')")
     fun catalog(): PermissionCatalogResponse {
-        val permissions = Permissions::class.java.declaredFields
-            .filter { Modifier.isStatic(it.modifiers) }
-            .mapNotNull { runCatching { it.get(null) as? String }.getOrNull() }
-            .distinct()
-            .sorted()
+        val definitions = PermissionCatalog.all()
+        val permissions = definitions.map { it.code }
         return PermissionCatalogResponse(
             permissions = permissions,
-            groups = permissions.groupBy { it.substringBefore(':') }.toSortedMap(),
-            defaultRoles = mapOf(
-                "ADMIN" to DefaultRolePermissions.ADMIN,
-                "INSTRUCTOR" to DefaultRolePermissions.INSTRUCTOR,
-                "LEARNER" to DefaultRolePermissions.LEARNER,
-            ),
+            groups = definitions.groupBy { it.group }
+                .mapValues { (_, items) -> items.map { it.code } }
+                .toSortedMap(),
+            definitions = definitions,
+            profiles = DefaultAccessProfiles.profiles,
+            defaultRoles = DefaultAccessProfiles.profiles.associate { it.code to it.permissions },
         )
     }
 

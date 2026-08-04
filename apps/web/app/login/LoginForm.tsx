@@ -55,58 +55,47 @@ export function LoginForm({
   }
 
   return (
-    <div className="login-card mystic-login-card">
-      <div className="login-card-ornament" aria-hidden="true">
+    <div className="cosmic-login-card">
+      <div className="login-card-colorbar" aria-hidden="true">
         <i />
-        <span>✦</span>
+        <i />
+        <i />
         <i />
       </div>
-      <header className="login-card-head">
-        <div className="login-seal" aria-hidden="true">
-          <span>L</span>
-          <i />
-        </div>
-        <div>
-          <span className="login-kicker">CỔNG VÀO HỌC VIỆN</span>
-          <small>IDENTITY GATEWAY · SECURE</small>
-        </div>
+      <header>
+        <span className="access-chip">MEMBER ACCESS</span>
+        <span className="access-lock" aria-hidden="true">
+          ●
+        </span>
       </header>
       <h2>
-        Đánh thức hành trình <em>tri thức</em>
+        Chào mừng
+        <br />
+        trở lại.
       </h2>
-      <p>
-        Danh tính của bạn là chìa khóa mở đúng không gian, dữ liệu và quyền hạn.
-      </p>
+      <p>Đăng nhập để tiếp tục đúng công việc, khóa học và dữ liệu của bạn.</p>
       <form onSubmit={submit}>
         <label>
-          <span className="field-title">
-            <b>Tên đăng nhập</b>
-            <small>ACCOUNT ID</small>
+          <span>
+            <b>01</b> Tên đăng nhập
           </span>
-          <span className="mystic-input">
-            <span className="input-sigil" aria-hidden="true">
-              ✦
-            </span>
+          <span className="cosmic-input">
             <input
               value={username}
               onChange={(event) => setUsername(event.target.value)}
               autoComplete="username"
               required
               autoFocus
-              placeholder="Nhập tên đăng nhập"
+              placeholder="VD: nguyenvana"
             />
-            <i aria-hidden="true" />
+            <i>@</i>
           </span>
         </label>
         <label>
-          <span className="field-title">
-            <b>Mật khẩu</b>
-            <small>SECURITY KEY</small>
+          <span>
+            <b>02</b> Mật khẩu
           </span>
-          <span className="mystic-input">
-            <span className="input-sigil" aria-hidden="true">
-              ◆
-            </span>
+          <span className="cosmic-input">
             <input
               value={password}
               onChange={(event) => setPassword(event.target.value)}
@@ -123,7 +112,6 @@ export function LoginForm({
             >
               {showPassword ? "Ẩn" : "Hiện"}
             </button>
-            <i aria-hidden="true" />
           </span>
         </label>
         {error && (
@@ -131,44 +119,24 @@ export function LoginForm({
             {error}
           </div>
         )}
-        <button className="login-button portal-button" disabled={loading}>
-          {loading ? (
-            <>
-              <span className="spinner" />
-              Đang xác thực danh tính...
-            </>
-          ) : (
-            <>
-              <span>
-                <small>ENTER THE REALM</small>Tiến vào học viện
-              </span>
-              <b aria-hidden="true">→</b>
-            </>
-          )}
+        <button className="cosmic-login-button" disabled={loading}>
+          <span>{loading ? "Đang xác thực..." : "Vào không gian học tập"}</span>
+          <b aria-hidden="true">↗</b>
         </button>
       </form>
-      <div className="login-trust-grid">
+      <div className="login-security-row">
         <span>
-          <i>✓</i>
-          <b>Kết nối nội bộ</b>
-          <small>Không chuyển dữ liệu ra ngoài</small>
+          <i>✓</i> Phiên được ký
         </span>
         <span>
-          <i>✓</i>
-          <b>Phân quyền động</b>
-          <small>Chỉ mở đúng phạm vi</small>
+          <i>✓</i> Quyền động
         </span>
-      </div>
-      <div className="secure-note">
-        <span>✧</span>
-        <div>
-          <b>Phiên đăng nhập được bảo vệ</b>
-          <small>Dữ liệu nằm trong hạ tầng của tổ chức</small>
-        </div>
-        <i>ENCRYPTED</i>
+        <span>
+          <i>✓</i> Fail-closed
+        </span>
       </div>
       {demoEnabled && (
-        <details>
+        <details className="demo-access">
           <summary>Tài khoản trình diễn</summary>
           <code>admin · instructor · learner</code>
           <code>Mật khẩu: {demoPassword || "được cấu hình trong .env"}</code>

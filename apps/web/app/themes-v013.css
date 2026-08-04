@@ -1,0 +1,677 @@
+/* LMSPilot Theme Studio · 0.13.0
+   Ten distinct design personalities for businesses, schools and institutions. */
+
+html[data-theme="enterprise-blue"] {
+  color-scheme: light;
+  --preset-page: #f3f6fb;
+  --preset-surface: #ffffff;
+  --preset-surface-raised: #e8eef8;
+  --preset-sidebar: #102a56;
+  --preset-primary: #2563eb;
+  --preset-secondary: #0f766e;
+  --preset-text: #172033;
+  --preset-muted: #687386;
+  --preset-sidebar-text: #f4f7ff;
+  --preset-success: #16845b;
+  --preset-warning: #a66513;
+  --preset-danger: #bf4050;
+  --preset-radius: 14px;
+  --preset-control-radius: 9px;
+  --preset-grid-size: 64px;
+  --preset-display-font: "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
+  --preset-shadow: 0 18px 45px rgba(31, 54, 96, 0.11);
+  --preset-ambient-one: #3976df;
+  --preset-ambient-two: #2f8e82;
+}
+
+html[data-theme="executive-midnight"] {
+  color-scheme: dark;
+  --preset-page: #0c1018;
+  --preset-surface: #151b26;
+  --preset-surface-raised: #202938;
+  --preset-sidebar: #070a10;
+  --preset-primary: #d2b478;
+  --preset-secondary: #6f8ef6;
+  --preset-text: #f7f4ed;
+  --preset-muted: #9ca5b5;
+  --preset-sidebar-text: #f7f4ed;
+  --preset-success: #67c39a;
+  --preset-warning: #d2b478;
+  --preset-danger: #e17e86;
+  --preset-radius: 10px;
+  --preset-control-radius: 7px;
+  --preset-grid-size: 86px;
+  --preset-display-font: Georgia, "Times New Roman", serif;
+  --preset-shadow: 0 26px 70px rgba(0, 0, 0, 0.42);
+  --preset-ambient-one: #6f8ef6;
+  --preset-ambient-two: #b48c4a;
+}
+
+html[data-theme="heritage-academy"] {
+  color-scheme: light;
+  --preset-page: #f3ebdd;
+  --preset-surface: #fffdf8;
+  --preset-surface-raised: #e9ddc9;
+  --preset-sidebar: #38231f;
+  --preset-primary: #7a1f3d;
+  --preset-secondary: #a47a3c;
+  --preset-text: #2d241f;
+  --preset-muted: #75685d;
+  --preset-sidebar-text: #fff7e9;
+  --preset-success: #467454;
+  --preset-warning: #9a671f;
+  --preset-danger: #a63e48;
+  --preset-radius: 5px;
+  --preset-control-radius: 4px;
+  --preset-grid-size: 72px;
+  --preset-display-font: Georgia, "Times New Roman", serif;
+  --preset-shadow: 0 16px 38px rgba(80, 54, 34, 0.12);
+  --preset-ambient-one: #9c274e;
+  --preset-ambient-two: #b48b4d;
+}
+
+html[data-theme="bright-school"] {
+  color-scheme: light;
+  --preset-page: #fff8ea;
+  --preset-surface: #ffffff;
+  --preset-surface-raised: #fff0c8;
+  --preset-sidebar: #3344a0;
+  --preset-primary: #f05252;
+  --preset-secondary: #3867d6;
+  --preset-text: #24304a;
+  --preset-muted: #6d7482;
+  --preset-sidebar-text: #ffffff;
+  --preset-success: #2d9b66;
+  --preset-warning: #c77d12;
+  --preset-danger: #d63b4a;
+  --preset-radius: 24px;
+  --preset-control-radius: 15px;
+  --preset-grid-size: 44px;
+  --preset-display-font: "Arial Rounded MT Bold", "Arial Black", Arial, sans-serif;
+  --preset-shadow: 0 14px 0 rgba(56, 103, 214, 0.09);
+  --preset-ambient-one: #ffb43a;
+  --preset-ambient-two: #7767e8;
+}
+
+html[data-theme="civic-trust"] {
+  color-scheme: light;
+  --preset-page: #eef4f5;
+  --preset-surface: #ffffff;
+  --preset-surface-raised: #dce9eb;
+  --preset-sidebar: #153c4a;
+  --preset-primary: #0b6e99;
+  --preset-secondary: #2f7d62;
+  --preset-text: #17313a;
+  --preset-muted: #677d84;
+  --preset-sidebar-text: #effbff;
+  --preset-success: #267958;
+  --preset-warning: #a76b1d;
+  --preset-danger: #ad4350;
+  --preset-radius: 8px;
+  --preset-control-radius: 5px;
+  --preset-grid-size: 56px;
+  --preset-display-font: "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
+  --preset-shadow: 0 12px 28px rgba(32, 71, 80, 0.1);
+  --preset-ambient-one: #1b7da5;
+  --preset-ambient-two: #3b8a70;
+}
+
+html[data-theme="creative-pop"] {
+  color-scheme: light;
+  --preset-page: #fbf7ff;
+  --preset-surface: #ffffff;
+  --preset-surface-raised: #f0e7ff;
+  --preset-sidebar: #25164a;
+  --preset-primary: #7138d0;
+  --preset-secondary: #e5488f;
+  --preset-text: #241a35;
+  --preset-muted: #746c80;
+  --preset-sidebar-text: #fff7ff;
+  --preset-success: #278461;
+  --preset-warning: #b86f17;
+  --preset-danger: #c93463;
+  --preset-radius: 18px;
+  --preset-control-radius: 10px;
+  --preset-grid-size: 40px;
+  --preset-display-font: "Arial Black", "Segoe UI Variable", sans-serif;
+  --preset-shadow: 8px 10px 0 rgba(113, 56, 208, 0.12);
+  --preset-ambient-one: #a765ff;
+  --preset-ambient-two: #ff70ad;
+}
+
+html[data-theme="nature-learning"] {
+  color-scheme: light;
+  --preset-page: #f2f4e9;
+  --preset-surface: #fcfff9;
+  --preset-surface-raised: #e2ead7;
+  --preset-sidebar: #233d2b;
+  --preset-primary: #397a52;
+  --preset-secondary: #b86f35;
+  --preset-text: #243528;
+  --preset-muted: #6e796f;
+  --preset-sidebar-text: #f4f8ef;
+  --preset-success: #397a52;
+  --preset-warning: #9a681e;
+  --preset-danger: #ad4c4c;
+  --preset-radius: 28px;
+  --preset-control-radius: 16px;
+  --preset-grid-size: 76px;
+  --preset-display-font: Georgia, "Segoe UI Variable", serif;
+  --preset-shadow: 0 20px 48px rgba(52, 78, 48, 0.12);
+  --preset-ambient-one: #6d9e68;
+  --preset-ambient-two: #c88b57;
+}
+
+html[data-theme="editorial-burgundy"] {
+  color-scheme: light;
+  --preset-page: #f6f1ec;
+  --preset-surface: #fffbf8;
+  --preset-surface-raised: #eee2da;
+  --preset-sidebar: #32151f;
+  --preset-primary: #9a2454;
+  --preset-secondary: #c56b24;
+  --preset-text: #2b2024;
+  --preset-muted: #776a70;
+  --preset-sidebar-text: #fff6f8;
+  --preset-success: #47775b;
+  --preset-warning: #a86118;
+  --preset-danger: #a9354a;
+  --preset-radius: 0px;
+  --preset-control-radius: 2px;
+  --preset-grid-size: 92px;
+  --preset-display-font: Georgia, "Times New Roman", serif;
+  --preset-shadow: 0 18px 38px rgba(67, 34, 46, 0.09);
+  --preset-ambient-one: #b33a6a;
+  --preset-ambient-two: #d68848;
+}
+
+html[data-theme="minimal-calm"] {
+  color-scheme: light;
+  --preset-page: #f5f5f3;
+  --preset-surface: #ffffff;
+  --preset-surface-raised: #e9e9e6;
+  --preset-sidebar: #e7e7e3;
+  --preset-primary: #334155;
+  --preset-secondary: #8b7e74;
+  --preset-text: #1c1d20;
+  --preset-muted: #777a80;
+  --preset-sidebar-text: #202227;
+  --preset-success: #3f7257;
+  --preset-warning: #8d681f;
+  --preset-danger: #a44850;
+  --preset-radius: 8px;
+  --preset-control-radius: 6px;
+  --preset-grid-size: 120px;
+  --preset-display-font: "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
+  --preset-shadow: 0 1px 3px rgba(20, 22, 25, 0.08);
+  --preset-ambient-one: #667085;
+  --preset-ambient-two: #a79f98;
+}
+
+html[data-theme="digital-grid"] {
+  color-scheme: dark;
+  --preset-page: #071011;
+  --preset-surface: #0d1b1d;
+  --preset-surface-raised: #13282a;
+  --preset-sidebar: #04090a;
+  --preset-primary: #22d3b6;
+  --preset-secondary: #60a5fa;
+  --preset-text: #e6fffc;
+  --preset-muted: #83a8a5;
+  --preset-sidebar-text: #e6fffc;
+  --preset-success: #45db9c;
+  --preset-warning: #e0bd5b;
+  --preset-danger: #f17484;
+  --preset-radius: 4px;
+  --preset-control-radius: 3px;
+  --preset-grid-size: 24px;
+  --preset-display-font: "Cascadia Mono", Consolas, monospace;
+  --preset-shadow: 0 0 0 1px rgba(34, 211, 182, 0.12);
+  --preset-ambient-one: #138f7c;
+  --preset-ambient-two: #397ed1;
+}
+
+/* Replace the former space/fantasy scenery with a neutral adaptive canvas. */
+.cosmic-stars,
+.cosmic-nebula,
+.cosmic-horizon,
+.orbital-telemetry,
+.dashboard-starfield,
+.progress-loop,
+.progress-coordinates,
+.page-header-orbit,
+.page-header-sculpture {
+  display: none;
+}
+
+.sculpture-orbit {
+  display: none;
+}
+
+.cosmic-dashboard-hero::before {
+  display: none;
+}
+
+.cosmic-field {
+  position: absolute;
+  background:
+    radial-gradient(
+      circle at 92% 8%,
+      color-mix(in srgb, var(--preset-ambient-one) 10%, transparent),
+      transparent 29%
+    ),
+    linear-gradient(180deg, var(--theme-page), var(--theme-page));
+}
+
+.cosmic-grid {
+  inset: 0;
+  width: auto;
+  height: auto;
+  opacity: 0.08;
+  transform: none;
+  transform-origin: center;
+  mask-image: linear-gradient(to bottom, black, transparent 78%);
+}
+
+.mission-mark b {
+  display: none;
+}
+
+.mission-mark i {
+  inset: 11px;
+  border-radius: calc(var(--preset-control-radius) * 0.65 + 2px);
+  background: linear-gradient(
+    145deg,
+    var(--theme-primary),
+    var(--theme-secondary)
+  );
+}
+
+.mission-mark em {
+  top: 8px;
+  right: 8px;
+}
+
+/* Light-content themes share accessible surface corrections. */
+:is(
+  html[data-theme="enterprise-blue"],
+  html[data-theme="heritage-academy"],
+  html[data-theme="bright-school"],
+  html[data-theme="civic-trust"],
+  html[data-theme="creative-pop"],
+  html[data-theme="nature-learning"],
+  html[data-theme="editorial-burgundy"],
+  html[data-theme="minimal-calm"]
+) .cosmic-topbar {
+  box-shadow: 0 7px 24px rgba(30, 45, 65, 0.06);
+}
+
+:is(
+  html[data-theme="enterprise-blue"],
+  html[data-theme="heritage-academy"],
+  html[data-theme="bright-school"],
+  html[data-theme="civic-trust"],
+  html[data-theme="creative-pop"],
+  html[data-theme="nature-learning"],
+  html[data-theme="editorial-burgundy"],
+  html[data-theme="minimal-calm"]
+) .hero-metrics > span {
+  border-color: var(--theme-line);
+  background: color-mix(in srgb, var(--theme-surface-raised) 72%, white);
+  color: var(--theme-text);
+}
+
+:is(
+  html[data-theme="enterprise-blue"],
+  html[data-theme="heritage-academy"],
+  html[data-theme="bright-school"],
+  html[data-theme="civic-trust"],
+  html[data-theme="creative-pop"],
+  html[data-theme="nature-learning"],
+  html[data-theme="editorial-burgundy"],
+  html[data-theme="minimal-calm"]
+) .hero-metrics small {
+  color: var(--theme-muted);
+}
+
+:is(
+  html[data-theme="enterprise-blue"],
+  html[data-theme="heritage-academy"],
+  html[data-theme="bright-school"],
+  html[data-theme="civic-trust"],
+  html[data-theme="creative-pop"],
+  html[data-theme="nature-learning"],
+  html[data-theme="editorial-burgundy"],
+  html[data-theme="minimal-calm"]
+) .hero-metrics .danger {
+  background: color-mix(in srgb, var(--preset-danger) 12%, white);
+}
+
+/* Compact two-level sidebar accordion. */
+.cosmic-nav {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+}
+
+.nav-group + .nav-group {
+  margin-top: 0;
+}
+
+.nav-group-toggle {
+  display: grid;
+  width: 100%;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid color-mix(in srgb, var(--theme-primary) 14%, transparent);
+  border-radius: var(--preset-control-radius);
+  padding: 10px;
+  background: color-mix(in srgb, var(--preset-sidebar) 89%, white 4%);
+  color: color-mix(in srgb, var(--preset-sidebar-text) 80%, transparent);
+  text-align: left;
+  transition: 160ms ease;
+}
+
+.nav-group-toggle:hover,
+.nav-group.expanded .nav-group-toggle {
+  border-color: color-mix(in srgb, var(--theme-primary) 34%, transparent);
+  background: color-mix(in srgb, var(--preset-sidebar) 82%, var(--theme-primary));
+  color: var(--preset-sidebar-text);
+}
+
+.nav-group-main-icon {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border-radius: calc(var(--preset-control-radius) * 0.8);
+  background: color-mix(in srgb, var(--theme-primary) 13%, transparent);
+  color: var(--theme-primary);
+}
+
+.nav-group-copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+}
+
+.nav-group-copy strong {
+  overflow: hidden;
+  font-size: 11.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nav-group-copy small {
+  overflow: hidden;
+  margin-top: 2px;
+  color: color-mix(in srgb, var(--preset-sidebar-text) 46%, transparent);
+  font-size: 8.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nav-group-count {
+  display: grid;
+  min-width: 23px;
+  height: 22px;
+  place-items: center;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--theme-primary) 13%, transparent);
+  color: var(--theme-primary);
+  font: 800 9px/1 monospace;
+}
+
+.nav-group-chevron {
+  transition: transform 160ms ease;
+}
+
+.nav-group.expanded .nav-group-chevron {
+  transform: rotate(90deg);
+}
+
+.nav-group-panel {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 180ms ease;
+}
+
+.nav-group.expanded .nav-group-panel {
+  grid-template-rows: 1fr;
+}
+
+.nav-group-items {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.nav-group-items-inner {
+  display: grid;
+  gap: 2px;
+  padding: 6px 0 2px 12px;
+  border-left: 1px solid color-mix(in srgb, var(--theme-primary) 22%, transparent);
+  margin-left: 16px;
+}
+
+.nav-group-items-inner .nav-link {
+  min-height: 43px;
+  margin: 0;
+  padding: 5px 8px;
+}
+
+.nav-group-items-inner .nav-icon {
+  width: 30px;
+  height: 30px;
+}
+
+.nav-group-items-inner .nav-copy small {
+  display: none;
+}
+
+.nav-group-items-inner .nav-copy b {
+  font-size: 10.8px;
+}
+
+/* Enterprise: clean data hierarchy and conservative depth. */
+html[data-theme="enterprise-blue"] .cosmic-dashboard-hero,
+html[data-theme="enterprise-blue"] .cosmic-page-header,
+html[data-theme="enterprise-blue"] .workspace-hero,
+html[data-theme="enterprise-blue"] .advanced-hero {
+  background:
+    linear-gradient(115deg, rgba(37, 99, 235, 0.08), transparent 46%),
+    var(--theme-surface);
+}
+
+/* Executive: premium serif headings with restrained gold rules. */
+html[data-theme="executive-midnight"] h1,
+html[data-theme="executive-midnight"] h2,
+html[data-theme="executive-midnight"] .page-heading h1 {
+  font-family: Georgia, "Times New Roman", serif;
+  font-weight: 600;
+  letter-spacing: -0.6px;
+}
+
+html[data-theme="executive-midnight"] .panel,
+html[data-theme="executive-midnight"] .kpi,
+html[data-theme="executive-midnight"] .course-card,
+html[data-theme="executive-midnight"] .workspace-panel {
+  border-top-color: color-mix(in srgb, var(--theme-primary) 50%, transparent);
+}
+
+/* Heritage academy: paper, serif typography and double-rule framing. */
+html[data-theme="heritage-academy"] body,
+html[data-theme="heritage-academy"] button,
+html[data-theme="heritage-academy"] input,
+html[data-theme="heritage-academy"] select,
+html[data-theme="heritage-academy"] textarea {
+  font-family: Georgia, "Times New Roman", serif;
+}
+
+html[data-theme="heritage-academy"] .cosmic-dashboard-hero,
+html[data-theme="heritage-academy"] .cosmic-page-header,
+html[data-theme="heritage-academy"] .workspace-hero {
+  border-width: 3px;
+  border-style: double;
+  background:
+    linear-gradient(90deg, rgba(122, 31, 61, 0.05), transparent 35%),
+    var(--theme-surface);
+}
+
+/* Bright school: round, friendly and intentionally playful. */
+html[data-theme="bright-school"] .cosmic-dashboard-hero,
+html[data-theme="bright-school"] .cosmic-page-header {
+  background:
+    radial-gradient(circle at 93% 10%, #ffe078 0 8%, transparent 8.4%),
+    radial-gradient(circle at 84% 28%, #79d7c1 0 6%, transparent 6.4%),
+    linear-gradient(125deg, rgba(240, 82, 82, 0.08), transparent 45%),
+    var(--theme-surface);
+}
+
+html[data-theme="bright-school"] .kpi-grid > .kpi:nth-child(2) {
+  background: #edf4ff;
+}
+
+html[data-theme="bright-school"] .kpi-grid > .kpi:nth-child(3) {
+  background: #fff4d6;
+}
+
+html[data-theme="bright-school"] .kpi-grid > .kpi:nth-child(4) {
+  background: #f8edff;
+}
+
+/* Civic: sturdy low-radius blocks with visible information rules. */
+html[data-theme="civic-trust"] .panel,
+html[data-theme="civic-trust"] .workspace-panel,
+html[data-theme="civic-trust"] .kpi,
+html[data-theme="civic-trust"] .course-card,
+html[data-theme="civic-trust"] .advanced-panel {
+  border-left-width: 3px;
+  box-shadow: none;
+}
+
+/* Creative studio: editorial color blocks and a deliberate offset shadow. */
+html[data-theme="creative-pop"] .cosmic-dashboard-hero,
+html[data-theme="creative-pop"] .cosmic-page-header {
+  background:
+    linear-gradient(135deg, rgba(113, 56, 208, 0.1), transparent 42%),
+    linear-gradient(315deg, rgba(229, 72, 143, 0.09), transparent 40%),
+    var(--theme-surface);
+}
+
+html[data-theme="creative-pop"] .kpi-grid > .kpi:nth-child(2),
+html[data-theme="creative-pop"] .route-deck-links > a:nth-child(2) {
+  border-color: color-mix(in srgb, var(--theme-secondary) 38%, transparent);
+}
+
+/* Nature: soft organic corners and warm secondary accents. */
+html[data-theme="nature-learning"] .cosmic-dashboard-hero,
+html[data-theme="nature-learning"] .cosmic-page-header,
+html[data-theme="nature-learning"] .workspace-hero {
+  /* A uniform surface avoids Chromium compositing gaps on long dashboard captures. */
+  border-radius: 28px;
+  background: var(--theme-surface);
+}
+
+/* Editorial: magazine rules, square cards and typographic hierarchy. */
+html[data-theme="editorial-burgundy"] h1,
+html[data-theme="editorial-burgundy"] h2,
+html[data-theme="editorial-burgundy"] h3 {
+  font-family: Georgia, "Times New Roman", serif;
+}
+
+html[data-theme="editorial-burgundy"] .dashboard-section-heading,
+html[data-theme="editorial-burgundy"] .section-heading {
+  border-top: 2px solid var(--theme-text);
+  border-bottom: 1px solid var(--theme-line-strong);
+  padding: 13px 0;
+}
+
+/* Minimal: no ambient ornament and almost no elevation. */
+html[data-theme="minimal-calm"] .cosmic-field,
+html[data-theme="minimal-calm"] .cosmic-dashboard-hero,
+html[data-theme="minimal-calm"] .cosmic-page-header,
+html[data-theme="minimal-calm"] .workspace-hero,
+html[data-theme="minimal-calm"] .advanced-hero {
+  background: var(--theme-page);
+}
+
+html[data-theme="minimal-calm"] .cosmic-grid {
+  display: none;
+}
+
+html[data-theme="minimal-calm"] .panel,
+html[data-theme="minimal-calm"] .kpi,
+html[data-theme="minimal-calm"] .course-card,
+html[data-theme="minimal-calm"] .workspace-panel,
+html[data-theme="minimal-calm"] .theme-card {
+  box-shadow: none;
+}
+
+/* Digital: mono type, square geometry and visible technical grid. */
+html[data-theme="digital-grid"] body,
+html[data-theme="digital-grid"] button,
+html[data-theme="digital-grid"] input,
+html[data-theme="digital-grid"] select,
+html[data-theme="digital-grid"] textarea {
+  font-family: "Cascadia Mono", Consolas, monospace;
+}
+
+html[data-theme="digital-grid"] .cosmic-grid {
+  display: block;
+  opacity: 0.24;
+  mask-image: none;
+}
+
+html[data-theme="digital-grid"] .cosmic-field {
+  background: var(--theme-page);
+}
+
+/* Studio previews communicate layout personality, not just swatches. */
+.theme-card-visual[data-preview-theme="heritage-academy"],
+.theme-card-visual[data-preview-theme="editorial-burgundy"] {
+  font-family: Georgia, "Times New Roman", serif;
+}
+
+.theme-card-visual[data-preview-theme="bright-school"] {
+  border-radius: 0 0 24px 24px;
+}
+
+.theme-card-visual[data-preview-theme="bright-school"] .theme-preview-hero {
+  border-radius: 22px 9px 22px 9px;
+}
+
+.theme-card-visual[data-preview-theme="editorial-burgundy"] *,
+.theme-card-visual[data-preview-theme="digital-grid"] * {
+  border-radius: 0 !important;
+}
+
+.theme-card-visual[data-preview-theme="minimal-calm"] {
+  background: var(--preview-background);
+}
+
+.theme-card-visual[data-preview-theme="minimal-calm"] .theme-preview-rail {
+  background: color-mix(in srgb, var(--preview-background) 92%, black);
+}
+
+.theme-card-visual[data-preview-theme="digital-grid"] {
+  background-image:
+    linear-gradient(color-mix(in srgb, var(--preview-primary) 13%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--preview-primary) 13%, transparent) 1px, transparent 1px);
+  background-size: 18px 18px;
+  background-color: var(--preview-background);
+}
+
+@media (max-width: 760px) {
+  .nav-group-copy small {
+    display: block;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-group-panel,
+  .nav-group-chevron,
+  .nav-group-toggle {
+    transition: none;
+  }
+}

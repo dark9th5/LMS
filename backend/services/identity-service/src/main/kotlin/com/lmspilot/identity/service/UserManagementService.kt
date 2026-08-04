@@ -132,11 +132,11 @@ class UserManagementService(
             ApiException(HttpStatus.NOT_FOUND, "ROLE_NOT_FOUND", "Không tìm thấy vai trò")
         }
         validatePermissions(input.permissions)
-        if (role.systemRole && role.code == "ADMIN" && !input.permissions.containsAll(DefaultRolePermissions.ADMIN)) {
+        if (role.systemRole && (input.permissions != role.permissions || input.name.trim() != role.name)) {
             throw ApiException(
                 HttpStatus.CONFLICT,
-                "PROTECTED_ROLE",
-                "Không thể thu hồi quyền lõi của vai trò quản trị hệ thống",
+                "PROTECTED_ACCESS_PROFILE",
+                "Gói quyền hệ thống là mẫu chuẩn chỉ đọc. Hãy tạo gói tùy chỉnh nếu cần thay đổi.",
             )
         }
         role.name = input.name.trim()
@@ -188,9 +188,6 @@ class UserManagementService(
         if (input.status != AccountStatus.ACTIVE) {
             throw ApiException(HttpStatus.CONFLICT, "PROTECTED_ACCOUNT", "Không thể khóa tài khoản quản trị gốc")
         }
-        if (input.roleCodes.none { it.equals("ADMIN", ignoreCase = true) }) {
-            throw ApiException(HttpStatus.CONFLICT, "PROTECTED_ACCOUNT", "Tài khoản quản trị gốc phải giữ role ADMIN")
-        }
     }
 
     private fun resolveRoles(codes: Set<String>): MutableSet<RoleEntity> {
@@ -202,10 +199,7 @@ class UserManagementService(
     }
 
     private fun validatePermissions(input: Set<String>) {
-        val known = Permissions::class.java.declaredFields
-            .filter { java.lang.reflect.Modifier.isStatic(it.modifiers) }
-            .mapNotNull { runCatching { it.get(null) as? String }.getOrNull() }
-            .toSet()
+        val known = PermissionCatalog.codes()
         val unknown = input - known
         if (unknown.isNotEmpty()) {
             throw ApiException(HttpStatus.BAD_REQUEST, "UNKNOWN_PERMISSION", "Quyền không hợp lệ: ${unknown.joinToString()}")

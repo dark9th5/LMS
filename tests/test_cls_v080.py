@@ -60,7 +60,8 @@ class ClsV080RequirementTests(unittest.TestCase):
         reminder = text("backend/services/reporting-service/src/main/kotlin/com/lmspilot/reporting/api/ReminderReportingApi.kt")
         self.assertIn("findAllByClassIdIn", reporting)
         self.assertIn("readModels.findAllByClassIdIn(classIds)", kpi)
-        self.assertIn('"ADMIN" !in CurrentUser.roles()', kpi)
+        self.assertIn("!CurrentUser.isSystemAdmin()", kpi)
+        self.assertNotIn("CurrentUser.roles()", kpi)
         self.assertIn("Permissions.REPORTS_KPI_READ !in CurrentUser.authorities()", kpi)
         self.assertIn("REMINDER_WINDOW_INVALID", reminder)
         self.assertIn("HttpStatus.BAD_REQUEST", reminder)
@@ -101,7 +102,7 @@ class ClsV080RequirementTests(unittest.TestCase):
     def test_notification_automation_is_permissioned_audited_and_visible(self) -> None:
         permissions = text("backend/platform-contracts/src/main/kotlin/com/lmspilot/contracts/Permissions.kt")
         api = text("backend/services/notification-service/src/main/kotlin/com/lmspilot/notification/api/NotificationAutomationApi.kt")
-        shell = text("apps/web/components/PortalShell.tsx")
+        shell = text("apps/web/components/CosmicShell.tsx")
         advanced = text("apps/web/components/AdvancedCenters.tsx")
         self.assertIn("NOTIFICATION_TEMPLATES_MANAGE", permissions)
         self.assertIn("NOTIFICATION_REMINDERS_MANAGE", permissions)

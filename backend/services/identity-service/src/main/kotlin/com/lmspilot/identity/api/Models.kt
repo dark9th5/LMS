@@ -132,6 +132,7 @@ data class BulkGrantResponse(
     val operationId: String,
     val permissionGrants: List<GrantResponse>,
     val roleAssignments: List<RoleAssignmentResponse>,
+    val duplicateAssignments: Int = 0,
 )
 
 data class EffectivePermissionResponse(
@@ -174,7 +175,7 @@ data class UserImportMappingRequest(
     val roleCodesColumn: String? = "roles",
     val passwordColumn: String? = "password",
     val statusColumn: String? = "status",
-    val defaultRoleCodes: Set<String> = setOf("LEARNER"),
+    val defaultRoleCodes: Set<String> = setOf("BASIC_USER"),
     @field:Size(max = 128) val defaultPassword: String? = null,
     val mode: UserImportMode = UserImportMode.CREATE_ONLY,
     val failurePolicy: UserImportFailurePolicy = UserImportFailurePolicy.PARTIAL,
@@ -244,4 +245,46 @@ data class UserImportCommitResponse(
     val failed: Int,
     val committed: Boolean,
     val results: List<UserImportRowResult>,
+)
+
+/** Dry-run model used by the permission console before a bulk grant is committed. */
+data class BulkGrantPreviewRequest(
+    @field:Size(min = 1, max = 1000) val userIds: Set<UUID>,
+    @field:Valid @field:Size(min = 1, max = 100) val grants: List<GrantInput>,
+)
+
+data class UserGrantPreview(
+    val userId: UUID,
+    val fullName: String,
+    val addedPermissions: Set<String>,
+    val alreadyAllowed: Set<String>,
+    val deniedPermissions: Set<String>,
+    val excludedByScope: Set<String>,
+)
+
+data class BulkGrantPreviewResponse(
+    val affectedUsers: Int,
+    val assignmentsToCreate: Int,
+    val duplicateAssignments: Int,
+    val criticalPermissions: Set<String>,
+    val users: List<UserGrantPreview>,
+)
+
+data class PermissionSourceResponse(
+    val permissionCode: String,
+    val sourceType: String,
+    val sourceId: UUID?,
+    val sourceLabel: String,
+    val effect: GrantEffect,
+    val scopeType: ScopeType,
+    val scopeId: UUID?,
+    val validFrom: Instant?,
+    val validUntil: Instant?,
+    val active: Boolean,
+    val applicable: Boolean,
+)
+
+data class AuthorizationExplanationResponse(
+    val effective: EffectivePermissionResponse,
+    val sources: List<PermissionSourceResponse>,
 )

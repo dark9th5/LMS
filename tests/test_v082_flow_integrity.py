@@ -130,7 +130,7 @@ class Release082FlowIntegrityTests(unittest.TestCase):
 
     def test_news_html_and_attachments_are_object_scoped(self) -> None:
         news = self.read("backend/services/notification-service/src/main/kotlin/com/lmspilot/notification/api/NewsApi.kt")
-        ui = self.read("apps/web/components/RealmControlCenter.tsx")
+        ui = self.read("apps/web/components/WorkspaceControlCenter.tsx")
         self.assertIn("val canonical = value", news)
         self.assertIn('.replace("&amp;", "&", ignoreCase = true)', news)
         self.assertIn("val escaped = canonical", news)

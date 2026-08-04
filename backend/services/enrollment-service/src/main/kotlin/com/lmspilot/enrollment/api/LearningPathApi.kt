@@ -432,12 +432,12 @@ class LearningPathService(
     private fun path(id: UUID) = paths.findById(id).orElseThrow { ApiException(HttpStatus.NOT_FOUND, "LEARNING_PATH_NOT_FOUND", "Không tìm thấy lộ trình đào tạo") }
 
     private fun requireManager(entity: LearningPathEntity? = null) {
-        if (CurrentUser.isSystemAdmin() || "ADMIN" in CurrentUser.roles() || Permissions.LEARNING_PATHS_MANAGE in CurrentUser.authorities() || entity?.ownerId == CurrentUser.id()) return
+        if (CurrentUser.isSystemAdmin() || Permissions.LEARNING_PATHS_MANAGE in CurrentUser.authorities() || entity?.ownerId == CurrentUser.id()) return
         throw ApiException(HttpStatus.FORBIDDEN, "LEARNING_PATH_SCOPE_DENIED", "Không có quyền quản lý lộ trình đào tạo")
     }
 
     private fun requireAssigner(entity: LearningPathEntity) {
-        if (CurrentUser.isSystemAdmin() || "ADMIN" in CurrentUser.roles() || Permissions.LEARNING_PATHS_ASSIGN in CurrentUser.authorities() || entity.ownerId == CurrentUser.id()) return
+        if (CurrentUser.isSystemAdmin() || Permissions.LEARNING_PATHS_ASSIGN in CurrentUser.authorities() || entity.ownerId == CurrentUser.id()) return
         throw ApiException(HttpStatus.FORBIDDEN, "LEARNING_PATH_ASSIGN_DENIED", "Không có quyền giao lộ trình đào tạo")
     }
 

@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
-import { ChangePasswordForm } from "./ChangePasswordForm";
+import { CosmicField } from "@/components/CosmicField";
 import { getUser } from "@/lib/session";
-import { MysticBackdrop } from "@/components/MysticBackdrop";
+import { ChangePasswordForm } from "./ChangePasswordForm";
 
 export const dynamic = "force-dynamic";
 
@@ -10,20 +10,26 @@ export default async function ChangePasswordPage() {
   if (!user) redirect("/login");
   return (
     <main className="password-gate">
-      <MysticBackdrop />
+      <CosmicField />
       <section className="password-gate-layout">
         <aside className="password-gate-visual">
-          <span className="password-coordinate">IDENTITY RITUAL · 01</span>
+          <span className="password-coordinate">
+            IDENTITY UPDATE · REQUIRED
+          </span>
           <div className="password-shield" aria-hidden="true">
             <i />
             <i />
             <i />
-            <span>✦</span>
+            <span>✓</span>
           </div>
-          <h2>Danh tính mạnh mở ra một học viện an toàn.</h2>
+          <h2>
+            Mật khẩu mới.
+            <br />
+            Khởi đầu an toàn hơn.
+          </h2>
           <p>
-            Mật khẩu riêng bảo vệ tiến độ, bài thi, điểm số và toàn bộ quyền hạn
-            được trao cho bạn.
+            Hành động này bảo vệ tiến độ, điểm số và toàn bộ phạm vi quyền của
+            bạn.
           </p>
           <div className="password-rules">
             <span>
@@ -38,18 +44,21 @@ export default async function ChangePasswordPage() {
           </div>
         </aside>
         <div className="password-gate-card">
-          <div className="login-card-ornament" aria-hidden="true">
+          <div className="login-card-colorbar" aria-hidden="true">
             <i />
-            <span>✦</span>
+            <i />
+            <i />
             <i />
           </div>
-          <span className="login-kicker">BẢO VỆ TÀI KHOẢN</span>
+          <span className="access-chip">SECURITY CHECKPOINT</span>
           <h1>
-            Đổi mật khẩu <em>tạm thời</em>
+            Đổi mật khẩu
+            <br />
+            <em>tạm thời.</em>
           </h1>
           <p>
-            Xin chào <strong>{user.fullName}</strong>. Hãy đặt mật khẩu riêng
-            trước khi bước vào học viện.
+            Xin chào <strong>{user.fullName}</strong>. Chỉ còn một bước để tiếp
+            tục.
           </p>
           <ChangePasswordForm />
         </div>

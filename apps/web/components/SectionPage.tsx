@@ -6,7 +6,10 @@ import { apiRequest, ApiRequestError, unwrapItems } from "@/lib/api";
 import type { IconName, PortalUser } from "@/lib/types";
 import { EntityDialog, type FormField } from "./EntityDialog";
 import { Icon } from "./Icon";
-import { RealmControlCenter, realmSections } from "./RealmControlCenter";
+import {
+  WorkspaceControlCenter,
+  workspaceSections,
+} from "./WorkspaceControlCenter";
 import { AdvancedSection, advancedSections } from "./AdvancedCenters";
 
 type UnknownRecord = Record<string, unknown>;
@@ -17,9 +20,9 @@ type SectionDefinition = {
   icon: IconName;
   columns: string[];
   endpoint: (user: PortalUser) => string;
-  permission?: string;
+  accessPermissions: string[];
+  actionPermissions?: string[];
   actionLabel?: string;
-  roles?: string[];
 };
 type References = {
   courses: UnknownRecord[];
@@ -30,103 +33,143 @@ type References = {
 const definitions: Record<string, SectionDefinition> = {
   courses: {
     title: "Khóa học & nội dung",
-    description: "Xây dựng, xuất bản và quản lý thư viện đào tạo trong đúng phạm vi được phân công.",
+    description:
+      "Xây dựng, xuất bản và quản lý thư viện đào tạo trong đúng phạm vi được phân công.",
     icon: "book",
     columns: ["Khóa học", "Mã", "Thời lượng", "Phiên bản", "Trạng thái"],
     endpoint: () => "/api/v1/courses?size=100",
-    permission: "courses:write",
+    accessPermissions: ["courses:read", "courses:create", "courses:update", "courses:learn"],
+    actionPermissions: ["courses:create", "courses:write"],
     actionLabel: "Tạo khóa học",
-    roles: ["ADMIN", "INSTRUCTOR"],
   },
   users: {
     title: "Người dùng",
-    description: "Quản lý vòng đời tài khoản, trạng thái và vai trò truy cập.",
+    description: "Quản lý vòng đời tài khoản, trạng thái và các gói quyền được ghép theo công việc.",
     icon: "users",
-    columns: ["Họ và tên", "Tài khoản", "Mã người dùng", "Vai trò", "Trạng thái"],
+    columns: [
+      "Họ và tên",
+      "Tài khoản",
+      "Mã người dùng",
+      "Gói quyền",
+      "Trạng thái",
+    ],
     endpoint: () => "/api/v1/users?size=100",
-    permission: "users:write",
+    accessPermissions: ["users:read", "roles:read"],
+    actionPermissions: ["users:create", "users:write"],
     actionLabel: "Thêm người dùng",
-    roles: ["ADMIN"],
   },
   organization: {
     title: "Cơ cấu tổ chức",
-    description: "Quản lý cấu trúc đơn vị nhiều cấp phục vụ ghi danh và báo cáo.",
+    description:
+      "Quản lý cấu trúc đơn vị nhiều cấp phục vụ ghi danh và báo cáo.",
     icon: "building",
     columns: ["Đơn vị", "Mã", "Loại", "Đơn vị cha", "Trạng thái"],
     endpoint: () => "/api/v1/organization/units",
-    permission: "organization:write",
+    accessPermissions: ["organization:read"],
+    actionPermissions: ["organization:manage", "organization:write"],
     actionLabel: "Thêm đơn vị",
-    roles: ["ADMIN"],
   },
   classes: {
     title: "Lớp & ghi danh",
-    description: "Mở đợt đào tạo, phân công giảng viên và quản lý học viên theo lớp.",
+    description:
+      "Mở đợt đào tạo, phân công giảng viên và quản lý học viên theo lớp.",
     icon: "class",
-    columns: ["Lớp đào tạo", "Mã lớp", "Khóa học", "Hạn hoàn thành", "Trạng thái"],
+    columns: [
+      "Lớp đào tạo",
+      "Mã lớp",
+      "Khóa học",
+      "Hạn hoàn thành",
+      "Trạng thái",
+    ],
     endpoint: () => "/api/v1/classes",
-    permission: "classes:write",
+    accessPermissions: ["classes:read", "classes:manage", "courses:assign"],
+    actionPermissions: ["classes:write", "classes:manage"],
     actionLabel: "Mở lớp mới",
-    roles: ["ADMIN", "INSTRUCTOR"],
   },
   learning: {
     title: "Học tập của tôi",
-    description: "Theo dõi tiến độ, thời gian học và tiếp tục từ vị trí gần nhất.",
+    description:
+      "Theo dõi tiến độ, thời gian học và tiếp tục từ vị trí gần nhất.",
     icon: "learn",
-    columns: ["Khóa học", "Tiến độ", "Thời gian học", "Truy cập gần nhất", "Trạng thái"],
+    columns: [
+      "Khóa học",
+      "Tiến độ",
+      "Thời gian học",
+      "Truy cập gần nhất",
+      "Trạng thái",
+    ],
     endpoint: () => "/api/v1/learning/me",
-    roles: ["LEARNER", "STUDENT"],
+    accessPermissions: ["courses:learn", "learning:read:self"],
   },
   exams: {
     title: "Bài kiểm tra",
-    description: "Xem các bài kiểm tra trong phạm vi quản lý hoặc được phép thực hiện.",
+    description:
+      "Xem các bài kiểm tra trong phạm vi quản lý hoặc được phép thực hiện.",
     icon: "exam",
-    columns: ["Bài kiểm tra", "Khóa học", "Thời lượng", "Số lượt", "Trạng thái"],
+    columns: [
+      "Bài kiểm tra",
+      "Khóa học",
+      "Thời lượng",
+      "Số lượt",
+      "Trạng thái",
+    ],
     endpoint: () => "/api/v1/exams",
-    roles: ["ADMIN", "INSTRUCTOR", "LEARNER", "STUDENT"],
+    accessPermissions: ["assessments:read", "assessments:take", "assessment:take", "assessments:create", "assessments:update", "exams:manage"],
   },
   grading: {
     title: "Chấm điểm",
-    description: "Xử lý hàng chờ tự luận và theo dõi kết quả chấm trong phạm vi được giao.",
+    description:
+      "Xử lý hàng chờ tự luận và theo dõi kết quả chấm trong phạm vi được giao.",
     icon: "grade",
     columns: ["Kết quả", "Bài thi", "Điểm", "Tỷ lệ", "Trạng thái"],
-    endpoint: (user) => user.permissions.includes("grading:manage") ? "/api/v1/grades/queue" : "/api/v1/grades/me",
-    roles: ["ADMIN", "INSTRUCTOR"],
+    endpoint: (user) =>
+      user.permissions.includes("grading:manage") || user.permissions.includes("assessments:grade")
+        ? "/api/v1/grades/queue"
+        : "/api/v1/grades/me",
+    accessPermissions: ["assessments:grade", "grading:manage", "grades:read:self"],
   },
   reports: {
     title: "Dashboard & báo cáo",
-    description: "Dữ liệu tổng hợp theo phạm vi quyền, có thể xuất CSV mà không làm treo giao diện.",
+    description:
+      "Dữ liệu tổng hợp theo phạm vi quyền, có thể xuất CSV mà không làm treo giao diện.",
     icon: "report",
     columns: ["Ghi danh", "Lớp", "Khóa học", "Tiến độ", "Kết quả"],
     endpoint: () => "/api/v1/reports/learning",
-    permission: "reports:export",
+    accessPermissions: ["reports:read:self", "reports:read:scope", "reports:kpi:read"],
+    actionPermissions: ["reports:export"],
     actionLabel: "Xuất CSV",
-    roles: ["ADMIN", "INSTRUCTOR"],
   },
   certificates: {
     title: "Chứng chỉ",
-    description: "Tra cứu chứng chỉ hiệu lực, thu hồi hoặc cấp lại theo đúng quyền.",
+    description:
+      "Tra cứu chứng chỉ hiệu lực, thu hồi hoặc cấp lại theo đúng quyền.",
     icon: "certificate",
     columns: ["Mã xác minh", "Khóa học", "Lần cấp", "Ngày cấp", "Trạng thái"],
-    endpoint: (user) => user.permissions.includes("certificates:manage") ? "/api/v1/certificates" : "/api/v1/certificates/me",
-    roles: ["ADMIN", "LEARNER", "STUDENT"],
+    endpoint: (user) =>
+      user.permissions.includes("certificates:manage")
+        ? "/api/v1/certificates"
+        : "/api/v1/certificates/me",
+    accessPermissions: ["certificates:read:self", "certificates:manage"],
   },
   operations: {
     title: "Vận hành hệ thống",
-    description: "Theo dõi health check và tạo yêu cầu sao lưu trong môi trường On-Premise.",
+    description:
+      "Theo dõi health check và tạo yêu cầu sao lưu trong môi trường On-Premise.",
     icon: "operations",
     columns: ["Thành phần", "Phiên bản", "Trạng thái", "Chi tiết", "Kiểm tra"],
     endpoint: () => "/api/v1/operations/health",
-    permission: "operations:manage",
+    accessPermissions: ["operations:manage", "audit:read", "license:manage"],
+    actionPermissions: ["operations:manage"],
     actionLabel: "Yêu cầu sao lưu",
-    roles: ["ADMIN"],
   },
   settings: {
     title: "Cấu hình sản phẩm",
-    description: "Nhận diện, ngôn ngữ và feature flag được áp dụng bằng cấu hình, không cần build lại.",
+    description:
+      "Nhận diện, ngôn ngữ và feature flag được áp dụng bằng cấu hình, không cần build lại.",
     icon: "settings",
     columns: ["Nhóm cấu hình", "Giá trị", "Nguồn", "Cập nhật", "Trạng thái"],
     endpoint: () => "/api/v1/configuration",
-    roles: ["ADMIN"],
+    accessPermissions: ["branding:manage", "configuration:manage", "integrations:manage"],
   },
 };
 
@@ -156,15 +199,11 @@ const statusLabels: Record<string, string> = {
   DOWN: "Gián đoạn",
 };
 
-const roleLabels: Record<string, string> = {
-  ADMIN: "Quản trị viên",
-  INSTRUCTOR: "Giảng viên",
-  LEARNER: "Học viên",
-  STUDENT: "Học viên (tương thích)",
-};
 
 function record(value: unknown): UnknownRecord {
-  return typeof value === "object" && value !== null ? value as UnknownRecord : {};
+  return typeof value === "object" && value !== null
+    ? (value as UnknownRecord)
+    : {};
 }
 function text(value: unknown, fallback = "—"): string {
   if (value === null || value === undefined || value === "") return fallback;
@@ -178,7 +217,10 @@ function date(value: unknown): string {
   if (!value) return "—";
   const parsed = new Date(String(value));
   if (Number.isNaN(parsed.getTime())) return text(value);
-  return new Intl.DateTimeFormat("vi-VN", { dateStyle: "short", timeStyle: "short" }).format(parsed);
+  return new Intl.DateTimeFormat("vi-VN", {
+    dateStyle: "short",
+    timeStyle: "short",
+  }).format(parsed);
 }
 function minutes(value: unknown): string {
   const total = Number(value ?? 0);
@@ -195,51 +237,205 @@ function percentage(value: unknown): string {
   const number = Number(value ?? 0);
   return `${Number.isFinite(number) ? Math.round(number) : 0}%`;
 }
-function idName(items: UnknownRecord[], id: unknown, primary: string, secondary?: string): string {
+function idName(
+  items: UnknownRecord[],
+  id: unknown,
+  primary: string,
+  secondary?: string,
+): string {
   const found = items.find((item) => text(item.id, "") === text(id, ""));
   if (!found) return text(id);
-  return secondary && found[secondary] ? `${text(found[primary])} (${text(found[secondary])})` : text(found[primary]);
+  return secondary && found[secondary]
+    ? `${text(found[primary])} (${text(found[secondary])})`
+    : text(found[primary]);
 }
 
-function normalize(section: string, payload: unknown, references: References): TableRow[] {
+function normalize(
+  section: string,
+  payload: unknown,
+  references: References,
+): TableRow[] {
   if (section === "settings") {
     const item = record(payload);
     return [
-      { id: "product", cells: ["Tên hệ thống", text(item.productName), "Cấu hình", date(item.updatedAt), "Đã áp dụng"] },
-      { id: "locale", cells: ["Ngôn ngữ mặc định", text(item.defaultLocale), "Cấu hình", date(item.updatedAt), "Đã áp dụng"] },
-      { id: "theme", cells: ["Màu nhận diện", `${text(item.primaryColor)} · ${text(item.accentColor)}`, "Cấu hình", date(item.updatedAt), "Đã áp dụng"] },
-      { id: "features", cells: ["Feature flag", `${Object.keys(record(item.featureFlags)).length} cấu hình`, "Cấu hình", date(item.updatedAt), "Hợp lệ"] },
+      {
+        id: "product",
+        cells: [
+          "Tên hệ thống",
+          text(item.productName),
+          "Cấu hình",
+          date(item.updatedAt),
+          "Đã áp dụng",
+        ],
+      },
+      {
+        id: "locale",
+        cells: [
+          "Ngôn ngữ mặc định",
+          text(item.defaultLocale),
+          "Cấu hình",
+          date(item.updatedAt),
+          "Đã áp dụng",
+        ],
+      },
+      {
+        id: "theme",
+        cells: [
+          "Màu nhận diện",
+          `${text(item.primaryColor)} · ${text(item.accentColor)}`,
+          "Cấu hình",
+          date(item.updatedAt),
+          "Đã áp dụng",
+        ],
+      },
+      {
+        id: "features",
+        cells: [
+          "Feature flag",
+          `${Object.keys(record(item.featureFlags)).length} cấu hình`,
+          "Cấu hình",
+          date(item.updatedAt),
+          "Hợp lệ",
+        ],
+      },
     ];
   }
 
-  const values = unwrapItems<UnknownRecord>(payload as UnknownRecord[] | { items?: UnknownRecord[] });
+  const values = unwrapItems<UnknownRecord>(
+    payload as UnknownRecord[] | { items?: UnknownRecord[] },
+  );
   return values.map((item, index) => {
     const id = text(item.id, `${section}-${index}`);
     switch (section) {
       case "users": {
-        const roles = Array.isArray(item.roles) ? item.roles.map((role) => roleLabels[text(role)] ?? text(role)).join(", ") : "—";
-        return { id, cells: [text(item.fullName), text(item.username), text(item.code), roles, status(item.status)] };
+        const roles = Array.isArray(item.roles)
+          ? item.roles
+              .map((role) => text(role).replaceAll("_", " "))
+              .join(", ")
+          : "—";
+        return {
+          id,
+          cells: [
+            text(item.fullName),
+            text(item.username),
+            text(item.code),
+            roles,
+            status(item.status),
+          ],
+        };
       }
       case "organization":
-        return { id, cells: [text(item.name), text(item.code), status(item.type), idName(references.units, item.parentId, "name"), status(item.status)] };
+        return {
+          id,
+          cells: [
+            text(item.name),
+            text(item.code),
+            status(item.type),
+            idName(references.units, item.parentId, "name"),
+            status(item.status),
+          ],
+        };
       case "courses":
-        return { id, cells: [text(item.name), text(item.code), minutes(item.durationMinutes), `v${text(item.contentVersion, "1")}`, status(item.status)] };
+        return {
+          id,
+          cells: [
+            text(item.name),
+            text(item.code),
+            minutes(item.durationMinutes),
+            `v${text(item.contentVersion, "1")}`,
+            status(item.status),
+          ],
+        };
       case "classes":
-        return { id, cells: [text(item.name), text(item.code), idName(references.courses, item.courseId, "name", "code"), date(item.dueAt), status(item.status)] };
+        return {
+          id,
+          cells: [
+            text(item.name),
+            text(item.code),
+            idName(references.courses, item.courseId, "name", "code"),
+            date(item.dueAt),
+            status(item.status),
+          ],
+        };
       case "learning":
-        return { id, cells: [idName(references.courses, item.courseId, "name", "code"), percentage(item.progressPercent), seconds(item.totalLearningSeconds), date(item.lastAccessedAt), status(item.status)] };
+        return {
+          id,
+          cells: [
+            idName(references.courses, item.courseId, "name", "code"),
+            percentage(item.progressPercent),
+            seconds(item.totalLearningSeconds),
+            date(item.lastAccessedAt),
+            status(item.status),
+          ],
+        };
       case "exams":
-        return { id, cells: [text(item.title), idName(references.courses, item.courseId, "name", "code"), minutes(item.durationMinutes), text(item.maxAttempts), status(item.status)] };
+        return {
+          id,
+          cells: [
+            text(item.title),
+            idName(references.courses, item.courseId, "name", "code"),
+            minutes(item.durationMinutes),
+            text(item.maxAttempts),
+            status(item.status),
+          ],
+        };
       case "grading":
-        return { id, cells: [`#${id.slice(0, 8)}`, text(item.examId), `${text(item.score, "0")}/${text(item.maxScore, "0")}`, percentage(item.percentage), status(item.status)] };
+        return {
+          id,
+          cells: [
+            `#${id.slice(0, 8)}`,
+            text(item.examId),
+            `${text(item.score, "0")}/${text(item.maxScore, "0")}`,
+            percentage(item.percentage),
+            status(item.status),
+          ],
+        };
       case "reports":
-        return { id, cells: [text(item.enrollmentId), text(item.classId), idName(references.courses, item.courseId, "name", "code"), percentage(item.progressPercent), item.passed === true ? "Đạt" : item.passed === false ? "Chưa đạt" : status(item.completed ? "COMPLETED" : "IN_PROGRESS")] };
+        return {
+          id,
+          cells: [
+            text(item.enrollmentId),
+            text(item.classId),
+            idName(references.courses, item.courseId, "name", "code"),
+            percentage(item.progressPercent),
+            item.passed === true
+              ? "Đạt"
+              : item.passed === false
+                ? "Chưa đạt"
+                : status(item.completed ? "COMPLETED" : "IN_PROGRESS"),
+          ],
+        };
       case "certificates":
-        return { id, cells: [text(item.verificationCode), idName(references.courses, item.courseId, "name", "code"), text(item.generation), date(item.issuedAt), status(item.status)] };
+        return {
+          id,
+          cells: [
+            text(item.verificationCode),
+            idName(references.courses, item.courseId, "name", "code"),
+            text(item.generation),
+            date(item.issuedAt),
+            status(item.status),
+          ],
+        };
       case "operations":
-        return { id: text(item.name, id), cells: [text(item.name), text(item.version), status(item.status), item.details ? "Có dữ liệu health check" : "—", new Intl.DateTimeFormat("vi-VN", { timeStyle: "medium" }).format(new Date())] };
+        return {
+          id: text(item.name, id),
+          cells: [
+            text(item.name),
+            text(item.version),
+            status(item.status),
+            item.details ? "Có dữ liệu health check" : "—",
+            new Intl.DateTimeFormat("vi-VN", { timeStyle: "medium" }).format(
+              new Date(),
+            ),
+          ],
+        };
       default:
-        return { id, cells: Object.values(item).slice(0, 5).map((value) => text(value)) };
+        return {
+          id,
+          cells: Object.values(item)
+            .slice(0, 5)
+            .map((value) => text(value)),
+        };
     }
   });
 }
@@ -248,43 +444,147 @@ function actionFields(section: string, references: References): FormField[] {
   switch (section) {
     case "users":
       return [
-        { name: "code", label: "Mã người dùng", required: true, placeholder: "NV001" },
-        { name: "username", label: "Tên đăng nhập", required: true, placeholder: "nguyenvana" },
+        {
+          name: "code",
+          label: "Mã người dùng",
+          required: true,
+          placeholder: "NV001",
+        },
+        {
+          name: "username",
+          label: "Tên đăng nhập",
+          required: true,
+          placeholder: "nguyenvana",
+        },
         { name: "fullName", label: "Họ và tên", required: true },
         { name: "email", label: "Email", type: "email" },
-        { name: "password", label: "Mật khẩu tạm", type: "password", required: true, placeholder: "Tối thiểu 12 ký tự" },
-        { name: "organizationUnitId", label: "Đơn vị", type: "select", options: references.units.map((unit) => ({ label: `${text(unit.name)} (${text(unit.code)})`, value: text(unit.id, "") })) },
-        { name: "role", label: "Vai trò", type: "select", required: true, defaultValue: "LEARNER", options: [
-          { label: "Học viên", value: "LEARNER" },
-          { label: "Giảng viên", value: "INSTRUCTOR" },
-          { label: "Quản trị viên", value: "ADMIN" },
-        ] },
+        {
+          name: "password",
+          label: "Mật khẩu tạm",
+          type: "password",
+          required: true,
+          placeholder: "Tối thiểu 12 ký tự",
+        },
+        {
+          name: "organizationUnitId",
+          label: "Đơn vị",
+          type: "select",
+          options: references.units.map((unit) => ({
+            label: `${text(unit.name)} (${text(unit.code)})`,
+            value: text(unit.id, ""),
+          })),
+        },
+        {
+          name: "role",
+          label: "Gói quyền khởi tạo",
+          type: "select",
+          required: true,
+          defaultValue: "BASIC_USER",
+          options: [
+            { label: "Người dùng cơ bản", value: "BASIC_USER" },
+            { label: "Biên soạn khóa học", value: "COURSE_AUTHOR" },
+            { label: "Quản lý đào tạo", value: "TRAINING_MANAGER" },
+            { label: "Quản lý thi", value: "EXAM_MANAGER" },
+            { label: "Chấm điểm", value: "GRADER" },
+          ],
+        },
       ];
     case "organization":
       return [
-        { name: "code", label: "Mã đơn vị", required: true, placeholder: "P.KT" },
+        {
+          name: "code",
+          label: "Mã đơn vị",
+          required: true,
+          placeholder: "P.KT",
+        },
         { name: "name", label: "Tên đơn vị", required: true },
-        { name: "type", label: "Loại đơn vị", type: "select", required: true, defaultValue: "DEPARTMENT", options: [
-          { label: "Tổ chức", value: "ORGANIZATION" }, { label: "Khối", value: "DIVISION" },
-          { label: "Phòng ban", value: "DEPARTMENT" }, { label: "Nhóm", value: "TEAM" },
-          { label: "Lớp", value: "CLASS" }, { label: "Nhóm học", value: "GROUP" },
-        ] },
-        { name: "parentId", label: "Đơn vị cha", type: "select", options: references.units.map((unit) => ({ label: text(unit.name), value: text(unit.id, "") })) },
+        {
+          name: "type",
+          label: "Loại đơn vị",
+          type: "select",
+          required: true,
+          defaultValue: "DEPARTMENT",
+          options: [
+            { label: "Tổ chức", value: "ORGANIZATION" },
+            { label: "Khối", value: "DIVISION" },
+            { label: "Phòng ban", value: "DEPARTMENT" },
+            { label: "Nhóm", value: "TEAM" },
+            { label: "Lớp", value: "CLASS" },
+            { label: "Nhóm học", value: "GROUP" },
+          ],
+        },
+        {
+          name: "parentId",
+          label: "Đơn vị cha",
+          type: "select",
+          options: references.units.map((unit) => ({
+            label: text(unit.name),
+            value: text(unit.id, ""),
+          })),
+        },
       ];
     case "courses":
       return [
-        { name: "code", label: "Mã khóa học", required: true, placeholder: "COURSE-001" },
+        {
+          name: "code",
+          label: "Mã khóa học",
+          required: true,
+          placeholder: "COURSE-001",
+        },
         { name: "name", label: "Tên khóa học", required: true },
-        { name: "durationMinutes", label: "Thời lượng (phút)", type: "number", min: 0, defaultValue: "30" },
-        { name: "passingScore", label: "Điểm đạt (%)", type: "number", min: 0, max: 100, defaultValue: "70" },
-        { name: "description", label: "Mô tả", type: "textarea", placeholder: "Mục tiêu và nội dung chính của khóa học" },
+        {
+          name: "durationMinutes",
+          label: "Thời lượng (phút)",
+          type: "number",
+          min: 0,
+          defaultValue: "30",
+        },
+        {
+          name: "passingScore",
+          label: "Điểm đạt (%)",
+          type: "number",
+          min: 0,
+          max: 100,
+          defaultValue: "70",
+        },
+        {
+          name: "description",
+          label: "Mô tả",
+          type: "textarea",
+          placeholder: "Mục tiêu và nội dung chính của khóa học",
+        },
       ];
     case "classes":
       return [
-        { name: "code", label: "Mã lớp", required: true, placeholder: "CLASS-2026-01" },
+        {
+          name: "code",
+          label: "Mã lớp",
+          required: true,
+          placeholder: "CLASS-2026-01",
+        },
         { name: "name", label: "Tên lớp", required: true },
-        { name: "courseId", label: "Khóa học đã xuất bản", type: "select", required: true, options: references.courses.filter((course) => course.status === "PUBLISHED").map((course) => ({ label: `${text(course.name)} (${text(course.code)})`, value: text(course.id, "") })) },
-        { name: "instructorId", label: "Giảng viên phụ trách", type: "select", required: true, options: references.instructors.map((instructor) => ({ label: `${text(instructor.fullName)} (${text(instructor.username)})`, value: text(instructor.id, "") })) },
+        {
+          name: "courseId",
+          label: "Khóa học đã xuất bản",
+          type: "select",
+          required: true,
+          options: references.courses
+            .filter((course) => course.status === "PUBLISHED")
+            .map((course) => ({
+              label: `${text(course.name)} (${text(course.code)})`,
+              value: text(course.id, ""),
+            })),
+        },
+        {
+          name: "instructorId",
+          label: "Giảng viên phụ trách",
+          type: "select",
+          required: true,
+          options: references.instructors.map((instructor) => ({
+            label: `${text(instructor.fullName)} (${text(instructor.username)})`,
+            value: text(instructor.id, ""),
+          })),
+        },
         { name: "dueAt", label: "Hạn hoàn thành", type: "date" },
       ];
     default:
@@ -292,39 +592,114 @@ function actionFields(section: string, references: References): FormField[] {
   }
 }
 
-function requestForAction(section: string, values: Record<string, string>): { path: string; body: UnknownRecord } {
+function requestForAction(
+  section: string,
+  values: Record<string, string>,
+): { path: string; body: UnknownRecord } {
   switch (section) {
     case "users":
-      return { path: "/api/v1/users", body: { code: values.code, username: values.username, password: values.password, fullName: values.fullName, email: values.email || null, organizationUnitId: values.organizationUnitId || null, roleCodes: [values.role] } };
+      return {
+        path: "/api/v1/users",
+        body: {
+          code: values.code,
+          username: values.username,
+          password: values.password,
+          fullName: values.fullName,
+          email: values.email || null,
+          organizationUnitId: values.organizationUnitId || null,
+          roleCodes: [values.role],
+        },
+      };
     case "organization":
-      return { path: "/api/v1/organization/units", body: { code: values.code, name: values.name, type: values.type, parentId: values.parentId || null, status: "ACTIVE" } };
+      return {
+        path: "/api/v1/organization/units",
+        body: {
+          code: values.code,
+          name: values.name,
+          type: values.type,
+          parentId: values.parentId || null,
+          status: "ACTIVE",
+        },
+      };
     case "courses":
-      return { path: "/api/v1/courses", body: { code: values.code, name: values.name, description: values.description || null, durationMinutes: Number(values.durationMinutes || 0), passingScore: Number(values.passingScore || 70), completionPolicyJson: "{\"requiredLessonPercent\":100}" } };
+      return {
+        path: "/api/v1/courses",
+        body: {
+          code: values.code,
+          name: values.name,
+          description: values.description || null,
+          durationMinutes: Number(values.durationMinutes || 0),
+          passingScore: Number(values.passingScore || 70),
+          completionPolicyJson: '{"requiredLessonPercent":100}',
+        },
+      };
     case "classes":
-      return { path: "/api/v1/classes", body: { code: values.code, name: values.name, courseId: values.courseId, dueAt: values.dueAt ? new Date(`${values.dueAt}T23:59:59`).toISOString() : null, instructorIds: values.instructorId ? [values.instructorId] : [] } };
+      return {
+        path: "/api/v1/classes",
+        body: {
+          code: values.code,
+          name: values.name,
+          courseId: values.courseId,
+          dueAt: values.dueAt
+            ? new Date(`${values.dueAt}T23:59:59`).toISOString()
+            : null,
+          instructorIds: values.instructorId ? [values.instructorId] : [],
+        },
+      };
     default:
       throw new Error("Thao tác chưa được cấu hình");
   }
 }
 
 function statusClass(value: string): string {
-  if (/Hoạt động|Đã xuất bản|Đã hoàn thành|Hiệu lực|Đạt|Đã áp dụng|Hợp lệ|Đang mở/.test(value)) return "success";
-  if (/Chờ|Bản nháp|Sắp|Đang học|Chưa bắt đầu|Development/.test(value)) return "pending";
-  if (/Khóa|Gián đoạn|Quá hạn|Thu hồi|Chưa đạt|Hết giờ/.test(value)) return "danger";
+  if (
+    /Hoạt động|Đã xuất bản|Đã hoàn thành|Hiệu lực|Đạt|Đã áp dụng|Hợp lệ|Đang mở/.test(
+      value,
+    )
+  )
+    return "success";
+  if (/Chờ|Bản nháp|Sắp|Đang học|Chưa bắt đầu|Development/.test(value))
+    return "pending";
+  if (/Khóa|Gián đoạn|Quá hạn|Thu hồi|Chưa đạt|Hết giờ/.test(value))
+    return "danger";
   return "muted";
 }
 
-export function SectionPage({ section, user }: { section: string; user: PortalUser }) {
-  if (realmSections.has(section)) return <RealmControlCenter section={section} user={user} />;
-  if (advancedSections.has(section)) return <AdvancedSection section={section} user={user} />;
+export function SectionPage({
+  section,
+  user,
+}: {
+  section: string;
+  user: PortalUser;
+}) {
+  if (workspaceSections.has(section))
+    return <WorkspaceControlCenter section={section} user={user} />;
+  if (advancedSections.has(section))
+    return <AdvancedSection section={section} user={user} />;
   return <LegacySectionPage section={section} user={user} />;
 }
 
-function LegacySectionPage({ section, user }: { section: string; user: PortalUser }) {
+function LegacySectionPage({
+  section,
+  user,
+}: {
+  section: string;
+  user: PortalUser;
+}) {
   const definition = definitions[section];
-  const canAccess = Boolean(definition && (user.accountType === "SYSTEM_ADMIN" || !definition.roles || !definition.roles.length || definition.roles.some((role) => user.roles.includes(role)) || ["courses:read","courses:learn","classes:read","assessments:read","assessment:take","reports:read:self","reports:read:scope"].some((permission) => user.permissions.includes(permission))));
+  const canAccess = Boolean(
+    definition &&
+      (user.accountType === "SYSTEM_ADMIN" ||
+        definition.accessPermissions.some((permission) =>
+          user.permissions.includes(permission),
+        )),
+  );
   const [payload, setPayload] = useState<unknown>(null);
-  const [references, setReferences] = useState<References>({ courses: [], units: [], instructors: [] });
+  const [references, setReferences] = useState<References>({
+    courses: [],
+    units: [],
+    instructors: [],
+  });
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -333,7 +708,14 @@ function LegacySectionPage({ section, user }: { section: string; user: PortalUse
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState("");
 
-  const canUseAction = Boolean(canAccess && definition?.actionLabel && (!definition.permission || user.permissions.includes(definition.permission)));
+  const canUseAction = Boolean(
+    canAccess &&
+      definition?.actionLabel &&
+      (!definition.actionPermissions?.length ||
+        definition.actionPermissions.some((permission) =>
+          user.permissions.includes(permission),
+        )),
+  );
 
   const load = useCallback(async () => {
     if (!definition || !canAccess) {
@@ -344,46 +726,86 @@ function LegacySectionPage({ section, user }: { section: string; user: PortalUse
     setLoading(true);
     setError("");
     try {
-      const needsCourses = ["classes", "learning", "exams", "reports", "certificates"].includes(section);
-      const needsUnits = ["organization", "users"].includes(section) && user.permissions.includes("organization:read");
-      const needsInstructors = section === "classes" && user.permissions.includes("users:read");
-      const [coursePayload, unitPayload, instructorPayload] = await Promise.all([
-        needsCourses ? apiRequest("/api/v1/courses?size=100").catch(() => []) : Promise.resolve([]),
-        needsUnits ? apiRequest("/api/v1/organization/units").catch(() => []) : Promise.resolve([]),
-        needsInstructors ? apiRequest("/api/v1/users?role=INSTRUCTOR&size=100").catch(() => []) : Promise.resolve([]),
-      ]);
+      const needsCourses = [
+        "classes",
+        "learning",
+        "exams",
+        "reports",
+        "certificates",
+      ].includes(section);
+      const needsUnits =
+        ["organization", "users"].includes(section) &&
+        user.permissions.includes("organization:read");
+      const needsInstructors =
+        section === "classes" && user.permissions.includes("users:read");
+      const [coursePayload, unitPayload, instructorPayload] = await Promise.all(
+        [
+          needsCourses
+            ? apiRequest("/api/v1/courses?size=100").catch(() => [])
+            : Promise.resolve([]),
+          needsUnits
+            ? apiRequest("/api/v1/organization/units").catch(() => [])
+            : Promise.resolve([]),
+          needsInstructors
+            ? apiRequest("/api/v1/users?size=100").catch(
+                () => [],
+              )
+            : Promise.resolve([]),
+        ],
+      );
       setReferences({
-        courses: unwrapItems<UnknownRecord>(coursePayload as { items?: UnknownRecord[] } | UnknownRecord[]),
+        courses: unwrapItems<UnknownRecord>(
+          coursePayload as { items?: UnknownRecord[] } | UnknownRecord[],
+        ),
         units: unwrapItems<UnknownRecord>(unitPayload as UnknownRecord[]),
-        instructors: unwrapItems<UnknownRecord>(instructorPayload as { items?: UnknownRecord[] } | UnknownRecord[]),
+        instructors: unwrapItems<UnknownRecord>(
+          instructorPayload as { items?: UnknownRecord[] } | UnknownRecord[],
+        ),
       });
       setPayload(await apiRequest(definition.endpoint(user)));
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Không thể tải dữ liệu");
+      setError(
+        caught instanceof Error ? caught.message : "Không thể tải dữ liệu",
+      );
     } finally {
       setLoading(false);
     }
   }, [canAccess, definition, section, user]);
 
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => {
+    void load();
+  }, [load]);
   useEffect(() => {
     if (!toast) return;
     const timer = window.setTimeout(() => setToast(""), 2600);
     return () => window.clearTimeout(timer);
   }, [toast]);
 
-  const rows = useMemo(() => normalize(section, payload, references), [section, payload, references]);
+  const rows = useMemo(
+    () => normalize(section, payload, references),
+    [section, payload, references],
+  );
   const filteredRows = useMemo(() => {
     const keyword = query.trim().toLocaleLowerCase("vi");
-    return keyword ? rows.filter((row) => row.cells.join(" ").toLocaleLowerCase("vi").includes(keyword)) : rows;
+    return keyword
+      ? rows.filter((row) =>
+          row.cells.join(" ").toLocaleLowerCase("vi").includes(keyword),
+        )
+      : rows;
   }, [query, rows]);
-  const fields = useMemo(() => canAccess ? actionFields(section, references) : [], [canAccess, section, references]);
+  const fields = useMemo(
+    () => (canAccess ? actionFields(section, references) : []),
+    [canAccess, section, references],
+  );
 
   async function runPrimaryAction() {
     setFormError("");
     try {
       if (section === "reports") {
-        const response = await fetch("/api/gateway/api/v1/reports/learning/export.csv", { cache: "no-store" });
+        const response = await fetch(
+          "/api/gateway/api/v1/reports/learning/export.csv",
+          { cache: "no-store" },
+        );
         if (!response.ok) throw new Error("Không thể xuất báo cáo");
         const blob = await response.blob();
         const url = URL.createObjectURL(blob);
@@ -396,11 +818,17 @@ function LegacySectionPage({ section, user }: { section: string; user: PortalUse
         return;
       }
       if (section === "operations") {
-        await apiRequest("/api/v1/operations/jobs/BACKUP", { method: "POST", body: JSON.stringify({ parameters: {} }) });
+        await apiRequest("/api/v1/operations/jobs/BACKUP", {
+          method: "POST",
+          body: JSON.stringify({ parameters: {} }),
+        });
         setToast("Đã tạo yêu cầu sao lưu.");
         return;
       }
-      if (section === "classes" && !references.courses.some((course) => course.status === "PUBLISHED")) {
+      if (
+        section === "classes" &&
+        !references.courses.some((course) => course.status === "PUBLISHED")
+      ) {
         setToast("Cần xuất bản ít nhất một khóa học trước khi mở lớp.");
         return;
       }
@@ -410,7 +838,11 @@ function LegacySectionPage({ section, user }: { section: string; user: PortalUse
       }
       if (fields.length > 0) setDialogOpen(true);
     } catch (caught) {
-      setToast(caught instanceof Error ? caught.message : "Không thể thực hiện thao tác");
+      setToast(
+        caught instanceof Error
+          ? caught.message
+          : "Không thể thực hiện thao tác",
+      );
     }
   }
 
@@ -419,12 +851,20 @@ function LegacySectionPage({ section, user }: { section: string; user: PortalUse
     setFormError("");
     try {
       const request = requestForAction(section, values);
-      await apiRequest(request.path, { method: "POST", body: JSON.stringify(request.body) });
+      await apiRequest(request.path, {
+        method: "POST",
+        body: JSON.stringify(request.body),
+      });
       setDialogOpen(false);
       setToast("Đã lưu dữ liệu thành công.");
       await load();
     } catch (caught) {
-      const message = caught instanceof ApiRequestError ? caught.message : caught instanceof Error ? caught.message : "Không thể lưu dữ liệu";
+      const message =
+        caught instanceof ApiRequestError
+          ? caught.message
+          : caught instanceof Error
+            ? caught.message
+            : "Không thể lưu dữ liệu";
       setFormError(message);
     } finally {
       setSaving(false);
@@ -432,49 +872,141 @@ function LegacySectionPage({ section, user }: { section: string; user: PortalUse
   }
 
   if (!definition || !canAccess) {
-    return <div className="data-card standalone-state"><div className="state-card error-state"><b>Không có quyền truy cập</b><p>Chức năng này không thuộc vai trò hiện tại của bạn.</p></div></div>;
+    return (
+      <div className="data-card standalone-state">
+        <div className="state-card error-state">
+          <b>Không có quyền truy cập</b>
+          <p>Chức năng này không thuộc vai trò hiện tại của bạn.</p>
+        </div>
+      </div>
+    );
   }
 
   return (
     <>
       <div className="page-head">
         <div>
-          <span className="page-icon"><Icon name={definition.icon} /></span>
-          <div><h1>{definition.title}</h1><p>{definition.description}</p></div>
+          <span className="page-icon">
+            <Icon name={definition.icon} />
+          </span>
+          <div>
+            <h1>{definition.title}</h1>
+            <p>{definition.description}</p>
+          </div>
         </div>
         <div className="page-head-actions">
-          {section === "users" && (user.permissions.includes("users:bulk-manage") || user.permissions.includes("users:write")) && (
-            <Link className="soft-button import-users-link" href="/users/import">
-              <Icon name="upload" size={18} /> Nhập Excel/CSV
-            </Link>
-          )}
+          {section === "users" &&
+            (user.permissions.includes("users:bulk-manage") ||
+              user.permissions.includes("users:write")) && (
+              <Link
+                className="soft-button import-users-link"
+                href="/users/import"
+              >
+                <Icon name="upload" size={18} /> Nhập Excel/CSV
+              </Link>
+            )}
           {canUseAction && (
-            <button className="primary-button" onClick={() => void runPrimaryAction()}>
-              <Icon name="plus" size={18} />{definition.actionLabel}
+            <button
+              className="primary-button"
+              onClick={() => void runPrimaryAction()}
+            >
+              <Icon name="plus" size={18} />
+              {definition.actionLabel}
             </button>
           )}
         </div>
       </div>
 
       <div className="filter-card">
-        <div className="table-search"><Icon name="search" size={18} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Tìm kiếm trong danh sách..." /></div>
-        <button className="soft-button" onClick={() => void load()} disabled={loading}>Làm mới</button>
+        <div className="table-search">
+          <Icon name="search" size={18} />
+          <input
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Tìm kiếm trong danh sách..."
+          />
+        </div>
+        <button
+          className="soft-button"
+          onClick={() => void load()}
+          disabled={loading}
+        >
+          Làm mới
+        </button>
         <span className="result-count">{filteredRows.length} kết quả</span>
       </div>
 
       <div className="data-card">
         {loading ? (
-          <div className="state-card"><span className="state-spinner" /><b>Đang tải dữ liệu</b><p>Hệ thống đang lấy dữ liệu từ service phụ trách.</p></div>
+          <div className="state-card">
+            <span className="state-spinner" />
+            <b>Đang tải dữ liệu</b>
+            <p>Hệ thống đang lấy dữ liệu từ service phụ trách.</p>
+          </div>
         ) : error ? (
-          <div className="state-card error-state"><b>Không thể hiển thị dữ liệu</b><p>{error}</p><button className="soft-button" onClick={() => void load()}>Thử lại</button></div>
+          <div className="state-card error-state">
+            <b>Không thể hiển thị dữ liệu</b>
+            <p>{error}</p>
+            <button className="soft-button" onClick={() => void load()}>
+              Thử lại
+            </button>
+          </div>
         ) : filteredRows.length === 0 ? (
-          <div className="state-card"><b>Chưa có dữ liệu phù hợp</b><p>Hãy thay đổi từ khóa hoặc tạo bản ghi đầu tiên nếu bạn có quyền.</p></div>
+          <div className="state-card">
+            <b>Chưa có dữ liệu phù hợp</b>
+            <p>
+              Hãy thay đổi từ khóa hoặc tạo bản ghi đầu tiên nếu bạn có quyền.
+            </p>
+          </div>
         ) : (
           <>
-            <div className="table-wrap"><table><thead><tr>{definition.columns.map((column) => <th key={column}>{column}</th>)}</tr></thead><tbody>
-              {filteredRows.map((row) => <tr key={row.id}>{row.cells.map((cell, index) => <td key={`${row.id}-${index}`}>{index === 0 ? <div className="primary-cell"><span className={`mini-avatar m${Math.abs(row.id.length + index) % 4}`}>{cell.slice(0, 2).toUpperCase()}</span><b>{cell}</b></div> : index === row.cells.length - 1 ? <span className={`status-pill ${statusClass(cell)}`}>{cell}</span> : cell}</td>)}</tr>)}
-            </tbody></table></div>
-            <div className="pagination"><span>Hiển thị {filteredRows.length} bản ghi</span><div><button disabled>‹</button><button className="selected">1</button><button disabled>›</button></div></div>
+            <div className="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    {definition.columns.map((column) => (
+                      <th key={column}>{column}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredRows.map((row) => (
+                    <tr key={row.id}>
+                      {row.cells.map((cell, index) => (
+                        <td key={`${row.id}-${index}`}>
+                          {index === 0 ? (
+                            <div className="primary-cell">
+                              <span
+                                className={`mini-avatar m${Math.abs(row.id.length + index) % 4}`}
+                              >
+                                {cell.slice(0, 2).toUpperCase()}
+                              </span>
+                              <b>{cell}</b>
+                            </div>
+                          ) : index === row.cells.length - 1 ? (
+                            <span
+                              className={`status-pill ${statusClass(cell)}`}
+                            >
+                              {cell}
+                            </span>
+                          ) : (
+                            cell
+                          )}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="pagination">
+              <span>Hiển thị {filteredRows.length} bản ghi</span>
+              <div>
+                <button disabled>‹</button>
+                <button className="selected">1</button>
+                <button disabled>›</button>
+              </div>
+            </div>
           </>
         )}
       </div>
@@ -489,7 +1021,12 @@ function LegacySectionPage({ section, user }: { section: string; user: PortalUse
         onClose={() => !saving && setDialogOpen(false)}
         onSubmit={submit}
       />
-      {toast && <div className="toast"><span>✓</span>{toast}</div>}
+      {toast && (
+        <div className="toast">
+          <span>✓</span>
+          {toast}
+        </div>
+      )}
     </>
   );
 }

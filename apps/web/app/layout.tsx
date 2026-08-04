@@ -1,27 +1,35 @@
 import type { CSSProperties, ReactNode } from "react";
 import type { Metadata, Viewport } from "next";
 import { brandingStyle, getPublicBranding } from "@/lib/branding";
+import { getTheme, normalizeThemeKey } from "@/lib/themes";
 import "./globals.css";
-import "./astral-v3.css";
+import "./cosmic-v011.css";
+import "./themes-v012.css";
+import "./themes-v013.css";
+import "./themes-v014.css";
 
 export async function generateMetadata(): Promise<Metadata> {
   const branding = await getPublicBranding();
   return {
     title: {
-      default: `${branding.systemName} · Học viện Huyền Tri`,
+      default: `${branding.systemName} · Learning Management`,
       template: `%s · ${branding.systemName}`,
     },
     description:
       branding.introduction ||
       "Nền tảng quản trị học tập, kỳ thi và tri thức nội bộ.",
-    icons: { icon: branding.faviconUrl || "/mystic-mark.svg" },
+    icons: { icon: branding.faviconUrl || "/orbit-mark.svg" },
   };
 }
 
-export const viewport: Viewport = {
-  colorScheme: "dark",
-  themeColor: "#080611",
-};
+export async function generateViewport(): Promise<Viewport> {
+  const branding = await getPublicBranding();
+  const theme = getTheme(branding.themeKey);
+  return {
+    colorScheme: theme.mode,
+    themeColor: theme.palette.background,
+  };
+}
 
 export default async function RootLayout({
   children,
@@ -29,8 +37,9 @@ export default async function RootLayout({
   children: ReactNode;
 }) {
   const branding = await getPublicBranding();
+  const themeKey = normalizeThemeKey(branding.themeKey);
   return (
-    <html lang="vi" suppressHydrationWarning>
+    <html lang="vi" data-theme={themeKey} suppressHydrationWarning>
       <body style={brandingStyle(branding) as CSSProperties}>{children}</body>
     </html>
   );

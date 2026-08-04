@@ -127,6 +127,10 @@ class RoleController(private val service: UserManagementService) {
 @RestController
 @RequestMapping("/api/v1/authorization")
 class AuthorizationController(private val service: AuthorizationService) {
+    @PostMapping("/grants/preview")
+    @PreAuthorize("hasAuthority('${Permissions.AUTHORIZATION_GRANT}')")
+    fun previewBulk(@Valid @RequestBody input: BulkGrantPreviewRequest) = service.previewBulk(input)
+
     @PostMapping("/grants/bulk")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasAuthority('${Permissions.AUTHORIZATION_GRANT}')")
@@ -143,6 +147,14 @@ class AuthorizationController(private val service: AuthorizationService) {
         @RequestParam scopeType: ScopeType,
         @RequestParam(required = false) scopeId: UUID?,
     ) = service.effective(userId, scopeType, scopeId)
+
+    @GetMapping("/explain")
+    @PreAuthorize("hasAnyAuthority('${Permissions.USERS_READ}', '${Permissions.AUTHORIZATION_GRANT}', '${Permissions.AUTHORIZATION_REVOKE}')")
+    fun explain(
+        @RequestParam userId: UUID,
+        @RequestParam scopeType: ScopeType,
+        @RequestParam(required = false) scopeId: UUID?,
+    ) = service.explain(userId, scopeType, scopeId)
 }
 
 

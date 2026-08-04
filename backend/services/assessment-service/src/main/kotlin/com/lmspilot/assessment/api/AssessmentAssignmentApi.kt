@@ -181,7 +181,8 @@ class AssessmentAudienceService(
     }
 
     private fun requireManage(exam: ExamEntity, permission: String) {
-        val allowed = CurrentUser.isSystemAdmin() || "ADMIN" in CurrentUser.roles() || exam.ownerId == CurrentUser.id() ||
+        val allowed = CurrentUser.isSystemAdmin() || permission in CurrentUser.authorities() ||
+            Permissions.EXAMS_ASSIGN in CurrentUser.authorities() || exam.ownerId == CurrentUser.id() ||
             scopedAuthorization.allowed(permission, "EXAM", exam.id) ||
             scopedAuthorization.allowed(Permissions.EXAMS_MANAGE, "EXAM", exam.id) ||
             scopedAuthorization.allowed(Permissions.COMPETITIONS_MANAGE, "EXAM", exam.id)

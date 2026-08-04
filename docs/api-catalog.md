@@ -1,4 +1,4 @@
-# API catalogue — LMSPilot CLS 0.9.0
+# API catalogue — LMSPilot CLS 0.15.0
 
 Các API nghiệp vụ đi qua API Gateway. Route không ghi `public` đều cần JWT và được service sở hữu dữ liệu kiểm tra quyền/phạm vi lần nữa.
 
@@ -45,4 +45,18 @@ Các API nghiệp vụ đi qua API Gateway. Route không ghi `public` đều c�
 
 Repository validator báo lỗi nếu internal controller không gọi `InternalTokenAuthorizer`.
 
+Branding request/response có `themeKey`, được giới hạn trong allowlist 10 preset hiện hành. Flyway V5 đổi catalog 0.12; V6 thay `enterprise-blue` bằng `soft-spectrum`, đổi default và chỉ chuyển palette nếu khớp default cũ đã biết. `PUT /api/v1/branding` yêu cầu quyền quản trị; `GET /public/v1/branding` chỉ công khai dữ liệu nhận diện cần cho SSR, không trả secret tích hợp.
+
 Request/response contract đặt cạnh controller của service sở hữu domain; contract sự kiện/quyền dùng chung nằm trong `backend/platform-contracts`.
+
+## Authorization 0.15
+
+- `GET /api/v1/authorization/catalog`: permission definitions, groups, risk, allowed scopes và access profiles.
+- `POST /api/v1/authorization/grants/preview`: dry-run cấp quyền hàng loạt.
+- `POST /api/v1/authorization/grants/bulk`: ghi assignment idempotent, bỏ qua bản ghi trùng.
+- `DELETE /api/v1/authorization/grants/bulk`: thu hồi permission grant/role assignment theo ID.
+- `GET /api/v1/authorization/effective`: permission ALLOW/DENY hiệu lực tại scope.
+- `GET /api/v1/authorization/explain`: hiệu lực và mọi nguồn quyền.
+- `GET /api/v1/authorization/users/{userId}/assignments`: các assignment đang lưu.
+
+JWT 0.15 có `permissions` cho coarse gate và `globalPermissions` cho thao tác `SYSTEM`. Client không được tự suy luận quyền exact-resource chỉ từ JWT.

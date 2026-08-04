@@ -1,0 +1,33 @@
+{
+  "release": "LMSPilot CLS 0.12.0",
+  "version": "0.12.0",
+  "date": "2026-08-04",
+  "status": "Theme Studio full-source release candidate",
+  "sourceFileCount": 478,
+  "backendServiceCount": 19,
+  "flywayServiceCount": 18,
+  "testCount": 111,
+  "visualScreenshotCount": 23,
+  "themePresetCount": 10,
+  "verification": {
+    "repositoryValidator": "PASS",
+    "staticContractFlowUiRegression": "111/111 PASS",
+    "themeStudioRegression": "7/7 PASS",
+    "semanticTypeScript": "PASS",
+    "frontendProductionBuild": "PASS - Next.js 16.2.12",
+    "productionRealMode": "PASS",
+    "npmProductionAudit": "PASS - 0 known vulnerabilities",
+    "chromiumVisualQa": "PASS - 23 screenshots, 0 page/console/server errors in capture run",
+    "gradleBuild": "NOT VERIFIED - Java 21 and Gradle distribution unavailable",
+    "dockerE2E": "NOT VERIFIED - Docker Engine unavailable",
+    "multiEngineBrowserE2E": "NOT VERIFIED - Firefox/WebKit and real backend stack unavailable",
+    "archiveVerification": "PASS - safe listing, 477 source checksums, validator, 111 tests, production guard, clean npm install, typecheck, production build and audit rerun after extraction"
+  },
+  "themeStudio": "docs/THEME_STUDIO_0.12.0.md",
+  "visualQa": "docs/screenshots/0.12.0/visual-qa.json",
+  "audit": "docs/AUDIT_0.8.2.md",
+  "startHere": "BAT_DAU_TAI_DAY.md",
+  "traceability": "docs/BA_CLS_TRACEABILITY_0.8.2.md",
+  "buildVerification": "docs/BUILD_VERIFICATION_0.12.0.md",
+  "deliveryStatus": "DELIVERY_STATUS.md"
+}

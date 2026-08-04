@@ -41,10 +41,16 @@ export function ClassesPage({ user }: { user: PortalUser }) {
       setClasses(unwrapItems<TrainingClass>(classData as any));
       setCourses(unwrapItems<Course>(courseData as any));
       if (canCreate && user.permissions.includes("users:read")) {
-        const users = await apiRequest<unknown>(
-          "/api/v1/users?role=INSTRUCTOR&size=100",
+        const users = await apiRequest<unknown>("/api/v1/users?size=1000");
+        setInstructors(
+          unwrapItems<UserAccount>(users as any).filter(
+            (account) =>
+              account.status === "ACTIVE" &&
+              (account.permissions ?? []).some((permission) =>
+                ["classes:manage", "classes:write", "courses:update", "courses:publish"].includes(permission),
+              ),
+          ),
         );
-        setInstructors(unwrapItems<UserAccount>(users as any));
       }
     } catch (caught) {
       setError(
@@ -154,7 +160,7 @@ export function ClassesPage({ user }: { user: PortalUser }) {
             <small>Trong phạm vi được phân công</small>
           </div>
           <strong>{classes.length}</strong>
-          <em>ALL COHORTS</em>
+          <em>CLASS TOTAL</em>
         </div>
         <div className="summary-card">
           <span className="summary-index">02</span>
@@ -168,7 +174,7 @@ export function ClassesPage({ user }: { user: PortalUser }) {
           <strong>
             {classes.filter((item) => item.status === "OPEN").length}
           </strong>
-          <em>LIVE COHORTS</em>
+          <em>ACTIVE NOW</em>
         </div>
         <div className="summary-card">
           <span className="summary-index">03</span>
@@ -180,7 +186,7 @@ export function ClassesPage({ user }: { user: PortalUser }) {
             <small>Đã xuất bản</small>
           </div>
           <strong>{publishedCourses.length}</strong>
-          <em>READY ARCHIVES</em>
+          <em>READY COURSES</em>
         </div>
       </section>
       <section className="toolbar-card">
@@ -224,7 +230,7 @@ export function ClassesPage({ user }: { user: PortalUser }) {
                 href={`/classes/${item.id}`}
                 key={item.id}
               >
-                <span className="class-rune">
+                <span className="class-number-block">
                   <small>{String(index + 1).padStart(2, "0")}</small>
                   <Icon name="class" />
                   <i />
@@ -250,7 +256,7 @@ export function ClassesPage({ user }: { user: PortalUser }) {
                   </div>
                 </div>
                 <span className="list-entry">
-                  <small>ENTER COHORT</small>
+                  <small>OPEN CLASS</small>
                   <Icon name="chevron" />
                 </span>
               </Link>

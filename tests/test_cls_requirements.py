@@ -29,12 +29,12 @@ class ClsRequirementTraceTests(unittest.TestCase):
         self.assertFalse((ROOT / "apps/web/app/register").exists())
         self.assertFalse((ROOT / "apps/web/app/signup").exists())
 
-    def test_default_roles_custom_roles_and_bulk_account_creation(self) -> None:
-        permissions = text("backend/platform-contracts/src/main/kotlin/com/lmspilot/contracts/Permissions.kt")
+    def test_access_profiles_custom_roles_and_bulk_account_creation(self) -> None:
+        profiles = text("backend/platform-contracts/src/main/kotlin/com/lmspilot/contracts/AccessProfiles.kt")
         users = text("backend/services/identity-service/src/main/kotlin/com/lmspilot/identity/api/Controllers.kt")
-        self.assertIn("val ADMIN", permissions)
-        self.assertIn("val INSTRUCTOR", permissions)
-        self.assertIn("val LEARNER", permissions)
+        self.assertIn('code = "BASIC_USER"', profiles)
+        self.assertIn('code = "COURSE_AUTHOR"', profiles)
+        self.assertIn('code = "TRAINING_MANAGER"', profiles)
         self.assertIn('@PostMapping("/bulk")', users)
         models = text("backend/services/identity-service/src/main/kotlin/com/lmspilot/identity/api/Models.kt")
         self.assertIn("operationId", models)
@@ -50,7 +50,7 @@ class ClsRequirementTraceTests(unittest.TestCase):
         self.assertIn("scopeId", models)
         self.assertIn("val denied", service)
         self.assertIn("return allowed && !denied", service)
-        self.assertIn("Base account roles are intentionally excluded", service)
+        self.assertIn("Base profile assignments are intentionally excluded", service)
 
     def test_organization_hierarchy_membership_and_scoped_enforcement(self) -> None:
         organization = text("backend/services/organization-service/src/main/kotlin/com/lmspilot/organization/api/OrganizationApi.kt")
@@ -139,15 +139,15 @@ class ClsRequirementTraceTests(unittest.TestCase):
         self.assertIn("file_edit_sessions", migration)
         self.assertIn("PDF_ANNOTATION", migration)
 
-    def test_fantasy_ui_keeps_accessibility_and_reduced_motion(self) -> None:
-        css = text("apps/web/app/globals.css")
-        shell = text("apps/web/components/PortalShell.tsx")
+    def test_cosmic_ui_keeps_accessibility_and_reduced_motion(self) -> None:
+        css = text("apps/web/app/globals.css") + text("apps/web/app/cosmic-v011.css")
+        shell = text("apps/web/components/CosmicShell.tsx")
         login = text("apps/web/app/login/LoginForm.tsx")
         self.assertIn("prefers-reduced-motion", css)
         self.assertIn("prefers-contrast", css)
         self.assertIn(":focus-visible", css)
-        self.assertIn("MysticBackdrop", shell)
-        self.assertIn("portal", login.lower())
+        self.assertIn("CosmicField", shell)
+        self.assertIn("cosmic", login.lower())
 
     def test_competition_only_permission_and_registration_window(self) -> None:
         assessment = text("backend/services/assessment-service/src/main/kotlin/com/lmspilot/assessment/api/AssessmentApi.kt")
@@ -160,7 +160,7 @@ class ClsRequirementTraceTests(unittest.TestCase):
 
     def test_learner_live_sessions_use_private_schedule_endpoint(self) -> None:
         api = text("backend/services/enrollment-service/src/main/kotlin/com/lmspilot/enrollment/api/AssignmentAndLiveApi.kt")
-        ui = text("apps/web/components/RealmControlCenter.tsx")
+        ui = text("apps/web/components/WorkspaceControlCenter.tsx")
         self.assertIn('@GetMapping("/me")', api)
         self.assertIn("fun mine() = service.myLiveSessions()", api)
         self.assertIn("LIVE_SESSIONS_JOIN", api)
@@ -193,7 +193,7 @@ class ClsRequirementTraceTests(unittest.TestCase):
         self.assertIn("Permissions.LIVE_SESSIONS_MANAGE", instructor)
 
     def test_competition_ui_uses_valid_visibility_and_exam_route(self) -> None:
-        ui = text("apps/web/components/RealmControlCenter.tsx")
+        ui = text("apps/web/components/WorkspaceControlCenter.tsx")
         self.assertIn("ADMIN_ONLY", ui)
         self.assertNotIn("AFTER_PUBLISH", ui)
         self.assertIn('href={`/exams/${active.id}`}', ui)

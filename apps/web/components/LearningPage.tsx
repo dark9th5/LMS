@@ -88,16 +88,16 @@ export function LearningPage({ user }: { user: PortalUser }) {
         icon="learn"
       />
       <section className="learner-hero journey-hero">
-        <div className="journey-map" aria-hidden="true">
+        <div className="journey-burst" aria-hidden="true">
           <i />
           <i />
           <i />
-          <span>✦</span>
-          <b>ASCEND</b>
+          <span>+</span>
+          <b>KEEP GOING</b>
         </div>
         <div className="journey-copy">
           <span>HÀNH TRÌNH CỦA BẠN · LIVE</span>
-          <h2>Mỗi bước tiến đều được khắc vào tinh đồ.</h2>
+          <h2>Mỗi lần quay lại, bạn tiến gần mục tiêu hơn.</h2>
           <p>
             Tiến độ được lưu trên máy chủ và có thể tiếp tục từ thiết bị khác
             trong cùng mạng LAN.
@@ -113,13 +113,13 @@ export function LearningPage({ user }: { user: PortalUser }) {
             </span>
             <span>
               <strong>{rows.length - completed}</strong>
-              <small>Đang chờ khám phá</small>
+              <small>Đang tiếp tục</small>
             </span>
           </div>
         </div>
         <div className="journey-progress">
           <div
-            className="journey-orbit"
+            className="journey-disc"
             style={{
               background: `conic-gradient(#6fe4d0 0 ${average}%,rgba(255,255,255,.08) ${average}% 100%)`,
             }}
@@ -184,16 +184,16 @@ export function LearningPage({ user }: { user: PortalUser }) {
                 key={row.enrollmentId}
               >
                 <div className={`learning-cover cover-${index % 5}`}>
-                  <div className="learning-map" aria-hidden="true">
+                  <div className="learning-color-shapes" aria-hidden="true">
                     <i />
                     <i />
-                    <span>✦</span>
+                    <span>+</span>
                   </div>
                   <span className="learning-code">
                     {course?.code ?? "COURSE"}
                   </span>
                   <small>PATH {String(index + 1).padStart(2, "0")}</small>
-                  <div className="learning-cover-orbit">
+                  <div className="learning-symbol">
                     <Icon name="learn" size={34} />
                     <i />
                   </div>
@@ -213,7 +213,7 @@ export function LearningPage({ user }: { user: PortalUser }) {
                   </p>
                   <ProgressBar
                     value={row.progressPercent}
-                    label="Mức độ khai mở"
+                    label="Tiến độ học tập"
                   />
                   <div className="course-meta">
                     <span>
@@ -227,7 +227,7 @@ export function LearningPage({ user }: { user: PortalUser }) {
                   </div>
                   <div className="learning-action">
                     <span>
-                      <small>CONTINUE JOURNEY</small>
+                      <small>CONTINUE LEARNING</small>
                       {row.status === "NOT_STARTED"
                         ? "Bắt đầu học"
                         : row.status === "COMPLETED"

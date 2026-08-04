@@ -684,7 +684,7 @@ class AssessmentManagementService(
     private fun assessmentContextType(exam: ExamEntity): AssessmentContextType =
         contexts.findById(exam.id).orElse(null)?.contextType
             ?: if (exam.courseId == null) AssessmentContextType.STANDALONE_EXAM else AssessmentContextType.COURSE_QUIZ
-    private fun isGlobalAdministrator() = CurrentUser.isSystemAdmin() || "ADMIN" in CurrentUser.roles()
+    private fun isGlobalAdministrator() = CurrentUser.isSystemAdmin()
     private fun isAdmin() = isGlobalAdministrator()
 
     private fun scopedExamIds(): Set<UUID> =
@@ -699,12 +699,15 @@ class AssessmentManagementService(
             requireCourseExamScope(context.courseId, permission)
             return
         }
-        val systemPermission = scopedAuthorization.allowed(permission, "SYSTEM", null) ||
+        val systemPermission = permission in CurrentUser.authorities() ||
+            Permissions.EXAMS_MANAGE in CurrentUser.authorities() ||
+            Permissions.ASSESSMENT_MANAGE in CurrentUser.authorities() ||
+            scopedAuthorization.allowed(permission, "SYSTEM", null) ||
             scopedAuthorization.allowed(Permissions.EXAMS_MANAGE, "SYSTEM", null) ||
             scopedAuthorization.allowed(Permissions.ASSESSMENT_MANAGE, "SYSTEM", null) ||
             (context.type == AssessmentContextType.COMPETITION &&
                 scopedAuthorization.allowed(Permissions.COMPETITIONS_MANAGE, "SYSTEM", null))
-        if (!isGlobalAdministrator() && "INSTRUCTOR" !in CurrentUser.roles() && !systemPermission) {
+        if (!isGlobalAdministrator() && !systemPermission) {
             throw ApiException(HttpStatus.FORBIDDEN, "ASSESSMENT_CREATE_OUT_OF_SCOPE", "Cần quyền toàn hệ thống để tạo bài thi độc lập")
         }
     }

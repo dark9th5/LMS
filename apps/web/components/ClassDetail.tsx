@@ -32,8 +32,14 @@ export function ClassDetail({ classId, user }: { classId: string; user: PortalUs
       const [courseData, enrollmentData] = await Promise.all([apiRequest<Course>(`/api/v1/courses/${item.courseId}`), apiRequest<unknown>(`/api/v1/classes/${classId}/enrollments`)]);
       setTrainingClass(item); setCourse(courseData); setEnrollments(unwrapItems<Enrollment>(enrollmentData as any));
       if (user.permissions.includes("users:read")) {
-        const userData = await apiRequest<unknown>("/api/v1/users?role=LEARNER&size=100");
-        setUsers(unwrapItems<UserAccount>(userData as any));
+        const userData = await apiRequest<unknown>("/api/v1/users?size=1000");
+        setUsers(
+          unwrapItems<UserAccount>(userData as any).filter(
+            (account) =>
+              account.status === "ACTIVE" &&
+              (account.permissions ?? []).includes("courses:learn"),
+          ),
+        );
       }
     } catch (caught) { setError(caught instanceof Error ? caught.message : "Không thể tải lớp đào tạo"); }
     finally { setLoading(false); }

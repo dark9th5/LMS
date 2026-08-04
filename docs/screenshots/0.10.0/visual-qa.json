@@ -1,0 +1,17 @@
+{
+  "screenshots": [
+    "01-login-desktop.png",
+    "02-dashboard-desktop.png",
+    "02b-dashboard-full.png",
+    "03-courses-desktop.png",
+    "03b-courses-full.png",
+    "04-classes-desktop.png",
+    "05-exams-desktop.png",
+    "06-learning-desktop.png",
+    "07-learning-mobile.png",
+    "07b-learning-mobile-full.png",
+    "08-login-mobile-full.png"
+  ],
+  "pageErrors": [],
+  "serverErrors": ""
+}

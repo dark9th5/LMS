@@ -103,7 +103,10 @@ class RepositoryContractTests(unittest.TestCase):
         css = (ROOT / "apps/web/app/globals.css").read_text(encoding="utf-8")
         self.assertIn(".sidebar-nav::-webkit-scrollbar", css)
         self.assertIn(".player-lesson-list::-webkit-scrollbar", css)
-        self.assertGreaterEqual(css.count("scrollbar-width:none"), 2)
+        self.assertGreaterEqual(
+            len(re.findall(r"scrollbar-width:\s*none", css)),
+            2,
+        )
 
 
     def test_course_lessons_support_real_editing_and_inline_viewing(self) -> None:

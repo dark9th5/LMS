@@ -1,4 +1,6 @@
-# LMSPilot CLS — Học viện Huyền Tri UI
+# Tài liệu lịch sử — Học viện Huyền Tri UI
+
+> **Không còn là giao diện hiện hành.** Runtime fantasy và các component được nhắc bên dưới đã bị loại bỏ từ các bản sau. Giao diện hiện hành nằm trong `../SOFT_SPECTRUM_0.14.0.md`; tài liệu này chỉ được giữ để truy vết lịch sử.
 
 ## Mục tiêu
 

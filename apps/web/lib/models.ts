@@ -235,15 +235,11 @@ export function formatDuration(minutes?: number | null): string {
 }
 
 export function roleLabel(roles: string[]): string {
-  if (!roles.length) return "Người dùng";
-  if (roles.includes("ADMIN")) return "Quản trị viên";
-  if (roles.includes("INSTRUCTOR")) return "Giảng viên";
-  if (roles.includes("LEARNER") || roles.includes("STUDENT")) return "Học viên";
-  return roles.join(" · ");
+  if (!roles.length) return "Chưa có gói quyền";
+  return roles.map((role) => role.replaceAll("_", " ")).join(" · ");
 }
 
-export function primaryRole(roles: string[]): "ADMIN" | "INSTRUCTOR" | "STUDENT" {
-  if (roles.includes("ADMIN")) return "ADMIN";
-  if (roles.includes("INSTRUCTOR")) return "INSTRUCTOR";
-  return "STUDENT";
+/** @deprecated Dùng accountType và permission hiệu lực thay cho role chính. */
+export function primaryRole(roles: string[]): "USER" | "POWER_USER" {
+  return roles.length > 1 ? "POWER_USER" : "USER";
 }

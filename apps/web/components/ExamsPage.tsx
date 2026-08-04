@@ -310,7 +310,7 @@ export function ExamsPage({ user }: { user: PortalUser }) {
             >
               <div className="exam-card-scene">
                 <span className="exam-sequence">
-                  CHALLENGE {String(index + 1).padStart(2, "0")}
+                  ASSESSMENT {String(index + 1).padStart(2, "0")}
                 </span>
                 <div className="exam-card-icon">
                   <Icon name="exam" size={29} />
@@ -321,17 +321,17 @@ export function ExamsPage({ user }: { user: PortalUser }) {
                   <strong>{exam.passingScore}</strong>
                   <small>% ĐIỂM ĐẠT</small>
                 </div>
-                <div className="exam-card-map" aria-hidden="true">
+                <div className="exam-color-shapes" aria-hidden="true">
                   <i />
                   <i />
                   <i />
-                  <span>✦</span>
+                  <span>+</span>
                 </div>
               </div>
               <div className="exam-card-body">
                 <div>
                   <StatusBadge value={exam.status} />
-                  <span>PROTOCOL v{exam.version}</span>
+                  <span>VERSION {exam.version}</span>
                 </div>
                 <h2>{exam.title}</h2>
                 <p>
@@ -359,7 +359,7 @@ export function ExamsPage({ user }: { user: PortalUser }) {
                 </dl>
                 <span className="exam-open">
                   <span>
-                    <small>ENTER CHALLENGE</small>
+                    <small>OPEN ASSESSMENT</small>
                     {canManage ? "Xem và chỉnh sửa" : "Mở bài kiểm tra"}
                   </span>
                   <i>

@@ -181,7 +181,10 @@ class AssignmentAndLiveService(
     }
 
     private fun requireClassManager(trainingClass: TrainingClassEntity) {
-        if (CurrentUser.isSystemAdmin() || "ADMIN" in CurrentUser.roles() || CurrentUser.id() == trainingClass.createdBy || CurrentUser.id() in trainingClass.instructorIds) return
+        if (CurrentUser.isSystemAdmin() ||
+            Permissions.CLASSES_MANAGE in CurrentUser.authorities() ||
+            Permissions.LIVE_SESSIONS_MANAGE in CurrentUser.authorities() ||
+            CurrentUser.id() == trainingClass.createdBy || CurrentUser.id() in trainingClass.instructorIds) return
         val permissions = setOf(Permissions.CLASSES_MANAGE, Permissions.COURSES_ASSIGN, Permissions.LIVE_SESSIONS_MANAGE)
         val scoped = CurrentUser.authorities().any { it in permissions } && permissions.any {
             scopedAuthorization.allowed(it, "COURSE", trainingClass.courseId)
@@ -190,7 +193,7 @@ class AssignmentAndLiveService(
     }
 
     private fun requireCourseManager(courseId: UUID, permission: String) {
-        if (CurrentUser.isSystemAdmin() || "ADMIN" in CurrentUser.roles()) return
+        if (CurrentUser.isSystemAdmin() || permission in CurrentUser.authorities() || Permissions.CLASSES_MANAGE in CurrentUser.authorities()) return
         val assignedInstructor = classes.findAll().any { it.courseId == courseId && CurrentUser.id() in it.instructorIds }
         val scoped = scopedAuthorization.allowed(permission, "COURSE", courseId) ||
             scopedAuthorization.allowed(Permissions.CLASSES_MANAGE, "COURSE", courseId)
