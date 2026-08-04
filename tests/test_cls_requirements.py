@@ -140,14 +140,15 @@ class ClsRequirementTraceTests(unittest.TestCase):
         self.assertIn("PDF_ANNOTATION", migration)
 
     def test_cosmic_ui_keeps_accessibility_and_reduced_motion(self) -> None:
-        css = text("apps/web/app/globals.css") + text("apps/web/app/cosmic-v011.css")
+        css = text("apps/web/app/globals.css") + text("apps/web/app/unified.css")
         shell = text("apps/web/components/CosmicShell.tsx")
         login = text("apps/web/app/login/LoginForm.tsx")
         self.assertIn("prefers-reduced-motion", css)
         self.assertIn("prefers-contrast", css)
         self.assertIn(":focus-visible", css)
-        self.assertIn("CosmicField", shell)
-        self.assertIn("cosmic", login.lower())
+        self.assertIn("visibleGroups", shell)
+        self.assertIn("aria-describedby", login)
+        self.assertIn("input:-webkit-autofill", css)
 
     def test_competition_only_permission_and_registration_window(self) -> None:
         assessment = text("backend/services/assessment-service/src/main/kotlin/com/lmspilot/assessment/api/AssessmentApi.kt")

@@ -1,25 +1,32 @@
-# BẮT ĐẦU TẠI ĐÂY — LMSPilot CLS 0.15.0
-
-Đây là repository đầy đủ; không cần áp overlay.
+# BẮT ĐẦU TẠI ĐÂY — LMSPilot CLS 0.16.0
 
 ## 1. Giải nén an toàn
 
-Giải nén `LMS-CLS-complete-0.15.0.zip` vào thư mục mới, không ghi đè repository đang chạy. Nếu muốn thay code trong repository Git hiện có, tạo branch/tag dự phòng và giữ nguyên thư mục `.git`.
+Giải nén `LMS-CLS-complete-0.16.0.zip` vào một thư mục mới. Không ghi đè trực tiếp hệ thống đang chạy trước khi tạo branch/tag và backup dữ liệu.
 
-## 2. Yêu cầu
+Khi thay source trong repository Git hiện có, giữ nguyên thư mục `.git`, tạo branch riêng và sao chép nội dung bản 0.16.0 vào working tree.
 
-- Windows: Docker Desktop, Linux containers, PowerShell.
-- Linux: Docker Engine và Docker Compose v2.
-- Lần build đầu cần truy cập registry hoặc có sẵn image/dependency cache.
-- Python 3 trên host nếu dùng Operations Agent cho backup/restore từ giao diện.
+## 2. Chuẩn bị môi trường
 
-## 3. Cài đặt
+- Java 21
+- Node.js 22–24 và npm 10+
+- Docker/Docker Compose khi chạy full stack
+- Python 3.13 và PyYAML/pytest cho kiểm tra repository
 
-Windows:
+## 3. Kiểm tra source
 
-```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\setup.ps1
+```bash
+python scripts/validate-repository.py
+pytest -q
+cd apps/web
+npm ci
+npm run typecheck
+npm run build
+cd ../../backend
+./gradlew test
 ```
+
+## 4. Chạy hệ thống
 
 Linux:
 
@@ -28,31 +35,24 @@ chmod +x scripts/*.sh
 ./scripts/setup.sh
 ```
 
-Không sửa migration hoặc dùng secret mẫu trước lần chạy đầu. Setup sẽ tạo `.env`, sinh secret, chạy preflight, build, health check và smoke test.
+Windows:
 
-## 4. Đăng nhập
-
-Khi thấy `SMOKE TEST PASSED`, mở `http://localhost:3000`.
-
-Username demo:
-
-```text
-admin
-instructor
-learner
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\setup.ps1
 ```
 
-Mật khẩu nằm trong `.env`, biến `LMSPILOT_DEFAULT_ADMIN_PASSWORD`. Hệ thống có thể yêu cầu đổi mật khẩu ở lần đăng nhập đầu tùy seed/policy.
+Chỉ coi setup thành công khi smoke test báo `SMOKE TEST PASSED`.
 
-## 5. Kiểm tra khi có lỗi
+## 5. Kiểm tra giao diện 0.16
 
-```bash
-docker compose ps
-docker compose logs --tail=200
-./scripts/preflight.sh
-./scripts/test-static.sh
-```
+Sau khi đăng nhập bằng System Admin:
 
-Windows dùng các lệnh Docker tương tự và `scripts\preflight.ps1`, `scripts\test-static.ps1`.
+1. Mở `Cài đặt` và chọn giao diện sáng hoặc tối.
+2. Chọn màu chủ đạo và màu nền; kiểm tra bản xem trước tự chọn màu chữ.
+3. Kiểm tra login ở default, focus, filled, error và browser autofill.
+4. Mở một bài học; nội dung phải nằm ở cột lớn, mục lục ở cột phụ.
+5. Mở một bài thi; câu hỏi phải nằm ở cột lớn, danh sách câu ở cột phụ.
+6. Kiểm tra sidebar admin chỉ còn các khu vực Core.
+7. Kiểm tra form câu hỏi có từng dòng phương án và nút `+ / −`.
 
-Đăng nhập bằng System Admin, mở `Thiết lập thương hiệu → Theme Studio` để xem thử hoặc áp dụng 10 theme. `Sắc màu Cân bằng` là default; sidebar chỉ dùng navy–xám–trắng và vẫn mở ba nhóm Học tập/Đánh giá/Quản trị theo quyền. Đọc trước `docs/PERMISSION_FIRST_0.15.0.md`, sau đó xem `README.md`, `DELIVERY_STATUS.md`, `docs/SOFT_SPECTRUM_0.14.0.md`, `docs/BUILD_VERIFICATION_0.14.0.md`, `docs/AUDIT_0.8.2.md`, `docs/BA_CLS_TRACEABILITY_0.8.2.md`, `docs/OPERATIONS_RUNBOOK.md`.
+Đọc `docs/UNIFIED_UI_0.16.0.md`, `TEST_RESULTS_CLS_0.16.0.md` và `DELIVERY_STATUS.md` trước khi merge vào nhánh chính.

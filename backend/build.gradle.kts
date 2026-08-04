@@ -8,7 +8,7 @@ plugins {
 
 allprojects {
     group = "com.lmspilot"
-    version = "0.15.0"
+    version = "0.16.0"
 }
 
 subprojects {

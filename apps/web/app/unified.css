@@ -1,0 +1,1474 @@
+/* LMS Unified Design System 0.16.0
+ * One component system, two colour modes, accessible typography and focus.
+ * Loaded after globals.css to retire the visual behaviour of all legacy themes.
+ */
+
+:root,
+html[data-theme="unified-light"] {
+  color-scheme: light;
+  --ui-primary: var(--brand-primary, #2563eb);
+  --ui-on-primary: var(--brand-on-primary, #ffffff);
+  --ui-secondary: #475569;
+  --ui-bg: #f6f7f9;
+  --ui-surface: #ffffff;
+  --ui-surface-alt: #f0f3f7;
+  --ui-text: #172033;
+  --ui-muted: #5f6b7a;
+  --ui-border: #c7ced8;
+  --ui-border-strong: #8d99a8;
+  --ui-focus: #1d4ed8;
+  --ui-success: #087443;
+  --ui-warning: #9a5b00;
+  --ui-danger: #b42318;
+  --ui-info: #175cd3;
+  --ui-overlay: rgba(15, 23, 42, 0.58);
+  --ui-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+  --ui-shadow-sm: 0 4px 14px rgba(15, 23, 42, 0.08);
+  --ui-radius-sm: 8px;
+  --ui-radius: 12px;
+  --ui-radius-lg: 18px;
+}
+
+html[data-theme="unified-dark"] {
+  color-scheme: dark;
+  --ui-primary: var(--brand-primary, #7cb4ff);
+  --ui-on-primary: var(--brand-on-primary, #111827);
+  --ui-secondary: #a8b3c2;
+  --ui-bg: #10151d;
+  --ui-surface: #18212d;
+  --ui-surface-alt: #202b39;
+  --ui-text: #f3f6fa;
+  --ui-muted: #a8b3c2;
+  --ui-border: #3a4758;
+  --ui-border-strong: #697789;
+  --ui-focus: #9cc6ff;
+  --ui-success: #58d49a;
+  --ui-warning: #ffc56e;
+  --ui-danger: #ff8a82;
+  --ui-info: #8fc0ff;
+  --ui-overlay: rgba(0, 0, 0, 0.7);
+  --ui-shadow: 0 16px 36px rgba(0, 0, 0, 0.24);
+  --ui-shadow-sm: 0 6px 18px rgba(0, 0, 0, 0.2);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  min-width: 320px;
+  font-size: 16px;
+  background: var(--ui-bg);
+  text-rendering: optimizeLegibility;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    Helvetica, Arial, sans-serif !important;
+  font-size: 1rem !important;
+  line-height: 1.55;
+  color: var(--ui-text) !important;
+  background: var(--ui-bg) !important;
+}
+
+body,
+button,
+input,
+select,
+textarea {
+  font-family: inherit !important;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+strong,
+b {
+  font-family: inherit !important;
+  color: inherit;
+}
+
+h1 {
+  font-size: clamp(1.875rem, 2vw + 1rem, 2.75rem) !important;
+  line-height: 1.15 !important;
+  letter-spacing: -0.025em !important;
+}
+
+h2 {
+  font-size: clamp(1.375rem, 1vw + 1rem, 2rem) !important;
+  line-height: 1.25 !important;
+}
+
+h3 {
+  font-size: 1.125rem !important;
+  line-height: 1.35 !important;
+}
+
+p,
+li,
+dd,
+dt,
+td,
+th {
+  font-size: 1rem;
+}
+
+small,
+.caption,
+.eyebrow,
+[class*="-hint"],
+[class*="-subtitle"] {
+  font-size: 0.8125rem !important;
+  line-height: 1.45 !important;
+}
+
+a {
+  color: var(--ui-primary);
+  text-underline-offset: 0.18em;
+}
+
+::selection {
+  color: var(--ui-on-primary);
+  background: var(--ui-primary);
+}
+
+:focus {
+  outline: none;
+}
+
+:focus-visible {
+  outline: 3px solid var(--ui-focus) !important;
+  outline-offset: 3px !important;
+  box-shadow: none !important;
+}
+
+button,
+[role="button"],
+a.button,
+.button,
+.icon-button {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+button,
+.button {
+  font-size: 0.9375rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+}
+
+button:disabled,
+.button:disabled,
+input:disabled,
+select:disabled,
+textarea:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
+/* Form controls */
+label {
+  color: var(--ui-text) !important;
+  font-size: 0.875rem !important;
+  font-weight: 650;
+  line-height: 1.45;
+}
+
+input:not([type="checkbox"]):not([type="radio"]):not([type="color"]),
+select,
+textarea {
+  width: 100%;
+  min-height: 46px;
+  border: 1px solid var(--ui-border-strong) !important;
+  border-radius: var(--ui-radius-sm) !important;
+  padding: 0.7rem 0.8rem !important;
+  color: var(--ui-text) !important;
+  background: var(--ui-surface) !important;
+  caret-color: var(--ui-text) !important;
+  font-size: 1rem !important;
+  font-weight: 500 !important;
+  line-height: 1.45 !important;
+  box-shadow: none !important;
+  transition: border-color 120ms ease, background-color 120ms ease;
+}
+
+textarea {
+  min-height: 112px;
+  resize: vertical;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--ui-muted) !important;
+  opacity: 1 !important;
+}
+
+input:not([type="checkbox"]):not([type="radio"]):not([type="color"]):hover,
+select:hover,
+textarea:hover {
+  border-color: var(--ui-text) !important;
+}
+
+input:not([type="checkbox"]):not([type="radio"]):not([type="color"]):focus,
+select:focus,
+textarea:focus {
+  color: var(--ui-text) !important;
+  background: var(--ui-surface) !important;
+  border-color: var(--ui-focus) !important;
+  outline: 3px solid color-mix(in srgb, var(--ui-focus) 28%, transparent) !important;
+  outline-offset: 1px !important;
+}
+
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--ui-text) !important;
+  caret-color: var(--ui-text) !important;
+  box-shadow: 0 0 0 1000px var(--ui-surface) inset !important;
+  transition: background-color 9999s ease-out 0s;
+}
+
+input[type="checkbox"],
+input[type="radio"] {
+  width: 20px !important;
+  height: 20px !important;
+  min-width: 20px;
+  accent-color: var(--ui-primary);
+}
+
+.form-error,
+.form-alert.error,
+.floating-error {
+  border: 1px solid color-mix(in srgb, var(--ui-danger) 65%, var(--ui-border)) !important;
+  border-radius: var(--ui-radius-sm) !important;
+  padding: 0.75rem 0.9rem !important;
+  color: var(--ui-danger) !important;
+  background: color-mix(in srgb, var(--ui-danger) 9%, var(--ui-surface)) !important;
+  font-size: 0.9rem !important;
+  font-weight: 650;
+}
+
+/* Shared buttons */
+.button,
+.cosmic-login-button,
+.workspace-button,
+button.primary,
+.button.primary {
+  border: 1px solid var(--ui-primary) !important;
+  border-radius: var(--ui-radius-sm) !important;
+  padding: 0.65rem 1rem !important;
+  color: var(--ui-on-primary) !important;
+  background: var(--ui-primary) !important;
+  box-shadow: none !important;
+}
+
+.button.secondary,
+.button.ghost,
+.workspace-button.secondary,
+button.secondary {
+  border: 1px solid var(--ui-border-strong) !important;
+  color: var(--ui-text) !important;
+  background: var(--ui-surface) !important;
+  box-shadow: none !important;
+}
+
+.button:hover:not(:disabled),
+.cosmic-login-button:hover:not(:disabled),
+.workspace-button:hover:not(:disabled) {
+  filter: brightness(0.94);
+  transform: none !important;
+}
+
+.icon-button {
+  display: inline-grid !important;
+  place-items: center;
+  border: 1px solid var(--ui-border) !important;
+  border-radius: var(--ui-radius-sm) !important;
+  color: var(--ui-text) !important;
+  background: var(--ui-surface) !important;
+  box-shadow: none !important;
+}
+
+/* Shell */
+.cosmic-field,
+.cosmic-atmosphere,
+.cosmic-grid,
+.content-ribbon,
+.sidebar-live-card,
+.page-header-sculpture,
+.preview-stars,
+.button-spark {
+  display: none !important;
+}
+
+.cosmic-shell,
+.app-shell {
+  min-height: 100vh;
+  color: var(--ui-text) !important;
+  background: var(--ui-bg) !important;
+}
+
+.cosmic-sidebar {
+  width: 280px !important;
+  border-right: 1px solid var(--ui-border) !important;
+  color: var(--ui-text) !important;
+  background: var(--ui-surface) !important;
+  box-shadow: none !important;
+}
+
+.cosmic-workspace {
+  margin-left: 280px !important;
+  min-width: 0;
+  background: var(--ui-bg) !important;
+}
+
+.sidebar-top,
+.sidebar-bottom,
+.cosmic-topbar {
+  border-color: var(--ui-border) !important;
+  background: var(--ui-surface) !important;
+}
+
+.cosmic-brand {
+  color: var(--ui-text) !important;
+  text-decoration: none;
+}
+
+.cosmic-brand strong {
+  font-size: 1rem !important;
+  letter-spacing: 0 !important;
+}
+
+.cosmic-brand small {
+  color: var(--ui-muted) !important;
+  font-size: 0.72rem !important;
+  letter-spacing: 0.035em !important;
+}
+
+.mission-mark,
+.simple-brand-mark {
+  display: grid !important;
+  place-items: center;
+  width: 42px !important;
+  height: 42px !important;
+  border: 0 !important;
+  border-radius: 10px !important;
+  color: var(--ui-on-primary) !important;
+  background: var(--ui-primary) !important;
+  box-shadow: none !important;
+  font-size: 1.15rem;
+  font-weight: 800;
+}
+
+.mission-mark i,
+.mission-mark b,
+.mission-mark em {
+  display: none !important;
+}
+
+.mission-mark::before {
+  content: "L";
+}
+
+.cosmic-nav {
+  padding: 0.75rem !important;
+}
+
+.nav-group {
+  margin: 0 0 0.5rem !important;
+  border: 0 !important;
+  border-radius: var(--ui-radius) !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.nav-group-toggle {
+  min-height: 52px !important;
+  width: 100%;
+  border: 0 !important;
+  border-radius: var(--ui-radius-sm) !important;
+  color: var(--ui-text) !important;
+  background: transparent !important;
+}
+
+.nav-group-toggle:hover,
+.nav-group.expanded > .nav-group-toggle {
+  background: var(--ui-surface-alt) !important;
+}
+
+.nav-group-main-icon,
+.nav-icon,
+.command-icon {
+  color: var(--ui-primary) !important;
+  background: color-mix(in srgb, var(--ui-primary) 10%, var(--ui-surface)) !important;
+  border: 0 !important;
+  border-radius: 8px !important;
+}
+
+.nav-group-copy strong,
+.nav-copy b {
+  color: var(--ui-text) !important;
+  font-size: 0.93rem !important;
+}
+
+.nav-group-copy small,
+.nav-copy small {
+  color: var(--ui-muted) !important;
+  font-size: 0.79rem !important;
+}
+
+.nav-group-count {
+  color: var(--ui-muted) !important;
+  background: transparent !important;
+}
+
+.nav-group-panel,
+.nav-group-items,
+.nav-group-items-inner {
+  background: transparent !important;
+}
+
+.nav-link {
+  min-height: 48px !important;
+  margin: 2px 0 !important;
+  border: 1px solid transparent !important;
+  border-radius: var(--ui-radius-sm) !important;
+  color: var(--ui-text) !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.nav-link:hover {
+  background: var(--ui-surface-alt) !important;
+}
+
+.nav-link.active {
+  border-color: color-mix(in srgb, var(--ui-primary) 30%, var(--ui-border)) !important;
+  color: var(--ui-text) !important;
+  background: color-mix(in srgb, var(--ui-primary) 11%, var(--ui-surface)) !important;
+}
+
+.sidebar-command,
+.sidebar-user,
+.topbar-command {
+  border: 1px solid var(--ui-border) !important;
+  border-radius: var(--ui-radius-sm) !important;
+  color: var(--ui-text) !important;
+  background: var(--ui-surface-alt) !important;
+  box-shadow: none !important;
+}
+
+.sidebar-user small,
+.topbar-context small,
+.topbar-date small {
+  color: var(--ui-muted) !important;
+}
+
+.cosmic-topbar {
+  min-height: 68px !important;
+  padding: 0.7rem 1.25rem !important;
+  border-bottom: 1px solid var(--ui-border) !important;
+}
+
+.topbar-context strong,
+.topbar-date b {
+  color: var(--ui-text) !important;
+  font-size: 0.94rem !important;
+}
+
+.cosmic-content {
+  width: 100%;
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: clamp(1rem, 2vw, 2rem) !important;
+  color: var(--ui-text) !important;
+}
+
+/* Cards, panels, tables */
+.panel,
+.workspace-panel,
+.summary-card,
+.state-card,
+.stat-grid > div,
+.advanced-stats > div,
+.kpi-stats > div,
+.course-card,
+.class-card,
+.exam-card,
+.result-panel,
+.exam-intro,
+.theme-studio,
+.theme-card,
+.service-card,
+.assignment-box,
+.learning-callout,
+.empty-state,
+.loading-state,
+.error-state {
+  border: 1px solid var(--ui-border) !important;
+  border-radius: var(--ui-radius) !important;
+  color: var(--ui-text) !important;
+  background: var(--ui-surface) !important;
+  box-shadow: var(--ui-shadow-sm) !important;
+}
+
+.state-card,
+.stat-grid > div,
+.advanced-stats > div,
+.kpi-stats > div {
+  padding: 1rem !important;
+}
+
+.state-card strong,
+.stat-grid strong,
+.advanced-stats strong,
+.kpi-stats strong {
+  font-size: 1.55rem !important;
+  line-height: 1.2;
+}
+
+.state-card span,
+.stat-grid span,
+.advanced-stats span,
+.kpi-stats span {
+  color: var(--ui-muted) !important;
+  font-size: 0.8125rem !important;
+}
+
+.panel-header,
+.workspace-panel > header,
+.section-title,
+.card-header {
+  border-color: var(--ui-border) !important;
+  color: var(--ui-text) !important;
+  background: var(--ui-surface) !important;
+}
+
+.data-table,
+table {
+  width: 100%;
+  border-collapse: collapse;
+  color: var(--ui-text) !important;
+  background: var(--ui-surface) !important;
+}
+
+th {
+  padding: 0.75rem !important;
+  border-bottom: 1px solid var(--ui-border-strong) !important;
+  color: var(--ui-muted) !important;
+  background: var(--ui-surface-alt) !important;
+  font-size: 0.8125rem !important;
+  text-align: left;
+}
+
+td {
+  padding: 0.8rem !important;
+  border-bottom: 1px solid var(--ui-border) !important;
+  color: var(--ui-text) !important;
+  background: var(--ui-surface) !important;
+  font-size: 0.9375rem !important;
+}
+
+tr:hover td {
+  background: var(--ui-surface-alt) !important;
+}
+
+.status-badge,
+.tag,
+.content-type,
+.access-chip,
+.command-badge {
+  border: 1px solid var(--ui-border) !important;
+  border-radius: 999px !important;
+  color: var(--ui-text) !important;
+  background: var(--ui-surface-alt) !important;
+  font-size: 0.78rem !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+}
+
+/* Login */
+.unified-login-page,
+.cosmic-login-page {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1.05fr) minmax(420px, 0.75fr) !important;
+  min-height: 100vh;
+  color: var(--ui-text) !important;
+  background: var(--ui-bg) !important;
+}
+
+.unified-login-page .login-showcase {
+  position: relative;
+  display: flex !important;
+  min-height: 100vh !important;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: clamp(2rem, 5vw, 5rem) !important;
+  border: 0 !important;
+  border-right: 1px solid var(--ui-border) !important;
+  color: var(--ui-text) !important;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--ui-primary) 9%, var(--ui-surface)), transparent 55%),
+    var(--ui-surface) !important;
+  box-shadow: none !important;
+}
+
+.login-brand {
+  display: flex !important;
+  align-items: center;
+  gap: 0.85rem;
+  color: var(--ui-text) !important;
+}
+
+.login-logo {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+}
+
+.login-brand strong {
+  display: block;
+  font-size: 1.1rem !important;
+}
+
+.login-brand small {
+  display: block;
+  margin-top: 2px;
+  color: var(--ui-muted) !important;
+  font-size: 0.82rem !important;
+}
+
+.login-welcome {
+  max-width: 680px;
+  margin: auto 0;
+  padding: 4rem 0;
+}
+
+.login-welcome > span {
+  color: var(--ui-primary);
+  font-size: 0.88rem;
+  font-weight: 750;
+}
+
+.login-welcome h2 {
+  max-width: 15ch;
+  margin: 0.75rem 0 1rem;
+  font-size: clamp(2.2rem, 5vw, 4.5rem) !important;
+  letter-spacing: -0.045em !important;
+}
+
+.login-welcome p,
+.login-privacy {
+  max-width: 58ch;
+  color: var(--ui-muted) !important;
+  font-size: 1rem !important;
+}
+
+.unified-login-page .login-access {
+  display: grid !important;
+  min-height: 100vh !important;
+  place-items: center;
+  padding: clamp(1.25rem, 5vw, 4rem) !important;
+  color: var(--ui-text) !important;
+  background: var(--ui-bg) !important;
+}
+
+.unified-login-card,
+.cosmic-login-card {
+  width: min(100%, 440px) !important;
+  margin: 0 !important;
+  padding: clamp(1.5rem, 4vw, 2.25rem) !important;
+  border: 1px solid var(--ui-border) !important;
+  border-radius: var(--ui-radius-lg) !important;
+  color: var(--ui-text) !important;
+  background: var(--ui-surface) !important;
+  box-shadow: var(--ui-shadow) !important;
+}
+
+.login-form-heading {
+  display: block !important;
+  margin-bottom: 1.75rem;
+  border: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+}
+
+.login-form-heading h1 {
+  margin: 0 0 0.45rem !important;
+  font-size: 2rem !important;
+}
+
+.login-form-heading p,
+.login-help {
+  margin: 0;
+  color: var(--ui-muted) !important;
+  font-size: 0.9rem !important;
+}
+
+.cosmic-login-card form {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.cosmic-login-card .field-label {
+  margin-top: 0.55rem;
+}
+
+.cosmic-input {
+  position: relative;
+  display: flex !important;
+  align-items: center;
+  min-height: 48px;
+  border: 0 !important;
+  border-radius: var(--ui-radius-sm) !important;
+  color: var(--ui-text) !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+}
+
+.cosmic-input input {
+  padding-right: 4.5rem !important;
+}
+
+.reveal-password {
+  position: absolute;
+  right: 4px;
+  min-width: 56px;
+  min-height: 38px;
+  border: 0 !important;
+  border-radius: 6px !important;
+  color: var(--ui-primary) !important;
+  background: transparent !important;
+}
+
+.cosmic-login-button {
+  width: 100%;
+  min-height: 48px;
+  margin-top: 0.8rem;
+}
+
+.login-help {
+  margin-top: 1rem;
+  text-align: center;
+}
+
+.demo-access {
+  margin-top: 1rem;
+  border-top: 1px solid var(--ui-border);
+  padding-top: 1rem;
+  color: var(--ui-muted);
+}
+
+/* Header and dashboard simplification */
+.cosmic-page-header,
+.workspace-hero,
+.cosmic-dashboard-hero {
+  border: 1px solid var(--ui-border) !important;
+  border-radius: var(--ui-radius-lg) !important;
+  color: var(--ui-text) !important;
+  background: var(--ui-surface) !important;
+  box-shadow: var(--ui-shadow-sm) !important;
+}
+
+.page-heading h1,
+.workspace-hero h1,
+.cosmic-dashboard-hero h1 {
+  color: var(--ui-text) !important;
+  text-shadow: none !important;
+}
+
+.page-heading p,
+.workspace-hero p,
+.cosmic-dashboard-hero p {
+  color: var(--ui-muted) !important;
+  font-size: 1rem !important;
+}
+
+/* Learning workspace: content owns the viewport, outline is secondary. */
+.learning-player,
+.exam-taking {
+  width: 100%;
+  min-height: calc(100vh - 104px);
+  color: var(--ui-text) !important;
+  background: var(--ui-bg) !important;
+}
+
+.player-header,
+.exam-taking-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  min-height: 68px;
+  border: 1px solid var(--ui-border) !important;
+  border-radius: var(--ui-radius) !important;
+  padding: 0.75rem 1rem !important;
+  color: var(--ui-text) !important;
+  background: color-mix(in srgb, var(--ui-surface) 94%, transparent) !important;
+  box-shadow: var(--ui-shadow-sm) !important;
+  backdrop-filter: blur(12px);
+}
+
+.player-title small,
+.player-progress span,
+.exam-taking-header small,
+.exam-progress-row span {
+  color: var(--ui-muted) !important;
+  font-size: 0.8125rem !important;
+}
+
+.player-title strong,
+.exam-taking-header h1 {
+  color: var(--ui-text) !important;
+  font-size: 1rem !important;
+}
+
+.player-layout,
+.exam-taking-layout {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) 310px !important;
+  gap: 1rem !important;
+  margin-top: 1rem;
+  align-items: start;
+}
+
+.player-content,
+.exam-question-panel {
+  grid-column: 1;
+  grid-row: 1;
+  min-width: 0;
+  min-height: calc(100vh - 210px);
+  border: 1px solid var(--ui-border) !important;
+  border-radius: var(--ui-radius) !important;
+  color: var(--ui-text) !important;
+  background: var(--ui-surface) !important;
+  box-shadow: var(--ui-shadow-sm) !important;
+  overflow: hidden;
+}
+
+.player-outline,
+.exam-navigator {
+  grid-column: 2;
+  grid-row: 1;
+  position: sticky;
+  top: 84px;
+  max-height: calc(100vh - 112px);
+  min-width: 0;
+  overflow: auto;
+  border: 1px solid var(--ui-border) !important;
+  border-radius: var(--ui-radius) !important;
+  color: var(--ui-text) !important;
+  background: var(--ui-surface) !important;
+  box-shadow: var(--ui-shadow-sm) !important;
+}
+
+.player-outline-header,
+.question-editor-head {
+  border-bottom: 1px solid var(--ui-border) !important;
+  color: var(--ui-text) !important;
+  background: var(--ui-surface-alt) !important;
+}
+
+.player-lesson {
+  min-height: 58px !important;
+  border: 1px solid transparent !important;
+  border-radius: var(--ui-radius-sm) !important;
+  color: var(--ui-text) !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.player-lesson:hover {
+  background: var(--ui-surface-alt) !important;
+}
+
+.player-lesson.active {
+  border-color: color-mix(in srgb, var(--ui-primary) 35%, var(--ui-border)) !important;
+  background: color-mix(in srgb, var(--ui-primary) 10%, var(--ui-surface)) !important;
+}
+
+.player-lesson strong {
+  font-size: 0.92rem !important;
+}
+
+.player-lesson small {
+  color: var(--ui-muted) !important;
+  font-size: 0.78rem !important;
+}
+
+.completion-dot {
+  color: var(--ui-text) !important;
+  background: var(--ui-surface-alt) !important;
+  border-color: var(--ui-border) !important;
+}
+
+.completion-dot.done {
+  color: var(--ui-on-primary) !important;
+  background: var(--ui-primary) !important;
+}
+
+.learning-lesson {
+  color: var(--ui-text) !important;
+  background: var(--ui-surface) !important;
+}
+
+.learning-lesson > header {
+  padding: clamp(1.25rem, 3vw, 2.5rem) !important;
+  border-bottom: 1px solid var(--ui-border) !important;
+  background: var(--ui-surface) !important;
+}
+
+.learning-lesson > header h1 {
+  max-width: 24ch;
+  margin: 0.55rem 0 !important;
+  font-size: clamp(2rem, 4vw, 3.5rem) !important;
+}
+
+.learning-lesson > header p {
+  color: var(--ui-muted) !important;
+  font-size: 0.95rem !important;
+}
+
+.lesson-body {
+  padding: clamp(1.25rem, 3.5vw, 3.25rem) !important;
+}
+
+.learning-rich-text {
+  width: min(100%, 78ch);
+  margin-inline: auto;
+  color: var(--ui-text) !important;
+  font-size: 1.125rem !important;
+  line-height: 1.75 !important;
+}
+
+.learning-rich-text p,
+.learning-rich-text li {
+  font-size: inherit !important;
+  line-height: inherit !important;
+}
+
+.lesson-navigation,
+.exam-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
+  min-height: 72px;
+  border-top: 1px solid var(--ui-border) !important;
+  padding: 0.85rem 1rem !important;
+  color: var(--ui-text) !important;
+  background: color-mix(in srgb, var(--ui-surface) 96%, transparent) !important;
+  backdrop-filter: blur(10px);
+}
+
+/* Exam workspace */
+.exam-progress-row {
+  margin-top: 0.75rem;
+  color: var(--ui-text) !important;
+}
+
+.exam-navigator {
+  padding: 1rem !important;
+}
+
+.exam-navigator h2 {
+  margin: 0 0 0.85rem !important;
+  font-size: 1rem !important;
+}
+
+.exam-navigator > div:first-of-type {
+  display: grid !important;
+  grid-template-columns: repeat(5, minmax(42px, 1fr)) !important;
+  gap: 0.5rem !important;
+}
+
+.exam-navigator button {
+  min-width: 44px;
+  min-height: 44px;
+  border: 1px solid var(--ui-border-strong) !important;
+  border-radius: 8px !important;
+  color: var(--ui-text) !important;
+  background: var(--ui-surface) !important;
+  box-shadow: none !important;
+}
+
+.exam-navigator button.answered {
+  border-color: var(--ui-success) !important;
+  box-shadow: inset 0 -4px 0 var(--ui-success) !important;
+}
+
+.exam-navigator button.active {
+  border-color: var(--ui-primary) !important;
+  color: var(--ui-on-primary) !important;
+  background: var(--ui-primary) !important;
+  box-shadow: none !important;
+}
+
+.exam-legend {
+  color: var(--ui-muted) !important;
+  font-size: 0.8rem !important;
+}
+
+.exam-legend i {
+  border-color: var(--ui-border-strong) !important;
+  background: var(--ui-surface) !important;
+}
+
+.exam-legend i.answered {
+  border-color: var(--ui-success) !important;
+  background: var(--ui-success) !important;
+}
+
+.exam-question-panel {
+  display: flex;
+  flex-direction: column;
+}
+
+.question-editor {
+  flex: 1;
+  padding: clamp(1.25rem, 3.5vw, 3.5rem) !important;
+  color: var(--ui-text) !important;
+  background: var(--ui-surface) !important;
+}
+
+.question-editor h2 {
+  max-width: 42ch;
+  margin: 1.25rem 0 1.75rem !important;
+  font-size: clamp(1.4rem, 2vw, 2rem) !important;
+  line-height: 1.4 !important;
+}
+
+.answer-options {
+  display: grid;
+  gap: 0.75rem !important;
+}
+
+.answer-options label {
+  display: flex !important;
+  min-height: 56px;
+  align-items: flex-start;
+  gap: 0.85rem;
+  border: 1px solid var(--ui-border) !important;
+  border-radius: var(--ui-radius-sm) !important;
+  padding: 0.9rem 1rem !important;
+  color: var(--ui-text) !important;
+  background: var(--ui-surface) !important;
+  box-shadow: none !important;
+}
+
+.answer-options label:hover {
+  border-color: var(--ui-primary) !important;
+  background: color-mix(in srgb, var(--ui-primary) 6%, var(--ui-surface)) !important;
+}
+
+.answer-options label:has(input:checked) {
+  border-color: var(--ui-primary) !important;
+  background: color-mix(in srgb, var(--ui-primary) 11%, var(--ui-surface)) !important;
+}
+
+.answer-options span {
+  color: var(--ui-text) !important;
+  font-size: 1rem !important;
+  line-height: 1.5 !important;
+}
+
+.exam-timer {
+  border: 1px solid var(--ui-border) !important;
+  border-radius: var(--ui-radius-sm) !important;
+  color: var(--ui-text) !important;
+  background: var(--ui-surface-alt) !important;
+}
+
+.exam-timer.urgent {
+  border-color: var(--ui-danger) !important;
+  color: var(--ui-danger) !important;
+  background: color-mix(in srgb, var(--ui-danger) 8%, var(--ui-surface)) !important;
+}
+
+/* Appearance studio: one design, two modes. */
+.theme-studio-intro,
+.theme-selection-bar,
+.theme-card-body,
+.theme-studio-toolbar,
+.workspace-tabs {
+  border-color: var(--ui-border) !important;
+  color: var(--ui-text) !important;
+  background: var(--ui-surface) !important;
+}
+
+.theme-gallery {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+}
+
+.theme-card-visual {
+  border-bottom: 1px solid var(--ui-border) !important;
+  box-shadow: none !important;
+}
+
+.workspace-tabs button {
+  min-height: 44px;
+  color: var(--ui-muted) !important;
+  background: transparent !important;
+}
+
+.workspace-tabs button.active {
+  color: var(--ui-primary) !important;
+  border-bottom-color: var(--ui-primary) !important;
+}
+
+.color-input {
+  display: grid !important;
+  grid-template-columns: 52px minmax(0, 1fr) !important;
+  gap: 0.65rem !important;
+}
+
+.color-input input[type="color"] {
+  width: 52px !important;
+  height: 46px !important;
+  padding: 4px !important;
+  border: 1px solid var(--ui-border-strong) !important;
+  border-radius: var(--ui-radius-sm) !important;
+  background: var(--ui-surface) !important;
+}
+
+/* Repeatable and stepper controls */
+.repeatable-field {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.repeatable-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 44px;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.repeatable-remove,
+.repeatable-add,
+.number-stepper button {
+  min-width: 44px;
+  min-height: 44px;
+  border: 1px solid var(--ui-border-strong) !important;
+  border-radius: var(--ui-radius-sm) !important;
+  color: var(--ui-text) !important;
+  background: var(--ui-surface) !important;
+}
+
+.repeatable-add {
+  justify-self: start;
+  padding-inline: 0.8rem;
+}
+
+.number-stepper {
+  display: grid;
+  grid-template-columns: 44px minmax(72px, 1fr) 44px;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.number-stepper input {
+  text-align: center;
+}
+
+/* Command palette and modal */
+.command-backdrop,
+.modal-backdrop {
+  background: var(--ui-overlay) !important;
+}
+
+.cosmic-command,
+.modal,
+.dialog-panel {
+  border: 1px solid var(--ui-border) !important;
+  border-radius: var(--ui-radius-lg) !important;
+  color: var(--ui-text) !important;
+  background: var(--ui-surface) !important;
+  box-shadow: var(--ui-shadow) !important;
+}
+
+.command-colorbar {
+  height: 4px !important;
+  background: var(--ui-primary) !important;
+}
+
+.command-results a {
+  color: var(--ui-text) !important;
+  background: var(--ui-surface) !important;
+}
+
+.command-results a:hover,
+.command-results a.current {
+  background: var(--ui-surface-alt) !important;
+}
+
+/* Responsive */
+@media (max-width: 1100px) {
+  .cosmic-sidebar {
+    transform: translateX(-100%);
+    z-index: 100;
+  }
+
+  .cosmic-sidebar.sidebar-open {
+    transform: translateX(0);
+  }
+
+  .cosmic-workspace {
+    margin-left: 0 !important;
+  }
+
+  .mobile-menu,
+  .sidebar-close {
+    display: inline-grid !important;
+  }
+
+  .player-layout,
+  .exam-taking-layout {
+    grid-template-columns: minmax(0, 1fr) 280px !important;
+  }
+}
+
+@media (max-width: 820px) {
+  .unified-login-page,
+  .cosmic-login-page {
+    grid-template-columns: 1fr !important;
+  }
+
+  .unified-login-page .login-showcase {
+    min-height: auto !important;
+    border-right: 0 !important;
+    border-bottom: 1px solid var(--ui-border) !important;
+    padding: 1.25rem !important;
+  }
+
+  .login-welcome {
+    padding: 2.5rem 0 1rem;
+  }
+
+  .login-welcome h2 {
+    font-size: 2.4rem !important;
+  }
+
+  .login-privacy {
+    display: none;
+  }
+
+  .unified-login-page .login-access {
+    min-height: auto !important;
+    padding: 1.25rem !important;
+  }
+
+  .topbar-command,
+  .topbar-date {
+    display: none !important;
+  }
+
+  .cosmic-content {
+    padding: 1rem !important;
+  }
+
+  .player-layout,
+  .exam-taking-layout {
+    display: block !important;
+  }
+
+  .player-content,
+  .exam-question-panel {
+    min-height: calc(100vh - 176px);
+  }
+
+  .player-outline,
+  .exam-navigator {
+    position: fixed !important;
+    z-index: 80;
+    inset: 76px 0 0 auto;
+    width: min(92vw, 340px);
+    max-height: none;
+    border-radius: var(--ui-radius) 0 0 var(--ui-radius) !important;
+    transform: translateX(105%);
+    transition: transform 160ms ease;
+  }
+
+  .player-outline.open {
+    transform: translateX(0);
+  }
+
+  .exam-navigator {
+    position: static !important;
+    width: 100%;
+    margin-bottom: 0.75rem;
+    transform: none;
+  }
+
+  .lesson-body,
+  .question-editor {
+    padding: 1.25rem !important;
+  }
+
+  .lesson-navigation,
+  .exam-actions {
+    flex-wrap: wrap;
+  }
+
+  .theme-gallery,
+  .workspace-two-column,
+  .form-grid.two,
+  .form-grid.three,
+  .form-grid.four,
+  .detail-grid.two,
+  .stat-grid,
+  .kpi-stats,
+  .advanced-stats {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 520px) {
+  .cosmic-topbar {
+    padding-inline: 0.75rem !important;
+  }
+
+  .cosmic-page-header,
+  .workspace-hero,
+  .cosmic-dashboard-hero {
+    padding: 1rem !important;
+  }
+
+  .page-heading h1,
+  .workspace-hero h1,
+  .cosmic-dashboard-hero h1 {
+    font-size: 2rem !important;
+  }
+
+  .exam-taking-header,
+  .player-header {
+    align-items: flex-start !important;
+    flex-wrap: wrap;
+  }
+
+  .exam-navigator > div:first-of-type {
+    grid-template-columns: repeat(5, minmax(40px, 1fr)) !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+
+.submit-review {
+  display: grid;
+  gap: 1rem;
+}
+
+.submit-review dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin: 0;
+}
+
+.submit-review dl > div {
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-sm);
+  padding: 0.85rem;
+  background: var(--ui-surface-alt);
+}
+
+.submit-review dt {
+  color: var(--ui-muted);
+  font-size: 0.8125rem;
+}
+
+.submit-review dd {
+  margin: 0.2rem 0 0;
+  color: var(--ui-text);
+  font-size: 1.35rem;
+  font-weight: 750;
+}
+
+@media (max-width: 520px) {
+  .submit-review dl {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+.form-success {
+  margin-bottom: 1rem;
+  border: 1px solid color-mix(in srgb, var(--ui-success) 65%, var(--ui-border));
+  border-radius: var(--ui-radius-sm);
+  padding: 0.75rem 0.9rem;
+  color: var(--ui-success);
+  background: color-mix(in srgb, var(--ui-success) 9%, var(--ui-surface));
+  font-size: 0.9rem;
+  font-weight: 650;
+}
+
+.unified-password-page {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  padding: 1.25rem;
+  color: var(--ui-text);
+  background: var(--ui-bg);
+}
+
+.unified-password-card {
+  width: min(100%, 620px);
+  border: 1px solid var(--ui-border) !important;
+  border-radius: var(--ui-radius-lg) !important;
+  padding: clamp(1.5rem, 4vw, 2.5rem) !important;
+  color: var(--ui-text) !important;
+  background: var(--ui-surface) !important;
+  box-shadow: var(--ui-shadow) !important;
+}
+
+.unified-password-card > header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  border: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+}
+
+.unified-password-card h1 {
+  margin: 0.15rem 0 0 !important;
+  font-size: 2rem !important;
+}
+
+.unified-password-card > p,
+.password-requirements {
+  color: var(--ui-muted) !important;
+}
+
+.password-requirements {
+  margin: 1rem 0 1.5rem;
+  padding-left: 1.25rem;
+}
+
+.password-change-form {
+  display: grid;
+  gap: 1rem;
+}
+
+.password-change-form label {
+  display: grid;
+  gap: 0.4rem;
+}

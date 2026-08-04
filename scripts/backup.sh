@@ -49,7 +49,7 @@ else
   printf '%s\n' 'Runtime secrets were intentionally excluded. Set LMSPILOT_BACKUP_INCLUDE_SECRETS=true only when the backup destination is encrypted.' > "$TEMP_DEST/config/SECRETS_NOT_INCLUDED.txt"
 fi
 
-printf '{"createdAt":"%s","formatVersion":1,"applicationVersion":"0.15.0"}\n' "$(date -Iseconds)" > "$TEMP_DEST/manifest.json"
+printf '{"createdAt":"%s","formatVersion":1,"applicationVersion":"0.16.0"}\n' "$(date -Iseconds)" > "$TEMP_DEST/manifest.json"
 (
   cd "$TEMP_DEST"
   find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS

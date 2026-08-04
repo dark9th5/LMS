@@ -14,5 +14,4 @@ dependencyManagement {
 dependencies {
     api("com.fasterxml.jackson.module:jackson-module-kotlin")
     testImplementation(kotlin("test"))
-    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }

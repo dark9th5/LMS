@@ -36,7 +36,7 @@ import javax.crypto.spec.SecretKeySpec
 
 private const val DEFAULT_PROFILE = "default"
 private const val COLOR_PATTERN = "^#[0-9A-Fa-f]{6}([0-9A-Fa-f]{2})?$"
-private const val THEME_PATTERN = "^(soft-spectrum|executive-midnight|heritage-academy|bright-school|civic-trust|creative-pop|nature-learning|editorial-burgundy|minimal-calm|digital-grid)$"
+private const val THEME_PATTERN = "^(unified-light|unified-dark)$"
 
 data class BrandingRequest(
     @field:NotBlank @field:Size(max = 240) val systemName: String,
@@ -44,7 +44,7 @@ data class BrandingRequest(
     val logoFileId: UUID? = null,
     val faviconFileId: UUID? = null,
     val backgroundFileId: UUID? = null,
-    @field:Pattern(regexp = THEME_PATTERN) val themeKey: String = "soft-spectrum",
+    @field:Pattern(regexp = THEME_PATTERN) val themeKey: String = "unified-light",
     @field:Pattern(regexp = COLOR_PATTERN) val primaryColor: String,
     @field:Pattern(regexp = COLOR_PATTERN) val secondaryColor: String,
     @field:Pattern(regexp = COLOR_PATTERN) val backgroundColor: String,

@@ -10,7 +10,6 @@ import {
   WorkspaceControlCenter,
   workspaceSections,
 } from "./WorkspaceControlCenter";
-import { AdvancedSection, advancedSections } from "./AdvancedCenters";
 
 type UnknownRecord = Record<string, unknown>;
 type TableRow = { id: string; cells: string[] };
@@ -674,8 +673,6 @@ export function SectionPage({
 }) {
   if (workspaceSections.has(section))
     return <WorkspaceControlCenter section={section} user={user} />;
-  if (advancedSections.has(section))
-    return <AdvancedSection section={section} user={user} />;
   return <LegacySectionPage section={section} user={user} />;
 }
 

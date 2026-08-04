@@ -7,9 +7,11 @@ import type { PortalUser } from "@/lib/types";
 export function LoginForm({
   demoEnabled = false,
   demoPassword = "",
+  passwordChanged = false,
 }: {
   demoEnabled?: boolean;
   demoPassword?: string;
+  passwordChanged?: boolean;
 }) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -39,7 +41,7 @@ export function LoginForm({
         user?: PortalUser;
       };
       if (!response.ok || !data.user) {
-        setError(data.message ?? "Đăng nhập thất bại");
+        setError(data.message ?? "Tên đăng nhập hoặc mật khẩu chưa đúng.");
         return;
       }
       window.location.replace(
@@ -48,97 +50,74 @@ export function LoginForm({
           : landingForUser(data.user),
       );
     } catch {
-      setError("Không kết nối được dịch vụ xác thực trong mạng nội bộ.");
+      setError("Không thể kết nối máy chủ. Vui lòng thử lại hoặc liên hệ quản trị viên.");
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <div className="cosmic-login-card">
-      <div className="login-card-colorbar" aria-hidden="true">
-        <i />
-        <i />
-        <i />
-        <i />
-      </div>
-      <header>
-        <span className="access-chip">MEMBER ACCESS</span>
-        <span className="access-lock" aria-hidden="true">
-          ●
-        </span>
+    <div className="cosmic-login-card unified-login-card">
+      <header className="login-form-heading">
+        <h1>Đăng nhập</h1>
+        <p>Nhập tài khoản được tổ chức cấp để tiếp tục.</p>
       </header>
-      <h2>
-        Chào mừng
-        <br />
-        trở lại.
-      </h2>
-      <p>Đăng nhập để tiếp tục đúng công việc, khóa học và dữ liệu của bạn.</p>
-      <form onSubmit={submit}>
-        <label>
-          <span>
-            <b>01</b> Tên đăng nhập
-          </span>
-          <span className="cosmic-input">
-            <input
-              value={username}
-              onChange={(event) => setUsername(event.target.value)}
-              autoComplete="username"
-              required
-              autoFocus
-              placeholder="VD: nguyenvana"
-            />
-            <i>@</i>
-          </span>
-        </label>
-        <label>
-          <span>
-            <b>02</b> Mật khẩu
-          </span>
-          <span className="cosmic-input">
-            <input
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              type={showPassword ? "text" : "password"}
-              autoComplete="current-password"
-              required
-              placeholder="Nhập mật khẩu"
-            />
-            <button
-              type="button"
-              className="reveal-password"
-              onClick={() => setShowPassword((value) => !value)}
-              aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
-            >
-              {showPassword ? "Ẩn" : "Hiện"}
-            </button>
-          </span>
-        </label>
-        {error && (
-          <div className="form-error" role="alert">
-            {error}
-          </div>
-        )}
+      {passwordChanged && (
+        <div className="form-success" role="status">
+          Mật khẩu đã được cập nhật. Vui lòng đăng nhập lại.
+        </div>
+      )}
+      <form onSubmit={submit} noValidate>
+        <label className="field-label" htmlFor="username">Tên đăng nhập</label>
+        <div className="cosmic-input">
+          <input
+            id="username"
+            value={username}
+            onChange={(event) => setUsername(event.target.value)}
+            autoComplete="username"
+            required
+            autoFocus
+            spellCheck={false}
+            placeholder="Tên đăng nhập hoặc email"
+            aria-invalid={Boolean(error)}
+            aria-describedby={error ? "login-error" : undefined}
+          />
+        </div>
+
+        <label className="field-label" htmlFor="password">Mật khẩu</label>
+        <div className="cosmic-input password-input">
+          <input
+            id="password"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            type={showPassword ? "text" : "password"}
+            autoComplete="current-password"
+            required
+            placeholder="Nhập mật khẩu"
+            aria-invalid={Boolean(error)}
+            aria-describedby={error ? "login-error" : undefined}
+          />
+          <button
+            type="button"
+            className="reveal-password"
+            onClick={() => setShowPassword((value) => !value)}
+            aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+            aria-pressed={showPassword}
+          >
+            {showPassword ? "Ẩn" : "Hiện"}
+          </button>
+        </div>
+
+        {error && <div id="login-error" className="form-error" role="alert">{error}</div>}
         <button className="cosmic-login-button" disabled={loading}>
-          <span>{loading ? "Đang xác thực..." : "Vào không gian học tập"}</span>
-          <b aria-hidden="true">↗</b>
+          {loading ? "Đang đăng nhập…" : "Đăng nhập"}
         </button>
       </form>
-      <div className="login-security-row">
-        <span>
-          <i>✓</i> Phiên được ký
-        </span>
-        <span>
-          <i>✓</i> Quyền động
-        </span>
-        <span>
-          <i>✓</i> Fail-closed
-        </span>
-      </div>
+      <p className="login-help">Không đăng nhập được? Liên hệ quản trị viên của tổ chức.</p>
       {demoEnabled && (
         <details className="demo-access">
           <summary>Tài khoản trình diễn</summary>
-          <code>admin · instructor · learner</code>
+          <code>admin</code>
           <code>Mật khẩu: {demoPassword || "được cấu hình trong .env"}</code>
         </details>
       )}

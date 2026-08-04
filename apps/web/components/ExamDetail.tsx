@@ -97,6 +97,7 @@ export function ExamDetail({
   const [toast, setToast] = useState("");
   const [result, setResult] = useState<Grade | null>(null);
   const [editOpen, setEditOpen] = useState(false);
+  const [submitConfirmOpen, setSubmitConfirmOpen] = useState(false);
   const [formError, setFormError] = useState("");
   const [assignments, setAssignments] = useState<AssessmentAssignment[]>([]);
   const [assignmentDraft, setAssignmentDraft] = useState({
@@ -356,20 +357,7 @@ export function ExamDetail({
 
   async function submitExam(automatic = false) {
     if (!session) return;
-    const unanswered = questions.length - answered;
-    if (
-      !automatic &&
-      unanswered > 0 &&
-      !window.confirm(`Bạn còn ${unanswered} câu chưa trả lời. Vẫn nộp bài?`)
-    )
-      return;
-    if (
-      !automatic &&
-      !window.confirm(
-        "Sau khi nộp, bạn không thể sửa đáp án. Xác nhận nộp bài?",
-      )
-    )
-      return;
+    setSubmitConfirmOpen(false);
     setBusy(true);
     setError("");
     try {
@@ -1167,8 +1155,11 @@ export function ExamDetail({
             {(questions ?? []).map((item, index) => (
               <button
                 key={item.id}
+                type="button"
                 className={`${index === current ? "active" : ""} ${answers[item.id] !== undefined && String(answers[item.id]).length ? "answered" : ""}`}
                 onClick={() => setCurrent(index)}
+                aria-current={index === current ? "step" : undefined}
+                aria-label={`Câu ${index + 1}, ${answers[item.id] !== undefined && String(answers[item.id]).length ? "đã trả lời" : "chưa trả lời"}`}
               >
                 {index + 1}
               </button>
@@ -1232,7 +1223,7 @@ export function ExamDetail({
                 <button
                   className="button primary"
                   disabled={busy}
-                  onClick={() => void submitExam(false)}
+                  onClick={() => setSubmitConfirmOpen(true)}
                 >
                   Nộp bài
                   <Icon name="check" />
@@ -1242,6 +1233,45 @@ export function ExamDetail({
           </footer>
         </main>
       </div>
+      <Modal
+        open={submitConfirmOpen}
+        title="Xác nhận nộp bài"
+        description="Sau khi nộp, bạn không thể thay đổi đáp án."
+        onClose={() => setSubmitConfirmOpen(false)}
+      >
+        <div className="submit-review">
+          <dl>
+            <div><dt>Tổng số câu</dt><dd>{questions.length}</dd></div>
+            <div><dt>Đã trả lời</dt><dd>{answered}</dd></div>
+            <div><dt>Chưa trả lời</dt><dd>{Math.max(0, questions.length - answered)}</dd></div>
+            <div><dt>Thời gian còn lại</dt><dd>{timerLabel(remaining)}</dd></div>
+          </dl>
+          {questions.length - answered > 0 && (
+            <div className="form-alert error" role="alert">
+              <Icon name="warning" />
+              Bạn còn {questions.length - answered} câu chưa trả lời.
+            </div>
+          )}
+          <div className="modal-actions">
+            <button
+              type="button"
+              className="button secondary"
+              onClick={() => setSubmitConfirmOpen(false)}
+            >
+              Quay lại kiểm tra
+            </button>
+            <button
+              type="button"
+              className="button primary"
+              disabled={busy}
+              onClick={() => void submitExam(false)}
+            >
+              <Icon name="check" />
+              {busy ? "Đang nộp…" : "Xác nhận nộp bài"}
+            </button>
+          </div>
+        </div>
+      </Modal>
       {error && (
         <div className="floating-error">
           <Icon name="warning" />

@@ -10,6 +10,8 @@ import { Icon } from "./Icon";
 import { PageHeader } from "./PageHeader";
 import { EmptyState, ErrorState, LoadingState, Toast } from "./Feedback";
 import { Modal } from "./Modal";
+import { NumberStepper } from "./NumberStepper";
+import { RepeatableField } from "./RepeatableField";
 import { StatusBadge } from "./StatusBadge";
 
 export function ExamsPage({ user }: { user: PortalUser }) {
@@ -85,13 +87,15 @@ export function ExamsPage({ user }: { user: PortalUser }) {
     setFormError("");
     const data = new FormData(event.currentTarget);
     const type = String(data.get("type") ?? "SINGLE_CHOICE");
-    const rawOptions = String(data.get("options") ?? "")
-      .split("\n")
+    const rawOptions = data
+      .getAll("options")
+      .map(String)
       .map((value) => value.trim())
       .filter(Boolean);
     const options = type === "TRUE_FALSE" ? ["Đúng", "Sai"] : rawOptions;
-    const correctAnswers = String(data.get("correctAnswers") ?? "")
-      .split("\n")
+    const correctAnswers = data
+      .getAll("correctAnswers")
+      .map(String)
       .map((value) => value.trim())
       .filter(Boolean);
     const payload = {
@@ -101,8 +105,9 @@ export function ExamsPage({ user }: { user: PortalUser }) {
       correctAnswers,
       explanation: String(data.get("explanation") ?? "") || null,
       difficulty: Number(data.get("difficulty") || 1),
-      tags: String(data.get("tags") ?? "")
-        .split(",")
+      tags: data
+        .getAll("tags")
+        .map(String)
         .map((value) => value.trim())
         .filter(Boolean),
       defaultPoints: Number(data.get("defaultPoints") || 1),
@@ -516,32 +521,34 @@ export function ExamsPage({ user }: { user: PortalUser }) {
           <div className="form-grid four">
             <label>
               Thời lượng (phút)
-              <input
+              <NumberStepper
                 name="durationMinutes"
-                type="number"
-                min="1"
-                max="480"
-                defaultValue="30"
+                defaultValue={30}
+                min={1}
+                max={480}
+                step={5}
+                ariaLabel="Thời lượng bài thi"
               />
             </label>
             <label>
               Số lần làm
-              <input
+              <NumberStepper
                 name="maxAttempts"
-                type="number"
-                min="1"
-                max="20"
-                defaultValue="1"
+                defaultValue={1}
+                min={1}
+                max={20}
+                ariaLabel="Số lần làm"
               />
             </label>
             <label>
               Điểm đạt (%)
-              <input
+              <NumberStepper
                 name="passingScore"
-                type="number"
-                min="0"
-                max="100"
-                defaultValue="70"
+                defaultValue={70}
+                min={0}
+                max={100}
+                step={5}
+                ariaLabel="Điểm đạt"
               />
             </label>
             <label>
@@ -685,12 +692,13 @@ function QuestionForm({
         </label>
         <label>
           Điểm mặc định
-          <input
+          <NumberStepper
             name="defaultPoints"
-            type="number"
-            min="0.1"
-            step="0.1"
             defaultValue={question?.defaultPoints ?? 1}
+            min={0.1}
+            max={100}
+            step={0.5}
+            ariaLabel="Điểm mặc định"
           />
         </label>
       </div>
@@ -706,22 +714,24 @@ function QuestionForm({
       <label>
         Các phương án trả lời
         <small>
-          Mỗi phương án một dòng. Câu Đúng/Sai được hệ thống chuẩn hóa tự động.
+          Mỗi ô là một phương án. Dùng nút + hoặc − để thêm và xóa.
         </small>
-        <textarea
+        <RepeatableField
           name="options"
-          rows={5}
-          defaultValue={question?.options.join("\n") ?? ""}
-          placeholder={"Phương án A\nPhương án B"}
+          initialValues={question?.options.length ? question.options : ["", ""]}
+          addLabel="Thêm phương án"
+          placeholder="Nhập phương án trả lời"
+          minItems={2}
         />
       </label>
       <label>
         Đáp án đúng
-        <small>Mỗi đáp án một dòng, nhập đúng nội dung phương án.</small>
-        <textarea
+        <small>Mỗi ô là một đáp án đúng; nội dung phải khớp phương án.</small>
+        <RepeatableField
           name="correctAnswers"
-          rows={3}
-          defaultValue={question?.correctAnswers.join("\n") ?? ""}
+          initialValues={question?.correctAnswers.length ? question.correctAnswers : [""]}
+          addLabel="Thêm đáp án đúng"
+          placeholder="Nhập đáp án đúng"
         />
       </label>
       <div className="form-grid two">
@@ -740,10 +750,11 @@ function QuestionForm({
         </label>
         <label>
           Thẻ phân loại
-          <input
+          <RepeatableField
             name="tags"
-            defaultValue={question?.tags.join(", ") ?? ""}
-            placeholder="VD: lmspilot, lan"
+            initialValues={question?.tags.length ? question.tags : [""]}
+            addLabel="Thêm thẻ"
+            placeholder="VD: an toàn thông tin"
           />
         </label>
       </div>

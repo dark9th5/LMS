@@ -1,3 +1,5 @@
+import { normalizeHex, readableText } from "./color";
+
 export type PublicBranding = {
   systemName: string;
   themeKey: string;
@@ -14,13 +16,13 @@ export type PublicBranding = {
 
 export const defaultBranding: PublicBranding = {
   systemName: "LMSPilot",
-  themeKey: "soft-spectrum",
+  themeKey: "unified-light",
   introduction:
     "Không gian học tập và phát triển dành cho mọi thành viên trong tổ chức.",
-  primaryColor: "#B95547",
-  secondaryColor: "#5967B8",
-  backgroundColor: "#F6F3EF",
-  textColor: "#20232E",
+  primaryColor: "#2563EB",
+  secondaryColor: "#475569",
+  backgroundColor: "#F6F7F9",
+  textColor: "#172033",
 };
 
 function gatewayUrl(): string {
@@ -47,6 +49,9 @@ export async function getPublicBranding(): Promise<PublicBranding> {
     return {
       ...defaultBranding,
       ...data,
+      primaryColor: normalizeHex(data.primaryColor ?? "", defaultBranding.primaryColor),
+      secondaryColor: normalizeHex(data.secondaryColor ?? "", defaultBranding.secondaryColor),
+      backgroundColor: normalizeHex(data.backgroundColor ?? "", defaultBranding.backgroundColor),
       logoUrl: browserAsset(data.logoUrl),
       faviconUrl: browserAsset(data.faviconUrl),
       backgroundUrl: browserAsset(data.backgroundUrl),
@@ -59,11 +64,15 @@ export async function getPublicBranding(): Promise<PublicBranding> {
 export function brandingStyle(
   branding: PublicBranding,
 ): Record<string, string> {
+  const primary = normalizeHex(branding.primaryColor, defaultBranding.primaryColor);
+  const background = normalizeHex(branding.backgroundColor, defaultBranding.backgroundColor);
   return {
-    "--brand-primary": branding.primaryColor,
-    "--brand-secondary": branding.secondaryColor,
-    "--brand-background": branding.backgroundColor,
-    "--brand-text": branding.textColor,
+    "--brand-primary": primary,
+    "--brand-secondary": normalizeHex(branding.secondaryColor, defaultBranding.secondaryColor),
+    "--brand-background": background,
+    // Text colours are calculated, never trusted from an arbitrary saved value.
+    "--brand-on-primary": readableText(primary),
+    "--brand-on-background": readableText(background),
     ...(branding.backgroundUrl
       ? { "--brand-background-image": `url(${branding.backgroundUrl})` }
       : {}),

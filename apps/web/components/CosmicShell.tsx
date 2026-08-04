@@ -6,7 +6,6 @@ import { useEffect, useMemo, useState } from "react";
 import type { IconName, PortalUser } from "@/lib/types";
 import type { PublicBranding } from "@/lib/branding";
 import { landingForUser } from "@/lib/authorization";
-import { CosmicField } from "./CosmicField";
 import { Icon } from "./Icon";
 import { NotificationBell } from "./NotificationBell";
 
@@ -40,14 +39,14 @@ function matchesPath(path: string, href: string) {
 const navGroups: NavGroup[] = [
   {
     label: "Học tập",
-    summary: "Khóa học, lớp và lịch",
-    accent: "cyan",
+    summary: "Khóa học và lớp học",
+    accent: "blue",
     icon: "book",
     items: [
       {
         href: "/dashboard",
         label: "Tổng quan",
-        hint: "Nhịp vận hành hôm nay",
+        hint: "Việc cần làm và tiến độ",
         icon: "dashboard",
         permissions: ["reports:read:scope", "reports:kpi:read", "courses:create", "courses:update", "classes:manage", "assessments:grade", "users:read"],
       },
@@ -59,94 +58,38 @@ const navGroups: NavGroup[] = [
         permissions: ["courses:learn", "learning:read:self"],
       },
       {
-        href: "/learning-paths",
-        label: "Lộ trình phát triển",
-        hint: "Mục tiêu và các chặng học",
-        icon: "target",
-        permissions: [
-          "learning-paths:read",
-          "learning-paths:manage",
-          "learning-paths:assign",
-        ],
-      },
-      {
         href: "/courses",
         label: "Khóa học",
-        hint: "Nội dung đào tạo",
+        hint: "Nội dung và tài liệu học",
         icon: "book",
         permissions: ["courses:create", "courses:update", "courses:learn"],
       },
       {
         href: "/classes",
-        label: "Lớp đào tạo",
-        hint: "Nhóm học và lịch trình",
+        label: "Lớp học",
+        hint: "Ghi danh và lịch đào tạo",
         icon: "class",
         permissions: ["classes:read", "classes:manage"],
-      },
-      {
-        href: "/live-sessions",
-        label: "Lịch trực tuyến",
-        hint: "Phòng học và sự kiện live",
-        icon: "play",
-        permissions: [
-          "live-sessions:join",
-          "live-sessions:manage",
-          "courses:assign",
-        ],
-      },
-      {
-        href: "/news",
-        label: "Bản tin",
-        hint: "Thông báo của tổ chức",
-        icon: "bell",
-        permissions: ["news:read", "news:manage"],
-      },
-      {
-        href: "/account-security",
-        label: "Bảo mật tài khoản",
-        hint: "Mật khẩu và phiên đăng nhập",
-        icon: "lock",
       },
     ],
   },
   {
-    label: "Đánh giá",
-    summary: "Thi, điểm và chứng chỉ",
+    label: "Thi & đánh giá",
+    summary: "Bài thi, điểm và kết quả",
     accent: "indigo",
     icon: "exam",
     items: [
       {
         href: "/exams",
-        label: "Kỳ thi",
-        hint: "Bài kiểm tra và đề độc lập",
+        label: "Bài kiểm tra & kỳ thi",
+        hint: "Tạo đề hoặc làm bài được giao",
         icon: "exam",
         permissions: ["assessments:read", "assessments:take", "assessment:take", "assessments:create", "assessments:update", "exams:manage"],
       },
       {
-        href: "/competitions",
-        label: "Cuộc thi",
-        hint: "Thử thách, xếp hạng, phần thưởng",
-        icon: "target",
-        permissions: ["competitions:participate", "competitions:manage"],
-      },
-      {
-        href: "/ai-lab",
-        label: "AI Studio",
-        hint: "Sinh và duyệt câu hỏi",
-        icon: "question",
-        permissions: ["questions:generate:ai", "questions:approve:ai"],
-      },
-      {
-        href: "/documents",
-        label: "Tài liệu",
-        hint: "DOCX, PDF và phiên bản",
-        icon: "file",
-        permissions: ["files:read", "files:download", "files:edit"],
-      },
-      {
         href: "/grading",
         label: "Chấm điểm",
-        hint: "Hàng chờ và phản hồi",
+        hint: "Câu tự luận và phản hồi",
         icon: "grade",
         permissions: ["assessments:grade", "grading:manage"],
       },
@@ -155,34 +98,12 @@ const navGroups: NavGroup[] = [
         label: "Kết quả",
         hint: "Điểm số và phúc khảo",
         icon: "report",
-        permissions: [
-          "grades:read:self",
-          "grade-appeals:create",
-          "grade-appeals:manage",
-        ],
-      },
-      {
-        href: "/competencies",
-        label: "Năng lực",
-        hint: "Khoảng cách và mức sẵn sàng",
-        icon: "target",
-        permissions: [
-          "competencies:read:self",
-          "competencies:read:scope",
-          "competencies:manage",
-        ],
-      },
-      {
-        href: "/certificates",
-        label: "Chứng chỉ",
-        hint: "Thành tựu đã được xác minh",
-        icon: "certificate",
-        permissions: ["certificates:read:self", "certificates:manage"],
+        permissions: ["grades:read:self", "grade-appeals:create", "grade-appeals:manage"],
       },
       {
         href: "/reports",
         label: "Báo cáo",
-        hint: "Hiệu quả và tiến độ",
+        hint: "Tiến độ và hiệu quả đào tạo",
         icon: "report",
         permissions: ["reports:read:self", "reports:read:scope", "reports:kpi:read"],
       },
@@ -190,51 +111,30 @@ const navGroups: NavGroup[] = [
   },
   {
     label: "Quản trị",
-    summary: "Tổ chức, người dùng, hệ thống",
-    accent: "violet",
+    summary: "Người dùng và cài đặt",
+    accent: "slate",
     icon: "settings",
     items: [
       {
         href: "/users",
         label: "Người dùng & quyền",
-        hint: "Tài khoản, role và phạm vi",
+        hint: "Tài khoản và gói công việc",
         icon: "users",
         permissions: ["users:read", "roles:read", "authorization:grant", "authorization:revoke"],
       },
       {
         href: "/organization",
         label: "Tổ chức",
-        hint: "Chi nhánh và phòng ban",
+        hint: "Chi nhánh, phòng ban và nhóm",
         icon: "building",
         permissions: ["organization:read"],
       },
       {
-        href: "/notification-automation",
-        label: "Tự động thông báo",
-        hint: "Mẫu, email và nhắc hạn",
-        icon: "bell",
-        permissions: [
-          "notification-templates:manage",
-          "notification-reminders:manage",
-        ],
-      },
-      {
-        href: "/operations",
-        label: "Vận hành hệ thống",
-        hint: "Dịch vụ và sức khỏe",
-        icon: "operations",
-        permissions: ["audit:read", "operations:manage", "license:manage", "configuration:manage"],
-      },
-      {
         href: "/settings",
-        label: "Thiết lập thương hiệu",
-        hint: "Giao diện và tích hợp",
+        label: "Cài đặt",
+        hint: "Giao diện, thương hiệu và kết nối",
         icon: "settings",
-        permissions: [
-          "branding:manage",
-          "configuration:manage",
-          "integrations:manage",
-        ],
+        permissions: ["branding:manage", "configuration:manage", "integrations:manage"],
       },
     ],
   },
@@ -329,7 +229,6 @@ export function CosmicShell({
 
   return (
     <div className="app-shell cosmic-shell">
-      <CosmicField compact />
       {open && (
         <button
           className="mobile-overlay"
@@ -355,7 +254,7 @@ export function CosmicShell({
             )}
             <span>
               <strong>{systemName}</strong>
-              <small>LEARNING MANAGEMENT PLATFORM</small>
+              <small>HỆ THỐNG QUẢN LÝ HỌC TẬP</small>
             </span>
           </Link>
           <button
@@ -367,14 +266,6 @@ export function CosmicShell({
           </button>
         </div>
 
-        <div className="sidebar-live-card">
-          <div>
-            <span className="live-pulse" />
-            <b>Hệ thống hoạt động bình thường</b>
-          </div>
-          <small>KẾT NỐI DỊCH VỤ AN TOÀN</small>
-          <i aria-hidden="true" />
-        </div>
 
         <nav className="cosmic-nav" aria-label="Điều hướng chính">
           {visibleGroups.map((group, groupIndex) => {
@@ -463,7 +354,7 @@ export function CosmicShell({
             <div>
               <strong>{user.fullName}</strong>
               <small>
-                {isSystemAdmin ? "Quản trị hệ thống" : `${user.roles.length} gói quyền`}
+                {isSystemAdmin ? "Quản trị hệ thống" : "Tài khoản người dùng"}
               </small>
             </div>
             <form action="/api/auth/logout" method="post">
@@ -505,22 +396,12 @@ export function CosmicShell({
             <kbd>⌘ K</kbd>
           </button>
           <div className="topbar-actions">
-            <span className="topbar-date">
-              <small>HỆ THỐNG</small>
-              <b>Dữ liệu đang đồng bộ</b>
-            </span>
+            <span className="topbar-date"><small>Xin chào</small><b>{user.fullName}</b></span>
             <NotificationBell />
             <span className="avatar cosmic-avatar">{initials || "LP"}</span>
           </div>
         </header>
         <main className="app-content cosmic-content">
-          <div className="content-ribbon" aria-hidden="true">
-            <span>LEARN</span>
-            <i />
-            <span>CREATE</span>
-            <i />
-            <span>GROW</span>
-          </div>
           {children}
         </main>
       </div>

@@ -121,7 +121,7 @@ export function LearningPage({ user }: { user: PortalUser }) {
           <div
             className="journey-disc"
             style={{
-              background: `conic-gradient(#6fe4d0 0 ${average}%,rgba(255,255,255,.08) ${average}% 100%)`,
+              background: `conic-gradient(var(--ui-primary) 0 ${average}%,var(--ui-border) ${average}% 100%)`,
             }}
           >
             <div>

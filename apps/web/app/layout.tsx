@@ -3,10 +3,7 @@ import type { Metadata, Viewport } from "next";
 import { brandingStyle, getPublicBranding } from "@/lib/branding";
 import { getTheme, normalizeThemeKey } from "@/lib/themes";
 import "./globals.css";
-import "./cosmic-v011.css";
-import "./themes-v012.css";
-import "./themes-v013.css";
-import "./themes-v014.css";
+import "./unified.css";
 
 export async function generateMetadata(): Promise<Metadata> {
   const branding = await getPublicBranding();

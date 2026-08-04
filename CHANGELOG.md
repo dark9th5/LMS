@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.16.0 - 2026-08-04
+
+- Chuyển 10 theme sang Unified Design System với hai chế độ sáng/tối.
+- Sửa màu chữ/nền input ở login, focus và browser autofill.
+- Tăng typography, target size và độ rõ focus.
+- Sửa bố cục bài học/bài thi để nội dung chính chiếm phần lớn viewport.
+- Giảm Core Admin; retire route các trung tâm nâng cao.
+- Thêm RepeatableField, NumberStepper và form cấu hình dịch vụ có cấu trúc.
+- Thêm test UI contract 0.16 và cập nhật validation.
+
 ## 0.15.0 - 2026-08-04
 
 ### Permission-first authorization

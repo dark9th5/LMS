@@ -13,3 +13,7 @@ Nguồn hiện hành:
 Khi có xung đột, yêu cầu bổ sung đã được người dùng xác nhận về account type, role tùy chỉnh/scoped RBAC, standalone exam, competition/reward, AI provider, document editing, news, branding và dịch vụ tùy chọn được dùng làm phần mở rộng ưu tiên cao hơn baseline URD.
 
 - [`PERMISSION_FIRST_0.15.0.md`](PERMISSION_FIRST_0.15.0.md) truy vết mô hình quyền 0.15.
+
+## Giao diện 0.16
+
+- [`UNIFIED_UI_0.16.0.md`](UNIFIED_UI_0.16.0.md) truy vết việc hợp nhất theme, sửa tương phản login/input, bố cục học/thi, Core Admin và structured input.

@@ -259,7 +259,7 @@ export function Dashboard({ user }: { user: PortalUser }) {
     100 - completedPercent - inProgressPercent - overduePercent,
   );
   const donutStyle = {
-    background: `conic-gradient(#1d75df 0 ${completedPercent}%,#43b9e9 ${completedPercent}% ${completedPercent + inProgressPercent}%,#9bd9ee ${completedPercent + inProgressPercent}% ${100 - overduePercent}%,#f1a85d ${100 - overduePercent}% 100%)`,
+    background: `conic-gradient(var(--ui-success) 0 ${completedPercent}%,var(--ui-primary) ${completedPercent}% ${completedPercent + inProgressPercent}%,var(--ui-border-strong) ${completedPercent + inProgressPercent}% ${100 - overduePercent}%,var(--ui-warning) ${100 - overduePercent}% 100%)`,
   };
 
   const kpis = isStudent
@@ -433,7 +433,7 @@ export function Dashboard({ user }: { user: PortalUser }) {
           <div
             className="progress-disc"
             style={{
-              background: `conic-gradient(var(--progress-accent, #72ead6) 0 ${Math.round(metrics.average)}%,var(--progress-track, rgba(255,255,255,.07)) ${Math.round(metrics.average)}% 100%)`,
+              background: `conic-gradient(var(--ui-primary) 0 ${Math.round(metrics.average)}%,var(--ui-border) ${Math.round(metrics.average)}% 100%)`,
             }}
           >
             <div>

@@ -107,8 +107,10 @@ class ClsV080RequirementTests(unittest.TestCase):
         self.assertIn("NOTIFICATION_TEMPLATES_MANAGE", permissions)
         self.assertIn("NOTIFICATION_REMINDERS_MANAGE", permissions)
         self.assertIn("AUDIT_RECORDED", api)
-        self.assertIn('/notification-automation', shell)
+        self.assertNotIn('/notification-automation', shell)
         self.assertIn("NotificationAutomationCenter", advanced)
+        route = text("apps/web/app/(portal)/[section]/page.tsx")
+        self.assertIn('"notification-automation"', route)
 
     def test_backup_covers_competency_and_handles_runtime_secrets_explicitly(self) -> None:
         backup = text("scripts/backup.sh")
