@@ -9,6 +9,9 @@ Thumbs.db
 .env
 .env.*
 !.env.example
+!.env.cls.example
+!deploy/.env.cls.example
+!*.env*.example
 *.pem
 *.key
 *.p12
