@@ -142,7 +142,7 @@ if not zipfile.is_zipfile(wrapper):
 wrapper_props = read("backend/gradle/wrapper/gradle-wrapper.properties")
 if "https\\://services.gradle.org/distributions/gradle-8.14.5-bin.zip" not in wrapper_props:
     fail("Unexpected Gradle wrapper distribution")
-if "distributionSha256Sum=9c0f7faeeb306cb14e4279a3e084ca6b596894089a0638e68a07c945a32c9e14" not in wrapper_props:
+if "distributionSha256Sum=6f74b601422d6d6fc4e1f9a1ab6522f642c2fdcbc15ae33ebd30ba3d7198e854" not in wrapper_props:
     fail("Gradle distribution checksum is missing or unexpected")
 
 # Internal API authorization.
@@ -276,9 +276,10 @@ for service in services:
         fail("Service database passwords are not wired from environment")
 
 # Shell scripts must parse.
-for path in (ROOT / "scripts").glob("*.sh"):
-    if shutil.which("bash"):
-        result = subprocess.run(["bash", "-n", str(path)], capture_output=True, text=True)
+bash_cmd = shutil.which("bash")
+if bash_cmd and subprocess.run([bash_cmd, "-c", "exit 0"], capture_output=True).returncode == 0:
+    for path in (ROOT / "scripts").glob("*.sh"):
+        result = subprocess.run([bash_cmd, "-n", str(path)], capture_output=True, text=True)
         if result.returncode:
             fail(f"Shell syntax error in {path.relative_to(ROOT)}: {result.stderr.strip()}")
 
