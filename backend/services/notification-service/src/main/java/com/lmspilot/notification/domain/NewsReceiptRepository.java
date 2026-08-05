@@ -1,0 +1,1 @@
+package com.lmspilot.notification.domain;import java.util.*;import org.springframework.data.jpa.repository.JpaRepository;public interface NewsReceiptRepository extends JpaRepository<NewsReceiptEntity,NewsReceiptId>{Optional<NewsReceiptEntity> findByNewsIdAndUserId(UUID n,UUID u);}

@@ -1,197 +1,170 @@
-# LMSPilot 0.20.4
+# LMSPilot 0.21.0
 
-**LMSPilot** là nền tảng quản lý học tập on-premise theo kiến trúc microservice, dành cho doanh nghiệp, trường học và trung tâm đào tạo. Repository này là **full-source release candidate**, không phải bản vá và chưa được xem là production-certified cho đến khi hoàn tất build, migration, Docker smoke test, browser E2E, kiểm thử tải và UAT trên hạ tầng đích.
+**LMSPilot** là nền tảng quản lý học tập theo kiến trúc microservice, phục vụ doanh nghiệp, trường học và trung tâm đào tạo. Repository là monorepo gồm frontend Next.js và 19 backend service Java Spring Boot có thể phát triển, nâng cấp và kiểm thử độc lập.
 
-## 1. Mô hình người dùng
+## Công nghệ
+
+- Frontend: Next.js 16, React 19, TypeScript 5.9 — port `3000`.
+- Backend: **Java 21 + Spring Boot 3.5.16**.
+- Build backend: Gradle 8.14.5, Gradle Kotlin DSL (`*.gradle.kts`). Các file `.kts` chỉ là cấu hình build; mã ứng dụng backend nằm hoàn toàn trong `src/main/java`.
+- Database: PostgreSQL; mỗi service sở hữu schema và Flyway migration riêng.
+- Messaging: RabbitMQ; Redis là thành phần tùy chọn cho cache/rate limit.
+- File/integration: S3-compatible storage, SMTP, ONLYOFFICE/Collabora, OpenAI-compatible AI provider và meeting provider.
+
+## Vai trò sản phẩm
 
 Mỗi tài khoản chỉ có đúng một vai trò:
 
-| Vai trò | Phạm vi chức năng |
+| Vai trò | Chức năng chính |
 |---|---|
-| `ADMIN` | Quản lý tài khoản, tổ chức, cấu hình hệ thống, thương hiệu, dịch vụ ngoài, báo cáo và vận hành. |
-| `INSTRUCTOR` | Tạo và xuất bản khóa học, xây dựng bài học, tạo bài kiểm tra trong khóa học, tạo bài thi độc lập, giao học viên và chấm bài. |
-| `STUDENT` | Học khóa được giao, xem video/PDF/DOCX, nộp bài thực hành, làm bài kiểm tra/bài thi và xem kết quả/chứng chỉ. |
+| `ADMIN` | Quản trị tài khoản, tổ chức, thương hiệu, dịch vụ ngoài, báo cáo, giấy phép và vận hành. |
+| `INSTRUCTOR` | Biên soạn khóa học, tài liệu, bài thực hành, bài kiểm tra trong khóa học, bài thi độc lập và chấm điểm. |
+| `STUDENT` | Học khóa được giao, xem video/PDF/DOCX, nộp bài thực hành, làm bài kiểm tra/bài thi và xem kết quả. |
 
-Vai trò không dùng chung chức năng. Muốn thao tác ở cổng khác phải đăng nhập bằng tài khoản có vai trò tương ứng.
+Không có giao diện **Lớp học**. Học viên được giao trực tiếp vào khóa học. Bài kiểm tra thuộc khóa học; bài thi là nghiệp vụ độc lập.
 
-## 2. Mô hình nghiệp vụ
+## Chức năng chính
 
-```text
-Khóa học
-├── Chương
-│   ├── Video / âm thanh / nội dung đọc
-│   ├── PDF / DOCX / tệp tải xuống
-│   ├── Bài thực hành nộp trực tiếp
-│   └── Bài kiểm tra thuộc khóa học
-└── Học viên được giao trực tiếp
+- Quản lý tài khoản ba vai trò, JWT/refresh token, phiên đăng nhập, khóa tài khoản và chính sách mật khẩu.
+- Cơ cấu tổ chức dạng cây, thành viên và phạm vi dữ liệu.
+- Khóa học, chương/bài học, video, PDF, DOCX, file tải xuống, bài thực hành và thảo luận.
+- Tiến độ học, hoàn thành bài học, nộp/chấm bài thực hành và xAPI.
+- Ngân hàng câu hỏi, bài kiểm tra trong khóa học, bài thi độc lập, autosave/heartbeat và chấm điểm.
+- AI sinh câu hỏi từ PDF/DOCX theo Dễ/Trung bình/Khó/Hỗn hợp; kiểm tra schema, đáp án, trùng lặp, phân bố độ khó và citation; giảng viên review trước khi import.
+- Báo cáo, KPI, CSV, lịch báo cáo, thông báo, email, chứng chỉ và audit.
+- Logo, tên hệ thống, màu thương hiệu, tên miền và ảnh nền đăng nhập.
 
-Bài thi
-└── Kỳ thi độc lập, không thuộc khóa học
-```
-
-Hệ thống không có giao diện **Lớp học**. Một số bảng tương thích dữ liệu cũ vẫn tồn tại trong `enrollment-service`, nhưng không được coi là mô hình sản phẩm công khai.
-
-## 3. Chức năng chính
-
-- Quản trị tài khoản ba vai trò, phiên đăng nhập, chính sách mật khẩu và khóa tài khoản quản trị hệ thống.
-- Cơ cấu tổ chức dạng cây, thành viên đơn vị và phạm vi dữ liệu.
-- Biên soạn khóa học, chương, bài học, phiên bản nội dung và xuất bản.
-- Xem video, PDF, DOCX; tải tệp; nộp và chấm bài thực hành trực tiếp trong khóa học.
-- Bài kiểm tra nằm trong khóa học; bài thi độc lập có khu vực quản lý riêng.
-- Ngân hàng câu hỏi, phiên làm bài có heartbeat/autosave, chấm tự động và chấm thủ công.
-- AI sinh câu hỏi từ PDF/DOCX với lựa chọn Dễ/Trung bình/Khó/Hỗn hợp, kiểm tra citation, đáp án, lời giải và bước giảng viên duyệt trước khi import.
-- Báo cáo quản trị, giảng dạy và học tập; xuất CSV và lịch xuất báo cáo.
-- Chứng chỉ, thông báo, email, tin tức và nhắc hạn.
-- Tùy chỉnh logo, tên **LMSPilot**, màu thương hiệu và ảnh nền đăng nhập.
-- Tích hợp Redis, SMTP, S3, ONLYOFFICE/Collabora, model AI OpenAI-compatible và nền tảng họp trực tuyến.
-
-## 4. Kiến trúc kỹ thuật
+## Sơ đồ runtime
 
 ```text
-Browser
-  │
-  ├── Next.js Web :3000
-  │
-  └── API Gateway :8080
-        ├── Identity :8081
-        ├── Organization :8082
-        ├── Course :8083
-        ├── Enrollment :8084
-        ├── Learning :8085
-        ├── Assessment :8086
-        ├── Grading :8087
-        ├── Reporting :8088
-        ├── File Storage :8089
-        ├── License :8090
-        ├── Audit :8091
-        ├── Notification :8092
-        ├── Certificate :8093
-        ├── AI :8094
-        ├── Configuration :8095
-        ├── Integration :8096
-        ├── Operations :8097
-        └── Competency :8098
+Browser :3000
+    |
+API Gateway :8080
+    |-- Identity :8081        |-- Organization :8082
+    |-- Course :8083          |-- Enrollment :8084
+    |-- Learning :8085        |-- Assessment :8086
+    |-- Grading :8087         |-- Reporting :8088
+    |-- File Storage :8089    |-- License :8090
+    |-- Audit :8091           |-- Notification :8092
+    |-- Certificate :8093     |-- AI :8094
+    |-- Configuration :8095   |-- Integration :8096
+    |-- Operations :8097      `-- Competency :8098
 ```
 
-- Frontend: Next.js 16, React 19, TypeScript 5.9.
-- Backend: Kotlin 2.0, Spring Boot 3.5, Java 21.
-- Database: một PostgreSQL database mặc định tên `lmspilot`, tách schema theo service.
-- Messaging: RabbitMQ cho sự kiện và tác vụ bất đồng bộ.
-- Redis: rate limit/cache tùy cấu hình.
-- Mỗi service sở hữu API, schema, Flyway migration và test của chính nó; không truy cập trực tiếp database của service khác.
+## Service, port, API và database
 
-## 5. Danh mục service, port, API và database
-
-| Port | Thành phần | Trách nhiệm | DB schema | API chính |
+| Port | Service | Phạm vi sở hữu | PostgreSQL schema | API base |
 |---:|---|---|---|---|
-| 3000 | `apps/web` | Giao diện Next.js cho ba cổng Admin, Giảng viên và Học viên. | `—` | Chỉ gọi API Gateway qua `/api/**` hoặc URL gateway cấu hình. |
-| 8080 | `api-gateway` | Điểm vào duy nhất của frontend; xác thực JWT, rate limit, correlation ID và định tuyến. | `—` | `/api/v1/**`, `/public/v1/**` → các service nội bộ |
-| 8081 | `identity-service` | Đăng nhập, phiên, tài khoản và mô hình một tài khoản–một vai trò `ADMIN`/`INSTRUCTOR`/`STUDENT`. | `identity` | `/api/v1/auth`, `/api/v1/users`, `/api/v1/roles`, `/api/v1/authorization`, `/api/v1/directory` |
-| 8082 | `organization-service` | Cây cơ cấu tổ chức, đơn vị, quan hệ thành viên và phạm vi dữ liệu. | `organization` | `/api/v1/organization/units`, `/api/v1/organization/memberships` |
-| 8083 | `course-service` | Khóa học, chương, bài học, tài liệu, video, bài thực hành, thảo luận và phiên bản xuất bản. | `course` | `/api/v1/categories`, `/api/v1/courses`, `/api/v1/discussions` |
-| 8084 | `enrollment-service` | Giao khóa học trực tiếp cho học viên, ghi danh, hạn học, phiên học trực tuyến và lộ trình học. | `enrollment` | `/api/v1/enrollments`, `/api/v1/course-assignments`, `/api/v1/live-sessions`, `/api/v1/learning-paths` |
-| 8085 | `learning-service` | Tiến độ học, mở nội dung, hoàn thành bài học, nộp/chấm bài thực hành và xAPI. | `learning` | `/api/v1/learning`, `/api/v1/learning/assignments`, `/api/v1/xapi/statements` |
-| 8086 | `assessment-service` | Ngân hàng câu hỏi, bài kiểm tra trong khóa học, bài thi độc lập, phiên làm bài và cuộc thi. | `assessment` | `/api/v1/questions`, `/api/v1/exams`, `/api/v1/exam-sessions`, `/api/v1/competitions`, `/api/v1/assessment-assignments` |
-| 8087 | `grading-service` | Chấm tự động, chấm thủ công, lịch sử điểm, phản hồi và phúc khảo. | `grading` | `/api/v1/grades`, `/api/v1/grading` |
-| 8088 | `reporting-service` | Read model, dashboard, KPI, báo cáo học tập và xuất báo cáo theo lịch. | `reporting` | `/api/v1/reports`, `/api/v1/dashboard`, `/internal/v1/reports/reminders` |
-| 8089 | `file-storage-service` | Tải lên/tải xuống, quyền truy cập, phiên bản, xem PDF/DOCX/video và phiên chỉnh sửa. | `file_storage` | `/api/v1/files`, `/internal/v1/files`, `/public/v1/file-edit` |
-| 8090 | `license-service` | Kích hoạt giấy phép, entitlement và giới hạn tính năng triển khai. | `license` | `/api/v1/license` |
-| 8091 | `audit-service` | Nhật ký kiểm toán bất biến và xuất dữ liệu kiểm toán. | `audit` | `/api/v1/audit` |
-| 8092 | `notification-service` | Thông báo trong hệ thống, email, tin tức, mẫu và nhắc hạn. | `notification` | `/api/v1/notifications`, `/api/v1/news` |
-| 8093 | `certificate-service` | Mẫu chứng chỉ, cấp, tra cứu, in, thu hồi và cấp lại chứng chỉ. | `certificate` | `/api/v1/certificates`, `/public/v1/certificates` |
-| 8094 | `ai-service` | Cấu hình model OpenAI-compatible; trích xuất PDF/DOCX; sinh, kiểm tra và duyệt câu hỏi theo độ khó. | `ai` | `/api/v1/ai` |
-| 8095 | `configuration-service` | Thông tin hệ thống, thương hiệu, logo, màu sắc, ảnh nền đăng nhập và cấu hình dịch vụ ngoài. | `configuration` | `/api/v1/configuration`, `/api/v1/branding`, `/api/v1/external-services`, `/public/v1/configuration`, `/public/v1/branding` |
-| 8096 | `integration-service` | Adapter cho Redis, SMTP, S3, ONLYOFFICE, họp trực tuyến và dịch vụ bên thứ ba. | `integration` | `/api/v1/integrations` |
-| 8097 | `operations-service` | Health tổng hợp, tác vụ vận hành, agent lease và lịch chạy nội bộ. | `operations` | `/api/v1/operations` |
-| 8098 | `competency-service` | Khung năng lực, hồ sơ năng lực, đánh giá khoảng thiếu và ánh xạ khóa học. | `competency` | `/api/v1/competencies` |
+| 8080 | `api-gateway` | Điểm vào duy nhất của frontend; xác thực JWT, rate limit, correlation ID và định tuyến API. | `—` | `—` |
+| 8081 | `identity-service` | Đăng nhập, JWT/refresh token, phiên, tài khoản, vai trò độc quyền ADMIN/INSTRUCTOR/STUDENT và quyền theo phạm vi. | `identity` | `/api/v1/auth`, `/api/v1/authorization`, `/api/v1/directory`, `/api/v1/roles`, `/api/v1/users`, `/api/v1/users/{userId}/sessions`, `/internal/v1/authorization`, `/internal/v1/users` |
+| 8082 | `organization-service` | Cây cơ cấu tổ chức, đơn vị và quan hệ thành viên. | `organization` | `/api/v1/organization/memberships`, `/api/v1/organization/units`, `/internal/v1/organization`, `/internal/v1/organization/units` |
+| 8083 | `course-service` | Khóa học, danh mục, chương/bài học, phiên bản xuất bản và thảo luận. | `course` | `/api/v1/categories`, `/api/v1/courses`, `/api/v1/discussions`, `/internal/v1/courses` |
+| 8084 | `enrollment-service` | Giao khóa học, ghi danh, lộ trình học và phiên học trực tuyến. | `enrollment` | `/api/v1/course-assignments`, `/api/v1/enrollments`, `/api/v1/learning-paths`, `/api/v1/live-sessions`, `/internal/v1/course-access`, `/internal/v1/enrollments` |
+| 8085 | `learning-service` | Tiến độ học, hoàn thành bài học, nộp/chấm bài thực hành và xAPI. | `learning` | `/api/v1/learning`, `/api/v1/learning/assignments`, `/api/v1/xapi/statements`, `/internal/v1/learning` |
+| 8086 | `assessment-service` | Ngân hàng câu hỏi, bài kiểm tra trong khóa học, bài thi độc lập, phiên làm bài và cuộc thi. | `assessment` | `/api/v1/assessment-assignments`, `/api/v1/competitions`, `/api/v1/exam-sessions`, `/api/v1/exams`, `/api/v1/questions`, `/internal/v1/assessment` |
+| 8087 | `grading-service` | Chấm tự động, chấm thủ công, lịch sử điểm và phúc khảo. | `grading` | `/api/v1/grades` |
+| 8088 | `reporting-service` | Read model báo cáo, dashboard, KPI, xuất báo cáo và lịch báo cáo. | `reporting` | `/api/v1/reports`, `/api/v1/reports/kpis`, `/internal/v1/reports/reminders` |
+| 8089 | `file-storage-service` | Lưu trữ file, quyền truy cập, phiên bản, xem PDF/DOCX/video và phiên chỉnh sửa. | `file_storage` | `/api/v1/files`, `/internal/v1/files`, `/public/v1/file-edit` |
+| 8090 | `license-service` | Kích hoạt giấy phép, entitlement và giới hạn tính năng. | `license` | `/api/v1/license`, `/internal/v1/license` |
+| 8091 | `audit-service` | Nhật ký kiểm toán và xuất dữ liệu kiểm toán. | `audit` | `/api/v1/audit`, `/internal/v1/audit` |
+| 8092 | `notification-service` | Thông báo, email outbox, tin tức, template và nhắc hạn. | `notification` | `/api/v1/news`, `/api/v1/notifications`, `/api/v1/notifications/reminder-rules`, `/api/v1/notifications/templates` |
+| 8093 | `certificate-service` | Mẫu chứng chỉ, cấp, tra cứu, thu hồi và cấp lại. | `certificate` | `/api/v1/certificates`, `/public/v1/certificates` |
+| 8094 | `ai-service` | Model OpenAI-compatible; trích xuất PDF/DOCX; sinh, kiểm tra, review và import câu hỏi theo độ khó. | `ai` | `/api/v1/ai` |
+| 8095 | `configuration-service` | Thông tin hệ thống, thương hiệu, logo, ảnh nền đăng nhập và dịch vụ ngoài. | `configuration` | `/api/v1/branding`, `/api/v1/configuration`, `/api/v1/external-services`, `/api/v1/external-services/{id}`, `/api/v1/external-services/{id}/test`, `/public/v1/branding`, `/public/v1/branding/assets/{kind}`, `/public/v1/configuration` |
+| 8096 | `integration-service` | Adapter kết nối SMTP, Redis, S3, ONLYOFFICE/Collabora, họp trực tuyến và dịch vụ ngoài. | `integration` | `/api/v1/integrations` |
+| 8097 | `operations-service` | Health tổng hợp, job vận hành, lịch chạy và agent lease. | `operations` | `/api/v1/operations`, `/internal/v1/operations/jobs` |
+| 8098 | `competency-service` | Khung năng lực, hồ sơ, khoảng thiếu và ánh xạ khóa học. | `competency` | `/api/v1/competencies` |
 
-Chi tiết endpoint, bảng dữ liệu, migration và controller xem tại:
+Chi tiết đầy đủ:
 
-- [`docs/SERVICE_CATALOG.md`](docs/SERVICE_CATALOG.md)
-- [`docs/API_DATABASE_MAP.md`](docs/API_DATABASE_MAP.md)
-- [`docs/TEAM_SERVICE_ASSIGNMENT.md`](docs/TEAM_SERVICE_ASSIGNMENT.md)
-- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
+- [`docs/SERVICE_CATALOG.md`](docs/SERVICE_CATALOG.md): phạm vi, dependency, controller, port và cách chạy từng service.
+- [`docs/API_DATABASE_MAP.md`](docs/API_DATABASE_MAP.md): API base, controller, schema, bảng và migration tương ứng.
+- [`docs/TEAM_SERVICE_ASSIGNMENT.md`](docs/TEAM_SERVICE_ASSIGNMENT.md): bảng để thành viên đăng ký owner/reviewer và phạm vi nâng cấp/test.
+- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md): nguyên tắc microservice và giao tiếp liên service.
+- [`docs/JAVA_SPRING_MIGRATION_0.21.0.md`](docs/JAVA_SPRING_MIGRATION_0.21.0.md): phạm vi chuyển đổi Kotlin sang Java.
 
-## 6. Cấu trúc repository
+## Cấu trúc repository
 
 ```text
-apps/web/                         Frontend cho ba vai trò
-backend/platform-contracts/       Contract dùng chung giữa các service
-backend/service-support/          Security, error model và hỗ trợ dùng chung
-backend/services/<service>/       Mã nguồn, API, DB migration và test của từng service
-contracts/lmspilot/               JSON Schema cho dữ liệu trao đổi, gồm QuestionSet AI
-docs/                             Kiến trúc, API/DB, service catalog và hướng dẫn nhóm
-deploy/                           Compose profile và cấu hình triển khai
-infrastructure/                   PostgreSQL, RabbitMQ, Grafana, Prometheus
-scripts/                          Setup, validate, smoke test, backup/restore
-tests/                            Contract, security, repository và UI regression
+apps/web/                         Frontend Next.js
+backend/platform-contracts/       Contract Java dùng chung
+backend/service-support/          Security, error model, event và web support
+backend/services/<service>/       19 Spring Boot service
+contracts/lmspilot/               JSON Schema và contract ngoài tiến trình
+infrastructure/                   PostgreSQL, RabbitMQ, Redis, monitoring
+deploy/                           Docker và biến môi trường mẫu
+docs/                             Tài liệu hệ thống hiện hành
+scripts/                          Validator, backup/restore và operations agent
+tests/                            Regression/contract tests
 ```
 
-## 7. Chạy nhanh
+Mỗi service có cấu trúc:
 
-### Windows
-
-```powershell
-Copy-Item .env.example .env
-powershell -ExecutionPolicy Bypass -File .\scripts\setup.ps1
+```text
+backend/services/<service>/
+├── README.md
+├── build.gradle.kts
+└── src
+    ├── main
+    │   ├── java/com/lmspilot/...
+    │   └── resources
+    │       ├── application.yml
+    │       └── db/migration/V*__*.sql
+    └── test/java/com/lmspilot/...
 ```
 
-### Linux/macOS
+## Chạy nhanh
+
+### Docker Compose
 
 ```bash
 cp .env.example .env
-chmod +x scripts/*.sh
-./scripts/setup.sh
+docker compose up --build
 ```
 
-Mở `http://localhost:3000`. Demo seed có ba tài khoản `admin`, `instructor`, `student`; mật khẩu lấy từ `LMSPILOT_DEFAULT_ADMIN_PASSWORD`. Không bật demo seed ở staging hoặc production.
-
-## 8. Chạy và test một service
-
-Ví dụ với `course-service`:
+### Chạy một backend service
 
 ```bash
 cd backend
-./gradlew :services:course-service:test --no-daemon
 ./gradlew :services:course-service:bootRun
 ```
 
-Chạy toàn bộ kiểm tra repository:
+### Test một backend service
+
+```bash
+cd backend
+./gradlew :services:course-service:test
+```
+
+### Test toàn backend
+
+```bash
+cd backend
+./gradlew test
+```
+
+### Frontend
+
+```bash
+cd apps/web
+npm ci
+npm run dev
+```
+
+## Quy tắc làm việc theo service
+
+1. Mỗi service có một owner chính và ít nhất một reviewer.
+2. Owner chỉ thay đổi schema của service mình; không đọc/ghi trực tiếp bảng của service khác.
+3. Giao tiếp đồng bộ qua API Gateway hoặc internal API có `X-Service-Token`; giao tiếp bất đồng bộ qua event contract.
+4. Thay đổi API phải cập nhật controller/DTO, `docs/API_DATABASE_MAP.md`, contract và consumer test.
+5. Thay đổi database phải thêm Flyway migration mới; không sửa migration đã phát hành.
+6. Pull request phải có unit test, test API chính, migration test và mô tả ảnh hưởng liên service.
+
+## Kiểm tra repository
 
 ```bash
 python scripts/validate-repository.py
-python scripts/validate-service-ports.py
-node scripts/check-typescript-syntax.js
 python -m unittest discover -s tests -p "test_*.py"
-
-cd apps/web
-npm ci
-npm run typecheck
-npm run build
-
-cd ../../backend
-./gradlew test --no-daemon
 ```
 
-## 9. Quy tắc phân công service
-
-1. Mỗi thành viên chọn một service tại `backend/services/<service-name>` và ghi owner vào [`docs/TEAM_SERVICE_ASSIGNMENT.md`](docs/TEAM_SERVICE_ASSIGNMENT.md).
-2. Owner chịu trách nhiệm nghiệp vụ, API, DB migration, validation, unit/integration test, tài liệu và Docker/config của service đó.
-3. Không code trực tiếp trên `main`; mỗi Issue dùng branch riêng như `feature/course-publishing` hoặc `test/assessment-resume-session`.
-4. Không tự approve pull request của chính mình; thay đổi auth, API contract hoặc DB ownership phải được Tech Lead duyệt.
-5. Không gọi database của service khác. Dùng API nội bộ có `X-Service-Token` hoặc RabbitMQ.
-6. Trước pull request phải chạy test module, validator port và `git diff --check`.
-
-## 10. Tài liệu nên đọc theo thứ tự
-
-1. [`BAT_DAU_TAI_DAY.md`](BAT_DAU_TAI_DAY.md)
-2. [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
-3. [`docs/SERVICE_CATALOG.md`](docs/SERVICE_CATALOG.md)
-4. [`docs/API_DATABASE_MAP.md`](docs/API_DATABASE_MAP.md)
-5. [`docs/TEAM_SERVICE_ASSIGNMENT.md`](docs/TEAM_SERVICE_ASSIGNMENT.md)
-6. README riêng trong từng `backend/services/<service-name>/README.md`
-7. [`DELIVERY_STATUS.md`](DELIVERY_STATUS.md) và [`TEST_RESULTS_LMSPILOT_0.20.4.md`](TEST_RESULTS_LMSPILOT_0.20.4.md)
-
-## 11. Trước khi triển khai production
-
-Bắt buộc chạy fresh/upgrade migration trên bản sao dữ liệu, full frontend/backend build, Docker smoke, browser E2E cho cả ba vai trò, kiểm thử video/PDF/DOCX/bài thực hành/bài kiểm tra/bài thi, UAT với model AI thật, accessibility, tải đồng thời kỳ thi, backup/restore, TLS/domain, SMTP và pentest.
+Full Gradle/Next/Docker E2E phải chạy trên CI trước khi merge vào `main`.

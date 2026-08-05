@@ -1,0 +1,1 @@
+package com.lmspilot.configuration.api;import java.time.Instant;import java.util.Map;public record ProductConfigurationResponse(String productName,String logoUrl,String primaryColor,String accentColor,String defaultLocale,Map<String,Boolean>featureFlags,Map<String,String>terminology,Instant updatedAt){}

@@ -1,0 +1,1 @@
+package com.lmspilot.organization.api;import jakarta.validation.constraints.Size;import java.util.*;public record RevokeMembershipRequest(@Size(min=1,max=5000)Set<UUID> membershipIds){public RevokeMembershipRequest{membershipIds=membershipIds==null?Set.of():Set.copyOf(membershipIds);}}

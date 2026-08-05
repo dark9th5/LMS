@@ -1,0 +1,1 @@
+package com.lmspilot.certificate.api;import java.time.Instant;import java.util.UUID;public record CertificateIssuedEvent(UUID certificateId,UUID enrollmentId,UUID courseId,UUID userId,String verificationCode,Instant issuedAt){}

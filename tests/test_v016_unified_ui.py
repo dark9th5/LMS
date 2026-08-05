@@ -107,8 +107,8 @@ class Release016UnifiedUiTests(unittest.TestCase):
         self.assertNotIn('name="configJson"', workspace)
 
     def test_configuration_service_accepts_and_migrates_unified_modes(self) -> None:
-        api = text("backend/services/configuration-service/src/main/kotlin/com/lmspilot/configuration/api/CustomizationApi.kt")
-        domain = text("backend/services/configuration-service/src/main/kotlin/com/lmspilot/configuration/domain/CustomizationDomain.kt")
+        api = text("backend/services/configuration-service/src/main/java/com/lmspilot/configuration/api/CustomizationApi.java")
+        domain = text("backend/services/configuration-service/src/main/java/com/lmspilot/configuration/domain/CustomizationDomain.java")
         migration = text("backend/services/configuration-service/src/main/resources/db/migration/V7__unified_design_system.sql")
         self.assertIn('^(unified-light|unified-dark)$', api)
         self.assertIn('themeKey: String = "unified-light"', api)

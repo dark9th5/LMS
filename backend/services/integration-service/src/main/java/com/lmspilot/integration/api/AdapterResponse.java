@@ -1,0 +1,1 @@
+package com.lmspilot.integration.api;import com.lmspilot.integration.domain.*;import java.time.Instant;import java.util.*;public record AdapterResponse(UUID id,String code,String name,AdapterType type,String endpoint,Map<String,String> mapping,boolean secretConfigured,AdapterStatus status,Instant lastTestedAt,String lastTestResult){}

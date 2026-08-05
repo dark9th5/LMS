@@ -133,15 +133,9 @@ class Release017AccessibleLmsUiTests(unittest.TestCase):
         self.assertNotIn(".exam-navigator button{aspect-ratio", css)
         self.assertIn(".exam-navigator>div:nth-child(2)>button{aspect-ratio", css)
 
-    def test_release_contains_rendered_ui_previews(self) -> None:
-        preview_dir = ROOT / "docs/screenshots/0.17.0"
-        names = {path.name for path in preview_dir.glob("*.png")}
-        self.assertTrue({
-            "01-login.png", "02-dashboard-light.png", "03-course-catalog.png",
-            "04-learning-player.png", "05-exam-focus.png",
-            "06-dashboard-dark.png", "07-dashboard-mobile.png",
-        }.issubset(names))
-
+    def test_release_prunes_obsolete_preview_bundles(self) -> None:
+        self.assertFalse((ROOT / "docs/screenshots").exists())
+        self.assertTrue((ROOT / "docs/JAVA_SPRING_MIGRATION_0.21.0.md").exists())
 
 if __name__ == "__main__":
     unittest.main()

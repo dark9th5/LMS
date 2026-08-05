@@ -1,37 +1,66 @@
 # assessment-service
 
-- **Sản phẩm:** LMSPilot
+- **Tên:** Assessment
+- **Owner:** Chưa phân công
+- **Reviewer:** Chưa phân công
 - **Port mặc định:** `8086`
-- **Owner:** `TBD`
-- **Reviewer:** `TBD`
-- **Phạm vi sở hữu:** Ngân hàng câu hỏi, bài kiểm tra trong khóa học, bài thi độc lập, phiên làm bài và cuộc thi.
-- **API chính:** `/api/v1/questions`, `/api/v1/exams`, `/api/v1/exam-sessions`, `/api/v1/competitions`, `/api/v1/assessment-assignments`
+- **Ngôn ngữ/runtime:** Java 21, Spring Boot 3.5.16
 - **PostgreSQL schema:** `assessment`
-- **DB URL local:** `jdbc:postgresql://localhost:5432/lmspilot?currentSchema=assessment`
-- **Bảng sở hữu:** questions, exams, exam_questions, exam_sessions, demo_seed_history, assessment_contexts, competitions, competition_leaderboard, competition_rewards, reward_ledger, question_provenance, assessment_assignments, exam_session_events
-- **Phụ thuộc:** PostgreSQL, Course, Enrollment, Organization
 
-## Vị trí mã nguồn
+## Phạm vi sở hữu
 
-- Controller/API: `AssessmentApi.kt, AssessmentAssignmentApi.kt, CompetitionApi.kt`
-- Migration: `V1__assessment_schema.sql, V2__demo_seed_history.sql, V3__assessment_context_competition.sql, V4__question_provenance.sql, V5__assessment_assignments.sql, V6__resumable_exam_sessions.sql, V7__exam_session_learning_context.sql`
-- Main source: `src/main/kotlin`
-- Test: `src/test/kotlin`
-- Config: `src/main/resources/application.yml`
+Ngân hàng câu hỏi, bài kiểm tra trong khóa học, bài thi độc lập, phiên làm bài và cuộc thi.
 
-## Chạy riêng
+## API chính
+
+- `/api/v1/assessment-assignments`
+- `/api/v1/competitions`
+- `/api/v1/exam-sessions`
+- `/api/v1/exams`
+- `/api/v1/questions`
+- `/internal/v1/assessment`
+
+## Controller Java
+
+- `src/main/java/**/AssessmentControllers.java`
+
+## Bảng dữ liệu sở hữu
+
+- `assessment_assignments`
+- `assessment_contexts`
+- `competition_leaderboard`
+- `competition_rewards`
+- `competitions`
+- `demo_seed_history`
+- `exam_questions`
+- `exam_session_events`
+- `exam_sessions`
+- `exams`
+- `question_provenance`
+- `questions`
+- `reward_ledger`
+
+## Thư mục quan trọng
+
+- Main source: `src/main/java`
+- Configuration: `src/main/resources/application.yml`
+- Flyway: `src/main/resources/db/migration`
+- Tests: `src/test/java`
+
+## Chạy và test
 
 ```bash
 cd backend
-./gradlew :services:assessment-service:test --no-daemon
 ./gradlew :services:assessment-service:bootRun
+./gradlew :services:assessment-service:test
 ```
 
 ## Checklist owner
 
-- Nghiệp vụ và authorization đúng phạm vi service.
-- API có validation, error contract và test.
-- Migration Flyway chỉ thêm mới, không sửa lịch sử đã phát hành.
-- Không truy cập trực tiếp database service khác.
-- Cập nhật `docs/API_DATABASE_MAP.md` khi thêm endpoint hoặc bảng.
-- Chạy `python scripts/validate-service-ports.py` trước pull request.
+- [ ] API/DTO tương thích contract hiện tại.
+- [ ] Có unit test cho nghiệp vụ mới.
+- [ ] Có test authorization và validation.
+- [ ] Migration mới chạy được trên database sạch và database đã có dữ liệu.
+- [ ] Không truy cập trực tiếp bảng của service khác.
+- [ ] Cập nhật `docs/API_DATABASE_MAP.md` nếu API/DB thay đổi.
+- [ ] Reviewer đã kiểm tra ảnh hưởng producer/consumer.

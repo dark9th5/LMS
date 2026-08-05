@@ -1,37 +1,57 @@
 # organization-service
 
-- **Sản phẩm:** LMSPilot
+- **Tên:** Organization
+- **Owner:** Chưa phân công
+- **Reviewer:** Chưa phân công
 - **Port mặc định:** `8082`
-- **Owner:** `TBD`
-- **Reviewer:** `TBD`
-- **Phạm vi sở hữu:** Cây cơ cấu tổ chức, đơn vị, quan hệ thành viên và phạm vi dữ liệu.
-- **API chính:** `/api/v1/organization/units`, `/api/v1/organization/memberships`
+- **Ngôn ngữ/runtime:** Java 21, Spring Boot 3.5.16
 - **PostgreSQL schema:** `organization`
-- **DB URL local:** `jdbc:postgresql://localhost:5432/lmspilot?currentSchema=organization`
-- **Bảng sở hữu:** organization_units, organization_memberships_v2, organization_scope_projection
-- **Phụ thuộc:** PostgreSQL
 
-## Vị trí mã nguồn
+## Phạm vi sở hữu
 
-- Controller/API: `MembershipApi.kt, OrganizationApi.kt`
-- Migration: `V1__organization_schema.sql, V2__organization_scopes.sql`
-- Main source: `src/main/kotlin`
-- Test: `src/test/kotlin`
-- Config: `src/main/resources/application.yml`
+Cây cơ cấu tổ chức, đơn vị và quan hệ thành viên.
 
-## Chạy riêng
+## API chính
+
+- `/api/v1/organization/memberships`
+- `/api/v1/organization/units`
+- `/internal/v1/organization`
+- `/internal/v1/organization/units`
+
+## Controller Java
+
+- `src/main/java/**/InternalOrganizationScopeController.java`
+- `src/main/java/**/InternalOrganizationUnitController.java`
+- `src/main/java/**/OrganizationController.java`
+- `src/main/java/**/OrganizationMembershipController.java`
+
+## Bảng dữ liệu sở hữu
+
+- `organization_memberships_v2`
+- `organization_scope_projection`
+- `organization_units`
+
+## Thư mục quan trọng
+
+- Main source: `src/main/java`
+- Configuration: `src/main/resources/application.yml`
+- Flyway: `src/main/resources/db/migration`
+- Tests: `src/test/java`
+
+## Chạy và test
 
 ```bash
 cd backend
-./gradlew :services:organization-service:test --no-daemon
 ./gradlew :services:organization-service:bootRun
+./gradlew :services:organization-service:test
 ```
 
 ## Checklist owner
 
-- Nghiệp vụ và authorization đúng phạm vi service.
-- API có validation, error contract và test.
-- Migration Flyway chỉ thêm mới, không sửa lịch sử đã phát hành.
-- Không truy cập trực tiếp database service khác.
-- Cập nhật `docs/API_DATABASE_MAP.md` khi thêm endpoint hoặc bảng.
-- Chạy `python scripts/validate-service-ports.py` trước pull request.
+- [ ] API/DTO tương thích contract hiện tại.
+- [ ] Có unit test cho nghiệp vụ mới.
+- [ ] Có test authorization và validation.
+- [ ] Migration mới chạy được trên database sạch và database đã có dữ liệu.
+- [ ] Không truy cập trực tiếp bảng của service khác.
+- [ ] Cập nhật `docs/API_DATABASE_MAP.md` nếu API/DB thay đổi.
+- [ ] Reviewer đã kiểm tra ảnh hưởng producer/consumer.

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.21.0 - 2026-08-05
+
+- Chuyển toàn bộ backend runtime sang Java 21 + Spring Boot 3.5.16.
+- Giữ nguyên 19 microservice, port, API boundary, PostgreSQL schema và Flyway migration.
+- Chuyển backend test sang JUnit 5 Java.
+- Làm lại tài liệu LMSPilot, service catalog, API/database map và bảng phân công.
+
 ## 0.20.4 - 2026-08-05
 
 - Chuẩn hóa tên dự án và tài liệu thành LMSPilot.

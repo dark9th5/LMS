@@ -1,0 +1,2 @@
+package com.lmspilot.notification.domain; import jakarta.persistence.*;import java.time.*;import java.util.*;
+@Entity @Table(name="notification_reminder_dispatches") public class NotificationReminderDispatchEntity{@Id public UUID id=UUID.randomUUID();@Column(nullable=false)public UUID ruleId;@Column(nullable=false)public UUID userId;@Column(nullable=false,length=180)public String businessKey="";@Column(nullable=false)public Instant dispatchedAt=Instant.now();public NotificationReminderDispatchEntity(){}}

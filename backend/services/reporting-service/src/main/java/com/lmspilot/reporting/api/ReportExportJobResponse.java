@@ -1,0 +1,1 @@
+package com.lmspilot.reporting.api;import com.lmspilot.reporting.domain.*;import java.time.Instant;import java.util.UUID;public record ReportExportJobResponse(UUID id,ReportScope scope,ReportExportStatus status,Integer rowCount,String errorMessage,Instant createdAt,Instant completedAt,Instant expiresAt){}

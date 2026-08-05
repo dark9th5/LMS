@@ -1,0 +1,1 @@
+package com.lmspilot.license.domain;import java.util.UUID;import org.springframework.data.jpa.repository.JpaRepository;public interface LicenseRepository extends JpaRepository<LicenseEntity,UUID>{LicenseEntity findTopByOrderByActivatedAtDesc();LicenseEntity findByLicenseId(String licenseId);}

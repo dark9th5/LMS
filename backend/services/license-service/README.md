@@ -1,37 +1,51 @@
 # license-service
 
-- **Sản phẩm:** LMSPilot
+- **Tên:** License
+- **Owner:** Chưa phân công
+- **Reviewer:** Chưa phân công
 - **Port mặc định:** `8090`
-- **Owner:** `TBD`
-- **Reviewer:** `TBD`
-- **Phạm vi sở hữu:** Kích hoạt giấy phép, entitlement và giới hạn tính năng triển khai.
-- **API chính:** `/api/v1/license`
+- **Ngôn ngữ/runtime:** Java 21, Spring Boot 3.5.16
 - **PostgreSQL schema:** `license`
-- **DB URL local:** `jdbc:postgresql://localhost:5432/lmspilot?currentSchema=license`
-- **Bảng sở hữu:** licenses
-- **Phụ thuộc:** PostgreSQL
 
-## Vị trí mã nguồn
+## Phạm vi sở hữu
 
-- Controller/API: `LicenseApi.kt`
-- Migration: `V1__license_schema.sql, V2__license_grace_period.sql`
-- Main source: `src/main/kotlin`
-- Test: `src/test/kotlin`
-- Config: `src/main/resources/application.yml`
+Kích hoạt giấy phép, entitlement và giới hạn tính năng.
 
-## Chạy riêng
+## API chính
+
+- `/api/v1/license`
+- `/internal/v1/license`
+
+## Controller Java
+
+- `src/main/java/**/InternalLicenseController.java`
+- `src/main/java/**/LicenseController.java`
+
+## Bảng dữ liệu sở hữu
+
+- `licenses`
+
+## Thư mục quan trọng
+
+- Main source: `src/main/java`
+- Configuration: `src/main/resources/application.yml`
+- Flyway: `src/main/resources/db/migration`
+- Tests: `src/test/java`
+
+## Chạy và test
 
 ```bash
 cd backend
-./gradlew :services:license-service:test --no-daemon
 ./gradlew :services:license-service:bootRun
+./gradlew :services:license-service:test
 ```
 
 ## Checklist owner
 
-- Nghiệp vụ và authorization đúng phạm vi service.
-- API có validation, error contract và test.
-- Migration Flyway chỉ thêm mới, không sửa lịch sử đã phát hành.
-- Không truy cập trực tiếp database service khác.
-- Cập nhật `docs/API_DATABASE_MAP.md` khi thêm endpoint hoặc bảng.
-- Chạy `python scripts/validate-service-ports.py` trước pull request.
+- [ ] API/DTO tương thích contract hiện tại.
+- [ ] Có unit test cho nghiệp vụ mới.
+- [ ] Có test authorization và validation.
+- [ ] Migration mới chạy được trên database sạch và database đã có dữ liệu.
+- [ ] Không truy cập trực tiếp bảng của service khác.
+- [ ] Cập nhật `docs/API_DATABASE_MAP.md` nếu API/DB thay đổi.
+- [ ] Reviewer đã kiểm tra ảnh hưởng producer/consumer.

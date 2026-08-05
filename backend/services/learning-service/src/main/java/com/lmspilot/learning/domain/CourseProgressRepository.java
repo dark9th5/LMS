@@ -1,0 +1,2 @@
+package com.lmspilot.learning.domain; import java.util.*; import org.springframework.data.jpa.repository.JpaRepository;
+public interface CourseProgressRepository extends JpaRepository<CourseProgressEntity,UUID>{ Optional<CourseProgressEntity> findByEnrollmentId(UUID id); List<CourseProgressEntity> findAllByUserIdOrderByUpdatedAtDesc(UUID userId); List<CourseProgressEntity> findAllByUserIdAndCourseId(UUID userId,UUID courseId); }

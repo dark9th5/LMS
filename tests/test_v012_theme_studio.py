@@ -67,10 +67,10 @@ class Release012ThemeStudioTests(unittest.TestCase):
 
     def test_backend_persists_and_validates_theme_key(self) -> None:
         entity = self.read(
-            "backend/services/configuration-service/src/main/kotlin/com/lmspilot/configuration/domain/CustomizationDomain.kt"
+            "backend/services/configuration-service/src/main/java/com/lmspilot/configuration/domain/CustomizationDomain.java"
         )
         api = self.read(
-            "backend/services/configuration-service/src/main/kotlin/com/lmspilot/configuration/api/CustomizationApi.kt"
+            "backend/services/configuration-service/src/main/java/com/lmspilot/configuration/api/CustomizationApi.java"
         )
         migration = self.read(
             "backend/services/configuration-service/src/main/resources/db/migration/V6__soft_spectrum_default.sql"

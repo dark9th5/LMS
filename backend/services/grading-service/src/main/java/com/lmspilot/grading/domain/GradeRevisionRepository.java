@@ -1,0 +1,1 @@
+package com.lmspilot.grading.domain;import org.springframework.data.jpa.repository.JpaRepository;import java.util.*;public interface GradeRevisionRepository extends JpaRepository<GradeRevisionEntity,UUID>{List<GradeRevisionEntity>findAllByGradeIdOrderByCreatedAtDesc(UUID id);}

@@ -1,0 +1,1 @@
+package com.lmspilot.assessment.domain; import java.io.Serializable; import java.util.UUID; public class CompetitionLeaderboardId implements Serializable { public UUID competitionId; public UUID userId; public CompetitionLeaderboardId(){} public CompetitionLeaderboardId(UUID c,UUID u){competitionId=c;userId=u;} }

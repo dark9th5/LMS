@@ -1,37 +1,52 @@
 # ai-service
 
-- **Sản phẩm:** LMSPilot
+- **Tên:** AI
+- **Owner:** Chưa phân công
+- **Reviewer:** Chưa phân công
 - **Port mặc định:** `8094`
-- **Owner:** `TBD`
-- **Reviewer:** `TBD`
-- **Phạm vi sở hữu:** Cấu hình model OpenAI-compatible; trích xuất PDF/DOCX; sinh, kiểm tra và duyệt câu hỏi theo độ khó.
-- **API chính:** `/api/v1/ai`
+- **Ngôn ngữ/runtime:** Java 21, Spring Boot 3.5.16
 - **PostgreSQL schema:** `ai`
-- **DB URL local:** `jdbc:postgresql://localhost:5432/lmspilot?currentSchema=ai`
-- **Bảng sở hữu:** ai_provider_configs, question_generation_jobs, question_generation_reviews
-- **Phụ thuộc:** PostgreSQL, File Storage, Course, Assessment, AI provider
 
-## Vị trí mã nguồn
+## Phạm vi sở hữu
 
-- Controller/API: `AiApi.kt, QuestionGenerationApi.kt`
-- Migration: `V2__question_generation_pipeline.sql`
-- Main source: `src/main/kotlin`
-- Test: `src/test/kotlin`
-- Config: `src/main/resources/application.yml`
+Model OpenAI-compatible; trích xuất PDF/DOCX; sinh, kiểm tra, review và import câu hỏi theo độ khó.
 
-## Chạy riêng
+## API chính
+
+- `/api/v1/ai`
+
+## Controller Java
+
+- `src/main/java/**/AiApi.java`
+- `src/main/java/**/QuestionGenerationApi.java`
+
+## Bảng dữ liệu sở hữu
+
+- `ai_provider_configs`
+- `question_generation_jobs`
+- `question_generation_reviews`
+
+## Thư mục quan trọng
+
+- Main source: `src/main/java`
+- Configuration: `src/main/resources/application.yml`
+- Flyway: `src/main/resources/db/migration`
+- Tests: `src/test/java`
+
+## Chạy và test
 
 ```bash
 cd backend
-./gradlew :services:ai-service:test --no-daemon
 ./gradlew :services:ai-service:bootRun
+./gradlew :services:ai-service:test
 ```
 
 ## Checklist owner
 
-- Nghiệp vụ và authorization đúng phạm vi service.
-- API có validation, error contract và test.
-- Migration Flyway chỉ thêm mới, không sửa lịch sử đã phát hành.
-- Không truy cập trực tiếp database service khác.
-- Cập nhật `docs/API_DATABASE_MAP.md` khi thêm endpoint hoặc bảng.
-- Chạy `python scripts/validate-service-ports.py` trước pull request.
+- [ ] API/DTO tương thích contract hiện tại.
+- [ ] Có unit test cho nghiệp vụ mới.
+- [ ] Có test authorization và validation.
+- [ ] Migration mới chạy được trên database sạch và database đã có dữ liệu.
+- [ ] Không truy cập trực tiếp bảng của service khác.
+- [ ] Cập nhật `docs/API_DATABASE_MAP.md` nếu API/DB thay đổi.
+- [ ] Reviewer đã kiểm tra ảnh hưởng producer/consumer.

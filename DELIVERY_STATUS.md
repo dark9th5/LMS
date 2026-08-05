@@ -1,12 +1,7 @@
-# Trạng thái bàn giao — LMSPilot 0.20.4
+# Trạng thái bàn giao — LMSPilot 0.21.0
 
-Bản 0.20.4 là **full-source release candidate** và giữ nguyên nghiệp vụ của 0.20.3. Phạm vi thay đổi tập trung vào tài liệu dự án và khả năng phân công microservice:
+Backend đã được chuyển sang **Java 21 + Spring Boot 3.5.16** cho `platform-contracts`, `service-support` và toàn bộ 19 microservice. Không còn tệp Kotlin trong `backend/`. API path, port, PostgreSQL schema và Flyway migration hiện có được giữ nguyên.
 
-- Chuẩn hóa tên sản phẩm thành **LMSPilot**.
-- Xóa nhãn cũ khỏi tên tài liệu, contract, cấu hình triển khai và namespace nội bộ liên quan.
-- Viết lại README với chức năng, vai trò, kiến trúc, service, port, API và database.
-- Thêm `docs/SERVICE_CATALOG.md`, `docs/API_DATABASE_MAP.md`, `docs/TEAM_SERVICE_ASSIGNMENT.md` và `docs/ARCHITECTURE.md`.
-- Cập nhật README riêng cho đủ 19 backend service.
-- Chuyển tài liệu phát hành và giao diện cũ vào `docs/archive` để thư mục gốc gọn hơn.
+Đã đạt repository validator, Python regression, Java syntax/public-type scan, TypeScript/TSX syntax scan và CSS parse. Full Gradle test bị chặn vì môi trường không truy cập được `services.gradle.org`; phải chạy lại trên CI trước khi merge vào `main`.
 
-Các validator, TypeScript syntax và Python regression suite đã đạt. Full Gradle/Next build chưa chạy được do môi trường đóng gói không tải được dependency. Chi tiết tại `TEST_RESULTS_LMSPILOT_0.20.4.md`.
+Xem chi tiết tại `TEST_RESULTS_LMSPILOT_0.21.0.md`.

@@ -1,0 +1,1 @@
+package com.lmspilot.grading.api;import com.lmspilot.grading.domain.GradeRevisionType;import java.time.Instant;import java.util.UUID;public record GradeRevisionResponse(UUID id,double previousScore,double newScore,double previousPercentage,double newPercentage,GradeRevisionType type,String reason,UUID changedBy,Instant createdAt){}

@@ -1,0 +1,125 @@
+{
+  "product": "LMSPilot",
+  "version": "0.21.0",
+  "backend": "Java 21 + Spring Boot 3.5.16",
+  "services": [
+    {
+      "name": "api-gateway",
+      "port": 8080,
+      "schema": "—"
+    },
+    {
+      "name": "identity-service",
+      "port": 8081,
+      "schema": "identity"
+    },
+    {
+      "name": "organization-service",
+      "port": 8082,
+      "schema": "organization"
+    },
+    {
+      "name": "course-service",
+      "port": 8083,
+      "schema": "course"
+    },
+    {
+      "name": "enrollment-service",
+      "port": 8084,
+      "schema": "enrollment"
+    },
+    {
+      "name": "learning-service",
+      "port": 8085,
+      "schema": "learning"
+    },
+    {
+      "name": "assessment-service",
+      "port": 8086,
+      "schema": "assessment"
+    },
+    {
+      "name": "grading-service",
+      "port": 8087,
+      "schema": "grading"
+    },
+    {
+      "name": "reporting-service",
+      "port": 8088,
+      "schema": "reporting"
+    },
+    {
+      "name": "file-storage-service",
+      "port": 8089,
+      "schema": "file_storage"
+    },
+    {
+      "name": "license-service",
+      "port": 8090,
+      "schema": "license"
+    },
+    {
+      "name": "audit-service",
+      "port": 8091,
+      "schema": "audit"
+    },
+    {
+      "name": "notification-service",
+      "port": 8092,
+      "schema": "notification"
+    },
+    {
+      "name": "certificate-service",
+      "port": 8093,
+      "schema": "certificate"
+    },
+    {
+      "name": "ai-service",
+      "port": 8094,
+      "schema": "ai"
+    },
+    {
+      "name": "configuration-service",
+      "port": 8095,
+      "schema": "configuration"
+    },
+    {
+      "name": "integration-service",
+      "port": 8096,
+      "schema": "integration"
+    },
+    {
+      "name": "operations-service",
+      "port": 8097,
+      "schema": "operations"
+    },
+    {
+      "name": "competency-service",
+      "port": 8098,
+      "schema": "competency"
+    }
+  ],
+  "source": {
+    "backendLanguage": "Java",
+    "javaVersion": 21,
+    "springBootVersion": "3.5.16",
+    "javaFiles": 443,
+    "kotlinFiles": 0,
+    "springBootApplications": 19
+  },
+  "verification": {
+    "repositoryValidator": "PASS",
+    "pythonTests": {
+      "total": 166,
+      "passed": 132,
+      "skipped": 34
+    },
+    "typescriptSyntax": {
+      "files": 89,
+      "errors": 0
+    },
+    "cssParseErrors": 0,
+    "javaSyntaxOrPublicTypeErrors": 0,
+    "fullGradleTest": "BLOCKED_BY_NETWORK_SERVICES_GRADLE_ORG"
+  }
+}

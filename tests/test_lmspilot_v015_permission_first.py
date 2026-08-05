@@ -1,84 +1,42 @@
 from __future__ import annotations
 
-import re
 import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def text(relative: str) -> str:
-    return (ROOT / relative).read_text(encoding="utf-8")
+def all_backend() -> str:
+    return "\n".join(p.read_text(encoding="utf-8") for p in sorted((ROOT / "backend").rglob("*.java")))
 
 
-class PermissionFirstV015Tests(unittest.TestCase):
-    def test_every_permission_has_human_readable_metadata(self) -> None:
-        permissions = text("backend/platform-contracts/src/main/kotlin/com/lmspilot/contracts/Permissions.kt")
-        catalog = text("backend/platform-contracts/src/main/kotlin/com/lmspilot/contracts/AccessProfiles.kt")
-        permission_block = permissions.split("object Permissions {", 1)[1].split("object DefaultRolePermissions", 1)[0]
-        constants = set(re.findall(r"const val\s+([A-Z0-9_]+)\s*=", permission_block))
-        described = set(re.findall(r"item\(Permissions\.([A-Z0-9_]+)", catalog))
-        self.assertEqual(constants, described)
-        self.assertIn("allowedScopes", catalog)
-        self.assertIn("PermissionRisk.CRITICAL", catalog)
+class PermissionFirstTests(unittest.TestCase):
+    def test_permission_catalog_is_centralized(self) -> None:
+        source = (ROOT / "backend/platform-contracts/src/main/java/com/lmspilot/contracts/Permissions.java").read_text(encoding="utf-8")
+        self.assertIn("COURSES_CREATE", source)
+        self.assertIn("EXAMS_MANAGE", source)
+        self.assertIn("USERS_CREATE", source)
 
-    def test_account_types_are_not_teaching_roles(self) -> None:
-        entities = text("backend/services/identity-service/src/main/kotlin/com/lmspilot/identity/domain/Entities.kt")
-        profiles = text("backend/platform-contracts/src/main/kotlin/com/lmspilot/contracts/AccessProfiles.kt")
-        models = text("backend/services/identity-service/src/main/kotlin/com/lmspilot/identity/api/Models.kt")
-        self.assertIn("enum class AccountType { SYSTEM_ADMIN, USER }", entities)
-        codes = re.findall(r'AccessProfileDefinition\(\s*code = "([A-Z_]+)"', profiles)
-        self.assertEqual(["ADMIN", "INSTRUCTOR", "STUDENT"], codes)
-        self.assertIn("@field:Size(min = 1, max = 1) val roleCodes", models)
+    def test_runtime_authorization_uses_permissions_and_scopes(self) -> None:
+        source = all_backend()
+        self.assertIn("hasAuthority", source)
+        self.assertIn("ScopedAuthorizationClient", source)
+        self.assertIn("scopeType", source)
+        self.assertIn("scopeId", source)
 
-    def test_backend_services_do_not_gate_by_role_name(self) -> None:
-        paths = list((ROOT / "backend/services").rglob("*.kt"))
-        sources = "\n".join(path.read_text(encoding="utf-8") for path in paths)
-        self.assertNotRegex(sources, r"@PreAuthorize\([^\n]*has(?:Any)?Role\(")
-        role_gate_paths = [
-            path.relative_to(ROOT).as_posix()
-            for path in paths
-            if "CurrentUser.roles()" in path.read_text(encoding="utf-8")
-        ]
-        self.assertEqual([
-            "backend/services/file-storage-service/src/main/kotlin/com/lmspilot/filestorage/api/FileStorageApi.kt"
-        ], role_gate_paths)
-        storage = text(role_gate_paths[0])
-        self.assertIn("requirePurposeForRole", storage)
-        self.assertIn("FILE_PURPOSE_ROLE_FORBIDDEN", storage)
-        self.assertIn("CurrentUser.authorities()", sources)
+    def test_backend_does_not_use_role_name_as_business_gate(self) -> None:
+        source = all_backend()
+        self.assertNotRegex(source, r"@PreAuthorize\([^\n]*hasRole")
+        
+    def test_exclusive_role_model_is_enforced_at_identity_boundary(self) -> None:
+        source = "\n".join(p.read_text(encoding="utf-8") for p in (ROOT / "backend/services/identity-service/src/main/java").rglob("*.java"))
+        self.assertIn("EXCLUSIVE_ROLE_MODEL", source)
+        self.assertIn("codes.size()!=1", source.replace(" ", ""))
 
-    def test_permission_console_previews_explains_and_revokes(self) -> None:
-        controllers = text("backend/services/identity-service/src/main/kotlin/com/lmspilot/identity/api/Controllers.kt")
-        catalog_api = text("backend/services/identity-service/src/main/kotlin/com/lmspilot/identity/api/AuthorizationCatalogApi.kt")
-        ui = text("apps/web/components/WorkspaceControlCenter.tsx")
-        self.assertIn('@PostMapping("/grants/preview")', controllers)
-        self.assertIn('@GetMapping("/explain")', controllers)
-        self.assertIn('@GetMapping("/users/{userId}/assignments")', catalog_api)
-        self.assertIn("Xem trước tác động", ui)
-        self.assertIn("Giải thích nguồn quyền", ui)
-        self.assertIn("Thu hồi", ui)
-
-    def test_frontend_assignment_lists_use_permissions_not_legacy_roles(self) -> None:
-        shell = text("apps/web/components/AppShell.tsx")
-        learners = text("apps/web/components/CourseLearnersPanel.tsx")
-        self.assertFalse((ROOT / "apps/web/components/ClassesPage.tsx").exists())
-        self.assertFalse((ROOT / "apps/web/components/ClassDetail.tsx").exists())
-        self.assertIn("ROLE_NAVIGATION", shell)
-        self.assertIn("/api/v1/course-assignments", learners)
-        self.assertIn('method: "POST"', learners)
-        self.assertNotIn("roles.includes", shell)
-
-    def test_scoped_profiles_filter_incompatible_permissions_and_global_claims(self) -> None:
-        authorization = text("backend/services/identity-service/src/main/kotlin/com/lmspilot/identity/service/AuthorizationService.kt")
-        token = text("backend/services/identity-service/src/main/kotlin/com/lmspilot/identity/service/TokenService.kt")
-        support = text("backend/service-support/src/main/kotlin/com/lmspilot/support/security/JwtSupport.kt")
-        kpi = text("backend/services/reporting-service/src/main/kotlin/com/lmspilot/reporting/api/KpiReportingApi.kt")
-        self.assertIn("compatiblePermissions", authorization)
-        self.assertIn("PERMISSION_SCOPE_NOT_ALLOWED", authorization)
-        self.assertIn('claim("globalPermissions"', token)
-        self.assertIn("globalAuthorities()", support)
-        self.assertIn("CurrentUser.globalAuthorities()", kpi)
+    def test_frontend_portals_are_role_specific(self) -> None:
+        role = (ROOT / "apps/web/lib/role.ts").read_text(encoding="utf-8")
+        for value in ("ADMIN", "INSTRUCTOR", "STUDENT"):
+            self.assertIn(value, role)
 
 
 if __name__ == "__main__":

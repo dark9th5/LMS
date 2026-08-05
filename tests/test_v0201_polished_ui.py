@@ -12,9 +12,9 @@ def text(relative: str) -> str:
 
 class Release0201PolishedUiTests(unittest.TestCase):
     def test_release_version(self) -> None:
-        self.assertEqual("0.20.4", text("VERSION").strip())
-        self.assertIn('"version": "0.20.4"', text("apps/web/package.json"))
-        self.assertIn('version = "0.20.4"', text("backend/build.gradle.kts"))
+        self.assertEqual("0.21.0", text("VERSION").strip())
+        self.assertIn('"version": "0.21.0"', text("apps/web/package.json"))
+        self.assertIn('version = "0.21.0"', text("backend/build.gradle.kts"))
 
     def test_sidebar_keeps_role_separation_without_crowding(self) -> None:
         shell = text("apps/web/components/AppShell.tsx")
@@ -36,11 +36,9 @@ class Release0201PolishedUiTests(unittest.TestCase):
         self.assertNotIn("--ui-border:#ffffff", css.lower())
         self.assertIn("border-color:var(--ui-border)!important", css)
 
-    def test_visual_qa_bundle_exists(self) -> None:
-        images = sorted((ROOT / "docs/screenshots/0.20.1").glob("*.png"))
-        self.assertEqual(18, len(images))
-        self.assertTrue((ROOT / "scripts/render-ui-previews-v0201.py").is_file())
-
+    def test_historical_preview_bundle_is_pruned(self) -> None:
+        self.assertFalse((ROOT / "docs/screenshots/0.20.1").exists())
+        self.assertTrue((ROOT / "apps/web/app/unified.css").exists())
 
 if __name__ == "__main__":
     unittest.main()

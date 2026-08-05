@@ -1,37 +1,54 @@
 # competency-service
 
-- **Sản phẩm:** LMSPilot
+- **Tên:** Competency
+- **Owner:** Chưa phân công
+- **Reviewer:** Chưa phân công
 - **Port mặc định:** `8098`
-- **Owner:** `TBD`
-- **Reviewer:** `TBD`
-- **Phạm vi sở hữu:** Khung năng lực, hồ sơ năng lực, đánh giá khoảng thiếu và ánh xạ khóa học.
-- **API chính:** `/api/v1/competencies`
+- **Ngôn ngữ/runtime:** Java 21, Spring Boot 3.5.16
 - **PostgreSQL schema:** `competency`
-- **DB URL local:** `jdbc:postgresql://localhost:5432/lmspilot?currentSchema=competency`
-- **Bảng sở hữu:** competencies, competency_profiles, competency_profile_requirements, user_competency_profiles, user_competency_assessments, course_competency_maps
-- **Phụ thuộc:** PostgreSQL, License
 
-## Vị trí mã nguồn
+## Phạm vi sở hữu
 
-- Controller/API: `CompetencyApi.kt`
-- Migration: `V1__competency_framework.sql`
-- Main source: `src/main/kotlin`
-- Test: `src/test/kotlin`
-- Config: `src/main/resources/application.yml`
+Khung năng lực, hồ sơ, khoảng thiếu và ánh xạ khóa học.
 
-## Chạy riêng
+## API chính
+
+- `/api/v1/competencies`
+
+## Controller Java
+
+- `src/main/java/**/CompetencyController.java`
+
+## Bảng dữ liệu sở hữu
+
+- `competencies`
+- `competency_profile_requirements`
+- `competency_profiles`
+- `course_competency_maps`
+- `user_competency_assessments`
+- `user_competency_profiles`
+
+## Thư mục quan trọng
+
+- Main source: `src/main/java`
+- Configuration: `src/main/resources/application.yml`
+- Flyway: `src/main/resources/db/migration`
+- Tests: `src/test/java`
+
+## Chạy và test
 
 ```bash
 cd backend
-./gradlew :services:competency-service:test --no-daemon
 ./gradlew :services:competency-service:bootRun
+./gradlew :services:competency-service:test
 ```
 
 ## Checklist owner
 
-- Nghiệp vụ và authorization đúng phạm vi service.
-- API có validation, error contract và test.
-- Migration Flyway chỉ thêm mới, không sửa lịch sử đã phát hành.
-- Không truy cập trực tiếp database service khác.
-- Cập nhật `docs/API_DATABASE_MAP.md` khi thêm endpoint hoặc bảng.
-- Chạy `python scripts/validate-service-ports.py` trước pull request.
+- [ ] API/DTO tương thích contract hiện tại.
+- [ ] Có unit test cho nghiệp vụ mới.
+- [ ] Có test authorization và validation.
+- [ ] Migration mới chạy được trên database sạch và database đã có dữ liệu.
+- [ ] Không truy cập trực tiếp bảng của service khác.
+- [ ] Cập nhật `docs/API_DATABASE_MAP.md` nếu API/DB thay đổi.
+- [ ] Reviewer đã kiểm tra ảnh hưởng producer/consumer.

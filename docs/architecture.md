@@ -1,41 +1,21 @@
 # Kiến trúc LMSPilot
 
+LMSPilot dùng mô hình **microservice monorepo**. Mỗi backend service là một Spring Boot application Java 21 có port, API boundary, schema PostgreSQL, Flyway migration và README riêng.
+
 ## Nguyên tắc
 
-- Mỗi microservice sở hữu API và schema dữ liệu riêng.
-- Frontend chỉ đi qua API Gateway; không hard-code URL nội bộ.
-- Giao tiếp liên service qua HTTP nội bộ hoặc RabbitMQ, không truy cập chéo database.
-- PostgreSQL mặc định dùng database `lmspilot`; mỗi service dùng một schema riêng.
-- API công khai yêu cầu JWT; API `/internal/v1/**` yêu cầu service token và không dành cho trình duyệt.
-- Mỗi tài khoản chỉ có một vai trò `ADMIN`, `INSTRUCTOR` hoặc `STUDENT`.
-- Bài kiểm tra thuộc khóa học; bài thi là nghiệp vụ độc lập.
-
-## Luồng chính
-
-### Đăng nhập
-
-`Web → API Gateway → Identity Service → JWT/refresh token`.
-
-### Học khóa học
-
-`Web → Gateway → Enrollment → Course → Learning → File Storage`.
-
-### Làm bài kiểm tra hoặc bài thi
-
-`Web → Gateway → Assessment → Grading → Reporting/Certificate`.
-
-### Sinh câu hỏi bằng AI
-
-`Instructor → AI Service → File Storage/Course → AI provider → quality validator → review → Assessment import`.
-
-### Cấu hình thương hiệu
-
-`Admin → Configuration Service → File Storage → public branding API → Login/Web`.
+- Frontend chỉ gọi API Gateway.
+- Service không truy cập trực tiếp bảng của service khác.
+- Internal API yêu cầu `X-Service-Token`.
+- Event dùng contract trong `backend/platform-contracts` hoặc `contracts/lmspilot`.
+- Mỗi tài khoản có đúng một vai trò `ADMIN`, `INSTRUCTOR` hoặc `STUDENT`.
+- Bài kiểm tra thuộc khóa học; bài thi độc lập không có `courseId`.
+- AI chỉ sinh bản nháp từ phiên bản PDF/DOCX thuộc khóa học và phải qua review.
 
 ## Database
 
-Một PostgreSQL database mặc định tên `lmspilot`, tách schema:
+Môi trường mặc định dùng một PostgreSQL instance với schema riêng cho từng service. Đây là tách biệt logic; có thể chuyển từng schema sang database instance riêng khi cần mở rộng mà không thay đổi ownership.
 
-`identity`, `organization`, `course`, `enrollment`, `learning`, `assessment`, `grading`, `reporting`, `file_storage`, `license`, `audit`, `notification`, `certificate`, `ai`, `configuration`, `integration`, `operations`, `competency`.
+## Build
 
-API Gateway và frontend không sở hữu database.
+Mã backend là Java. `build.gradle.kts` là Gradle Kotlin DSL, không phải mã ứng dụng Kotlin.

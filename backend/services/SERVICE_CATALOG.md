@@ -1,32 +1,32 @@
-# Danh mục service 0.20.0
+# Danh mục service LMSPilot 0.21.0
 
-Mỗi service nằm trong một thư mục độc lập, có port riêng và có thể giao cho một thành viên/nhóm chịu trách nhiệm.
+Bảng này là nguồn tham chiếu để chia việc, nâng cấp và kiểm thử.
 
-| Service | Port | Phạm vi |
-|---|---:|---|
-| `api-gateway` | `8080` | Cổng API duy nhất cho web, xác thực tuyến và chuyển tiếp đến các service nội bộ. |
-| `identity-service` | `8081` | Đăng nhập, phiên, tài khoản và mô hình một tài khoản–một vai trò ADMIN/INSTRUCTOR/STUDENT. |
-| `organization-service` | `8082` | Cơ cấu tổ chức, đơn vị và quan hệ thành viên phục vụ quản trị. |
-| `course-service` | `8083` | Khóa học, mục lục, bài học, tài liệu PDF/DOCX, video, bài thực hành và bài kiểm tra thuộc khóa học. |
-| `enrollment-service` | `8084` | Gán người học trực tiếp vào khóa học và lưu bản phân phối nội bộ tương thích dữ liệu cũ; không cung cấp giao diện lớp học. |
-| `learning-service` | `8085` | Tiến độ học, mở nội dung khóa học, nộp bài thực hành và trạng thái hoàn thành. |
-| `assessment-service` | `8086` | Ngân hàng câu hỏi, bài kiểm tra trong khóa học và bài thi độc lập. |
-| `grading-service` | `8087` | Chấm tự động, chấm thủ công, phản hồi và khiếu nại điểm. |
-| `reporting-service` | `8088` | Read model, KPI, báo cáo quản trị, báo cáo giảng viên và kết quả cá nhân. |
-| `file-storage-service` | `8089` | Tải lên, tải xuống, xem DOCX/PDF, chỉnh sửa tài liệu và phân quyền tệp theo mục đích. |
-| `license-service` | `8090` | Xác thực giấy phép và giới hạn tính năng triển khai. |
-| `audit-service` | `8091` | Nhật ký kiểm toán bất biến cho thao tác nhạy cảm. |
-| `notification-service` | `8092` | Thông báo trong hệ thống, email, mẫu và nhắc hạn. |
-| `certificate-service` | `8093` | Cấp và tra cứu chứng chỉ sau khi hoàn thành điều kiện học tập. |
-| `ai-service` | `8094` | Trích xuất PDF/DOCX và tạo câu hỏi có kiểm duyệt từ đúng tài liệu của khóa học. |
-| `configuration-service` | `8095` | Cấu hình thương hiệu, logo, ảnh nền đăng nhập, màu chủ đạo và dịch vụ ngoài. |
-| `integration-service` | `8096` | Điểm mở rộng tích hợp hệ thống bên thứ ba. |
-| `operations-service` | `8097` | Health check và tác vụ vận hành có kiểm soát; chỉ bind localhost khi chạy Compose. |
-| `competency-service` | `8098` | Khung năng lực và hồ sơ năng lực; module backend tùy chọn. |
+| Port | Service | Trách nhiệm | API base | Schema | Controller Java | Dependency module |
+|---:|---|---|---|---|---|---|
+| 8080 | `api-gateway` | Điểm vào duy nhất của frontend; xác thực JWT, rate limit, correlation ID và định tuyến API. | `—` | `—` | `—` | `:platform-contracts` |
+| 8081 | `identity-service` | Đăng nhập, JWT/refresh token, phiên, tài khoản, vai trò độc quyền ADMIN/INSTRUCTOR/STUDENT và quyền theo phạm vi. | `/api/v1/auth`, `/api/v1/authorization`, `/api/v1/directory`, `/api/v1/roles`, `/api/v1/users`, `/api/v1/users/{userId}/sessions`, `/internal/v1/authorization`, `/internal/v1/users` | `identity` | `IdentityControllers.java` | `:service-support` |
+| 8082 | `organization-service` | Cây cơ cấu tổ chức, đơn vị và quan hệ thành viên. | `/api/v1/organization/memberships`, `/api/v1/organization/units`, `/internal/v1/organization`, `/internal/v1/organization/units` | `organization` | `InternalOrganizationScopeController.java`, `InternalOrganizationUnitController.java`, `OrganizationController.java`, `OrganizationMembershipController.java` | `:service-support` |
+| 8083 | `course-service` | Khóa học, danh mục, chương/bài học, phiên bản xuất bản và thảo luận. | `/api/v1/categories`, `/api/v1/courses`, `/api/v1/discussions`, `/internal/v1/courses` | `course` | `CategoryController.java`, `CourseController.java`, `DiscussionApi.java`, `InternalCourseController.java` | `:service-support` |
+| 8084 | `enrollment-service` | Giao khóa học, ghi danh, lộ trình học và phiên học trực tuyến. | `/api/v1/course-assignments`, `/api/v1/enrollments`, `/api/v1/learning-paths`, `/api/v1/live-sessions`, `/internal/v1/course-access`, `/internal/v1/enrollments` | `enrollment` | `AssignmentAndLiveApi.java`, `EnrollmentApi.java`, `LearningPathApi.java` | `:service-support` |
+| 8085 | `learning-service` | Tiến độ học, hoàn thành bài học, nộp/chấm bài thực hành và xAPI. | `/api/v1/learning`, `/api/v1/learning/assignments`, `/api/v1/xapi/statements`, `/internal/v1/learning` | `learning` | `AssignmentSubmissionApi.java`, `LearningApi.java`, `XapiApi.java` | `:service-support` |
+| 8086 | `assessment-service` | Ngân hàng câu hỏi, bài kiểm tra trong khóa học, bài thi độc lập, phiên làm bài và cuộc thi. | `/api/v1/assessment-assignments`, `/api/v1/competitions`, `/api/v1/exam-sessions`, `/api/v1/exams`, `/api/v1/questions`, `/internal/v1/assessment` | `assessment` | `AssessmentControllers.java` | `:service-support` |
+| 8087 | `grading-service` | Chấm tự động, chấm thủ công, lịch sử điểm và phúc khảo. | `/api/v1/grades` | `grading` | `GradeController.java` | `:service-support` |
+| 8088 | `reporting-service` | Read model báo cáo, dashboard, KPI, xuất báo cáo và lịch báo cáo. | `/api/v1/reports`, `/api/v1/reports/kpis`, `/internal/v1/reports/reminders` | `reporting` | `InternalReminderReportingController.java`, `KpiReportingController.java`, `ReportingController.java`, `ScheduledReportingController.java` | `:service-support` |
+| 8089 | `file-storage-service` | Lưu trữ file, quyền truy cập, phiên bản, xem PDF/DOCX/video và phiên chỉnh sửa. | `/api/v1/files`, `/internal/v1/files`, `/public/v1/file-edit` | `file_storage` | `FileEditingApi.java`, `FileStorageApi.java` | `:service-support` |
+| 8090 | `license-service` | Kích hoạt giấy phép, entitlement và giới hạn tính năng. | `/api/v1/license`, `/internal/v1/license` | `license` | `InternalLicenseController.java`, `LicenseController.java` | `:service-support` |
+| 8091 | `audit-service` | Nhật ký kiểm toán và xuất dữ liệu kiểm toán. | `/api/v1/audit`, `/internal/v1/audit` | `audit` | `AuditController.java`, `InternalAuditController.java` | `:service-support` |
+| 8092 | `notification-service` | Thông báo, email outbox, tin tức, template và nhắc hạn. | `/api/v1/news`, `/api/v1/notifications`, `/api/v1/notifications/reminder-rules`, `/api/v1/notifications/templates` | `notification` | `NewsApi.java`, `NotificationApi.java`, `NotificationAutomationApi.java` | `:service-support` |
+| 8093 | `certificate-service` | Mẫu chứng chỉ, cấp, tra cứu, thu hồi và cấp lại. | `/api/v1/certificates`, `/public/v1/certificates` | `certificate` | `CertificateController.java`, `PublicCertificateController.java` | `:service-support` |
+| 8094 | `ai-service` | Model OpenAI-compatible; trích xuất PDF/DOCX; sinh, kiểm tra, review và import câu hỏi theo độ khó. | `/api/v1/ai` | `ai` | `AiApi.java`, `QuestionGenerationApi.java` | `:service-support` |
+| 8095 | `configuration-service` | Thông tin hệ thống, thương hiệu, logo, ảnh nền đăng nhập và dịch vụ ngoài. | `/api/v1/branding`, `/api/v1/configuration`, `/api/v1/external-services`, `/api/v1/external-services/{id}`, `/api/v1/external-services/{id}/test`, `/public/v1/branding`, `/public/v1/branding/assets/{kind}`, `/public/v1/configuration` | `configuration` | `CustomizationController.java`, `ProductConfigurationController.java` | `:service-support` |
+| 8096 | `integration-service` | Adapter kết nối SMTP, Redis, S3, ONLYOFFICE/Collabora, họp trực tuyến và dịch vụ ngoài. | `/api/v1/integrations` | `integration` | `IntegrationController.java` | `:service-support` |
+| 8097 | `operations-service` | Health tổng hợp, job vận hành, lịch chạy và agent lease. | `/api/v1/operations`, `/internal/v1/operations/jobs` | `operations` | `InternalOperationsAgentController.java`, `OperationsController.java` | `:service-support` |
+| 8098 | `competency-service` | Khung năng lực, hồ sơ, khoảng thiếu và ánh xạ khóa học. | `/api/v1/competencies` | `competency` | `CompetencyController.java` | `:service-support` |
 
-## Ranh giới sản phẩm
+## Quy tắc ownership
 
-- Giao diện công khai chỉ có **Khóa học**; không có khu vực Lớp học.
-- `enrollment-service` giữ một bản ghi phân phối nội bộ để tương thích dữ liệu cũ, nhưng không công khai API hoặc UI lớp học.
-- `assessment-service` phân biệt `COURSE_QUIZ` (nằm trong khóa học) và `STANDALONE_EXAM` (Bài thi độc lập).
-- Ba vai trò sản phẩm là `ADMIN`, `INSTRUCTOR`, `STUDENT`; một tài khoản chỉ có đúng một vai trò.
+- Một owner chính, một reviewer dự phòng cho mỗi service.
+- Owner chịu trách nhiệm API, migration, unit test, integration test và tài liệu của service.
+- Thay đổi contract liên service cần owner của cả producer và consumer review.
+- Không giao cùng một bảng database cho hai service.

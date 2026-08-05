@@ -1,0 +1,1 @@
+package com.lmspilot.reporting.api;import com.lmspilot.reporting.domain.*;import java.time.Instant;import java.util.UUID;public record ReportScheduleResponse(UUID id,String name,ReportScope scope,ReportFrequency frequency,Integer dayOfWeek,int hourUtc,boolean enabled,Instant nextRunAt,Instant updatedAt){}

@@ -1,37 +1,56 @@
 # file-storage-service
 
-- **Sản phẩm:** LMSPilot
+- **Tên:** File Storage
+- **Owner:** Chưa phân công
+- **Reviewer:** Chưa phân công
 - **Port mặc định:** `8089`
-- **Owner:** `TBD`
-- **Reviewer:** `TBD`
-- **Phạm vi sở hữu:** Tải lên/tải xuống, quyền truy cập, phiên bản, xem PDF/DOCX/video và phiên chỉnh sửa.
-- **API chính:** `/api/v1/files`, `/internal/v1/files`, `/public/v1/file-edit`
+- **Ngôn ngữ/runtime:** Java 21, Spring Boot 3.5.16
 - **PostgreSQL schema:** `file_storage`
-- **DB URL local:** `jdbc:postgresql://localhost:5432/lmspilot?currentSchema=file_storage`
-- **Bảng sở hữu:** stored_files, demo_seed_history, file_versions_v2, file_edit_sessions, file_access_grants
-- **Phụ thuộc:** PostgreSQL, S3 tùy chọn, ONLYOFFICE/Collabora tùy chọn
 
-## Vị trí mã nguồn
+## Phạm vi sở hữu
 
-- Controller/API: `FileEditingApi.kt, FileStorageApi.kt, InternalFileApi.kt`
-- Migration: `V1__file_storage_schema.sql, V2__demo_seed_history.sql, V3__file_versions_and_edit_sessions.sql, V4__file_access_grants.sql`
-- Main source: `src/main/kotlin`
-- Test: `src/test/kotlin`
-- Config: `src/main/resources/application.yml`
+Lưu trữ file, quyền truy cập, phiên bản, xem PDF/DOCX/video và phiên chỉnh sửa.
 
-## Chạy riêng
+## API chính
+
+- `/api/v1/files`
+- `/internal/v1/files`
+- `/public/v1/file-edit`
+
+## Controller Java
+
+- `src/main/java/**/FileEditingApi.java`
+- `src/main/java/**/FileStorageApi.java`
+
+## Bảng dữ liệu sở hữu
+
+- `demo_seed_history`
+- `file_access_grants`
+- `file_edit_sessions`
+- `file_versions_v2`
+- `stored_files`
+
+## Thư mục quan trọng
+
+- Main source: `src/main/java`
+- Configuration: `src/main/resources/application.yml`
+- Flyway: `src/main/resources/db/migration`
+- Tests: `src/test/java`
+
+## Chạy và test
 
 ```bash
 cd backend
-./gradlew :services:file-storage-service:test --no-daemon
 ./gradlew :services:file-storage-service:bootRun
+./gradlew :services:file-storage-service:test
 ```
 
 ## Checklist owner
 
-- Nghiệp vụ và authorization đúng phạm vi service.
-- API có validation, error contract và test.
-- Migration Flyway chỉ thêm mới, không sửa lịch sử đã phát hành.
-- Không truy cập trực tiếp database service khác.
-- Cập nhật `docs/API_DATABASE_MAP.md` khi thêm endpoint hoặc bảng.
-- Chạy `python scripts/validate-service-ports.py` trước pull request.
+- [ ] API/DTO tương thích contract hiện tại.
+- [ ] Có unit test cho nghiệp vụ mới.
+- [ ] Có test authorization và validation.
+- [ ] Migration mới chạy được trên database sạch và database đã có dữ liệu.
+- [ ] Không truy cập trực tiếp bảng của service khác.
+- [ ] Cập nhật `docs/API_DATABASE_MAP.md` nếu API/DB thay đổi.
+- [ ] Reviewer đã kiểm tra ảnh hưởng producer/consumer.

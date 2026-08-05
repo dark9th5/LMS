@@ -1,37 +1,65 @@
 # enrollment-service
 
-- **Sản phẩm:** LMSPilot
+- **Tên:** Enrollment
+- **Owner:** Chưa phân công
+- **Reviewer:** Chưa phân công
 - **Port mặc định:** `8084`
-- **Owner:** `TBD`
-- **Reviewer:** `TBD`
-- **Phạm vi sở hữu:** Giao khóa học trực tiếp cho học viên, ghi danh, hạn học, phiên học trực tuyến và lộ trình học.
-- **API chính:** `/api/v1/enrollments`, `/api/v1/course-assignments`, `/api/v1/live-sessions`, `/api/v1/learning-paths`
+- **Ngôn ngữ/runtime:** Java 21, Spring Boot 3.5.16
 - **PostgreSQL schema:** `enrollment`
-- **DB URL local:** `jdbc:postgresql://localhost:5432/lmspilot?currentSchema=enrollment`
-- **Bảng sở hữu:** training_classes (tương thích dữ liệu cũ, không có UI lớp học), class_instructors, enrollments, course_cohorts_v2, course_assignments_v2, live_sessions, learning_paths, learning_path_items, learning_path_assignments, user_learning_paths
-- **Phụ thuộc:** PostgreSQL, Course, Organization, Learning
 
-## Vị trí mã nguồn
+## Phạm vi sở hữu
 
-- Controller/API: `AssignmentAndLiveApi.kt, EnrollmentApi.kt, LearningPathApi.kt`
-- Migration: `V1__enrollment_schema.sql, V3__course_cohorts_and_deadlines.sql, V4__live_sessions.sql, V5__learning_paths.sql`
-- Main source: `src/main/kotlin`
-- Test: `src/test/kotlin`
-- Config: `src/main/resources/application.yml`
+Giao khóa học, ghi danh, lộ trình học và phiên học trực tuyến.
 
-## Chạy riêng
+## API chính
+
+- `/api/v1/course-assignments`
+- `/api/v1/enrollments`
+- `/api/v1/learning-paths`
+- `/api/v1/live-sessions`
+- `/internal/v1/course-access`
+- `/internal/v1/enrollments`
+
+## Controller Java
+
+- `src/main/java/**/AssignmentAndLiveApi.java`
+- `src/main/java/**/EnrollmentApi.java`
+- `src/main/java/**/LearningPathApi.java`
+
+## Bảng dữ liệu sở hữu
+
+- `class_instructors`
+- `course_assignments_v2`
+- `course_cohorts_v2`
+- `enrollments`
+- `learning_path_assignments`
+- `learning_path_items`
+- `learning_paths`
+- `live_sessions`
+- `training_classes`
+- `user_learning_paths`
+
+## Thư mục quan trọng
+
+- Main source: `src/main/java`
+- Configuration: `src/main/resources/application.yml`
+- Flyway: `src/main/resources/db/migration`
+- Tests: `src/test/java`
+
+## Chạy và test
 
 ```bash
 cd backend
-./gradlew :services:enrollment-service:test --no-daemon
 ./gradlew :services:enrollment-service:bootRun
+./gradlew :services:enrollment-service:test
 ```
 
 ## Checklist owner
 
-- Nghiệp vụ và authorization đúng phạm vi service.
-- API có validation, error contract và test.
-- Migration Flyway chỉ thêm mới, không sửa lịch sử đã phát hành.
-- Không truy cập trực tiếp database service khác.
-- Cập nhật `docs/API_DATABASE_MAP.md` khi thêm endpoint hoặc bảng.
-- Chạy `python scripts/validate-service-ports.py` trước pull request.
+- [ ] API/DTO tương thích contract hiện tại.
+- [ ] Có unit test cho nghiệp vụ mới.
+- [ ] Có test authorization và validation.
+- [ ] Migration mới chạy được trên database sạch và database đã có dữ liệu.
+- [ ] Không truy cập trực tiếp bảng của service khác.
+- [ ] Cập nhật `docs/API_DATABASE_MAP.md` nếu API/DB thay đổi.
+- [ ] Reviewer đã kiểm tra ảnh hưởng producer/consumer.

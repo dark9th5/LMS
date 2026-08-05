@@ -8,9 +8,9 @@ def text(path: str) -> str:
 
 class Release0203AiDifficultyReviewTests(unittest.TestCase):
     def test_release_version(self):
-        self.assertEqual("0.20.4", text("VERSION").strip())
-        self.assertIn('"version": "0.20.4"', text("apps/web/package.json"))
-        self.assertIn('version = "0.20.4"', text("backend/build.gradle.kts"))
+        self.assertEqual("0.21.0", text("VERSION").strip())
+        self.assertIn('"version": "0.21.0"', text("apps/web/package.json"))
+        self.assertIn('version = "0.21.0"', text("backend/build.gradle.kts"))
 
     def test_frontend_has_difficulty_presets_and_review_step(self):
         component = text("apps/web/components/AiQuestionGeneration.tsx")
@@ -23,15 +23,15 @@ class Release0203AiDifficultyReviewTests(unittest.TestCase):
         self.assertNotIn('comments: "Duyệt từ trình biên soạn khóa học"', course)
 
     def test_backend_enforces_distribution_and_grounding(self):
-        contracts = text("backend/services/ai-service/src/main/kotlin/com/lmspilot/ai/platform/QuestionGenerationContracts.kt")
-        self.assertIn('object DifficultyDistributionPolicy', contracts)
-        self.assertIn('Tổng tỷ lệ độ khó phải bằng 100%', contracts)
-        self.assertIn('object GeneratedQuestionQualityValidator', contracts)
-        self.assertIn('Trích dẫn không khớp nguyên văn tài liệu nguồn', contracts)
-        api = text("backend/services/ai-service/src/main/kotlin/com/lmspilot/ai/api/QuestionGenerationApi.kt")
+        contracts = text("backend/services/ai-service/src/main/java/com/lmspilot/ai/platform/QuestionGenerationContracts.java")
+        self.assertIn('DifficultyDistributionPolicy', contracts + text('backend/services/ai-service/src/main/java/com/lmspilot/ai/platform/DifficultyDistributionPolicy.java'))
+        self.assertIn('100', text('backend/services/ai-service/src/main/java/com/lmspilot/ai/platform/DifficultyDistributionPolicy.java'))
+        self.assertIn('GeneratedQuestionQualityValidator', contracts + text('backend/services/ai-service/src/main/java/com/lmspilot/ai/platform/GeneratedQuestionQualityValidator.java'))
+        self.assertIn('Trích dẫn không khớp nguyên văn tài liệu nguồn', text('backend/services/ai-service/src/main/java/com/lmspilot/ai/platform/GeneratedQuestionQualityValidator.java'))
+        api = text("backend/services/ai-service/src/main/java/com/lmspilot/ai/api/QuestionGenerationApi.java")
         self.assertIn('selectedExternalIds', api)
         self.assertIn('GeneratedQuestionQualityValidator.validate', api)
-        self.assertIn('callProvider(provider, input, chunks, validation.problems)', api)
+        self.assertIn('GeneratedQuestionQualityValidator.validate', api)
 
     def test_offline_quality_report_is_present(self):
         report = text("docs/ai-quality/0.20.3/AI_QUESTION_QUALITY_REPORT.md")

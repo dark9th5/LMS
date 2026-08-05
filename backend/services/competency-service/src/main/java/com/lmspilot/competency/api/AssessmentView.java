@@ -1,0 +1,1 @@
+package com.lmspilot.competency.api; import com.lmspilot.competency.domain.AssessmentSource; import java.time.Instant; import java.util.UUID; public record AssessmentView(UUID id,UUID userId,UUID competencyId,String competencyCode,String competencyName,int level,AssessmentSource source,UUID assessedBy,Instant assessedAt,Instant validUntil){}

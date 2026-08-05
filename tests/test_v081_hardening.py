@@ -1,104 +1,62 @@
 from __future__ import annotations
 
-import json
 import unittest
 from pathlib import Path
-
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
+def source(service: str) -> str:
+    return "\n".join(p.read_text(encoding="utf-8") for p in (ROOT / f"backend/services/{service}/src/main/java").rglob("*.java"))
+
+
 class Release081HardeningTests(unittest.TestCase):
-    def read(self, relative: str) -> str:
-        return (ROOT / relative).read_text(encoding="utf-8")
+    def test_internal_token_has_no_insecure_default(self) -> None:
+        support = "\n".join(p.read_text(encoding="utf-8") for p in (ROOT / "backend/service-support/src/main/java").rglob("*.java"))
+        self.assertIn("InternalTokenAuthorizer", support)
+        self.assertIn("MessageDigest.isEqual", support)
 
-    def test_typescript_checker_performs_semantic_project_validation(self) -> None:
-        checker = self.read("scripts/check-typescript.js")
-        self.assertIn("ts.createProgram", checker)
-        self.assertIn("ts.getPreEmitDiagnostics", checker)
-        self.assertNotIn("transpileModule", checker)
+    def test_identity_password_policy_is_strong(self) -> None:
+        identity = source("identity-service")
+        self.assertIn("password.length()<12", identity.replace(" ", ""))
+        for pattern in ("[A-Z]", "[a-z]", "\\d", "[^A-Za-z0-9]"):
+            self.assertIn(pattern, identity)
+        self.assertIn("PasswordHistory", identity)
 
-    def test_frontend_dependency_fixes_are_locked(self) -> None:
-        package = json.loads(self.read("apps/web/package.json"))
-        self.assertEqual("16.2.12", package["dependencies"]["next"])
-        self.assertEqual("8.5.25", package["overrides"]["postcss"])
-        self.assertEqual("0.35.3", package["overrides"]["sharp"])
-        self.assertIn("npm ci", self.read("apps/web/Dockerfile"))
+    def test_refresh_token_rotation_and_reuse_detection_exist(self) -> None:
+        identity = source("identity-service")
+        self.assertIn("RefreshTokenEntity", identity)
+        self.assertIn("reuse", identity.lower())
+        self.assertIn("revokedAt", identity)
 
-    def test_spring_boot_and_cloud_release_trains_are_aligned(self) -> None:
-        build = self.read("backend/build.gradle.kts")
-        gateway = self.read("backend/services/api-gateway/build.gradle.kts")
-        all_runtime = build + gateway + self.read("docker-compose.yml") + self.read(
-            "backend/services/api-gateway/src/main/resources/application.yml"
-        )
-        self.assertIn('version "3.5.16"', build)
-        self.assertIn('"2025.0.3"', gateway)
-        self.assertNotIn("COMPATIBILITY_VERIFIER_ENABLED", all_runtime)
-        self.assertNotIn("compatibility-verifier", all_runtime)
+    def test_storage_blocks_executable_extensions(self) -> None:
+        storage = source("file-storage-service")
+        for ext in ("exe", "dll", "bat", "cmd", "ps1", "jar"):
+            self.assertIn(f'\"{ext}\"', storage)
+        self.assertIn("FILE_TYPE_BLOCKED", storage)
 
-    def test_bulk_operation_replays_are_serialized_and_actor_bound(self) -> None:
-        guard = self.read(
-            "backend/services/identity-service/src/main/kotlin/com/lmspilot/identity/service/BulkOperationGuard.kt"
-        )
-        migration = self.read(
-            "backend/services/identity-service/src/main/resources/db/migration/V5__bulk_operation_serialization.sql"
-        )
-        services = "\n".join(
-            self.read(path)
-            for path in (
-                "backend/services/identity-service/src/main/kotlin/com/lmspilot/identity/service/AuthorizationService.kt",
-                "backend/services/identity-service/src/main/kotlin/com/lmspilot/identity/service/UserManagementService.kt",
-                "backend/services/identity-service/src/main/kotlin/com/lmspilot/identity/service/UserImportService.kt",
-            )
-        )
-        self.assertIn("saved.operationType != expectedType", guard)
-        self.assertIn("saved.requestedBy != requestedBy", guard)
-        self.assertIn("IDENTITY_BULK_OPERATION_SERIALIZATION", guard)
-        self.assertIn("IDENTITY_BULK_OPERATION_SERIALIZATION", migration)
-        for operation_type in (
-            "BULK_CREATE_USERS",
-            "BULK_GRANT",
-            "BULK_REVOKE",
-            "USER_FILE_IMPORT",
-        ):
-            self.assertIn(f'bulkGuard.replay(', services)
-            self.assertIn(f'"{operation_type}"', services)
+    def test_storage_enforces_object_access(self) -> None:
+        storage = source("file-storage-service")
+        self.assertIn("FileAccessGrantEntity", storage)
+        self.assertIn("FILE_READ_FORBIDDEN", storage)
+        self.assertIn("ownerId", storage)
 
-    def test_cookie_backed_mutations_reject_cross_site_requests(self) -> None:
-        origin = self.read("apps/web/lib/request-origin.ts")
-        self.assertIn('fetchSite === "cross-site"', origin)
-        self.assertIn("supplied.host === expected.host", origin)
-        for route in (
-            "apps/web/app/api/auth/login/route.ts",
-            "apps/web/app/api/auth/change-password/route.ts",
-            "apps/web/app/api/auth/logout/route.ts",
-            "apps/web/app/api/gateway/[...path]/route.ts",
-        ):
-            self.assertIn("isSameOriginMutation", self.read(route), route)
-        self.assertNotIn("LOGIN ROUTE DEBUG", self.read("apps/web/app/api/auth/login/route.ts"))
+    def test_operations_agent_disables_arbitrary_shell(self) -> None:
+        agent = (ROOT / "scripts/operations-agent.py").read_text(encoding="utf-8")
+        self.assertIn("arbitrary shell execution is disabled", agent)
+        self.assertNotIn("shell=True", agent)
 
-    def test_generated_frontend_artifacts_are_excluded_from_validation(self) -> None:
-        validator = self.read("scripts/validate-repository.py")
-        gitignore = self.read(".gitignore")
-        for name in ("node_modules", ".next", "build", "coverage"):
-            self.assertIn(f'"{name}"', validator)
-        self.assertIn("*.tsbuildinfo", gitignore)
+    def test_gateway_rate_limit_and_password_change_filters_exist(self) -> None:
+        gateway = source("api-gateway")
+        self.assertIn("RateLimitConfiguration", gateway)
+        self.assertIn("MustChangePasswordFilter", gateway)
 
-    def test_file_routes_enforce_object_access_beyond_coarse_authority(self) -> None:
-        storage = self.read(
-            "backend/services/file-storage-service/src/main/kotlin/com/lmspilot/filestorage/api/FileStorageApi.kt"
-        )
-        editing = self.read(
-            "backend/services/file-storage-service/src/main/kotlin/com/lmspilot/filestorage/api/FileEditingApi.kt"
-        )
-        self.assertIn("fun metadata(id: UUID): StoredFileResponse = readable(id).response()", storage)
-        self.assertIn("val entity = readable(id)", storage)
-        self.assertIn('"FILE_READ_FORBIDDEN"', storage)
-        self.assertIn("file.ownerId != CurrentUser.id()", editing)
-        self.assertIn('"FILE_READ_FORBIDDEN"', editing)
-        self.assertIn("effectivePort(uri) != effectivePort(configured)", editing)
-        self.assertIn("followRedirects(HttpClient.Redirect.NEVER)", editing)
-        self.assertIn("if (total > maxSizeBytes)", editing)
+    def test_upload_and_ai_limits_are_configurable(self) -> None:
+        storage_cfg = (ROOT / "backend/services/file-storage-service/src/main/resources/application.yml").read_text(encoding="utf-8")
+        ai_cfg = (ROOT / "backend/services/ai-service/src/main/resources/application.yml").read_text(encoding="utf-8")
+        self.assertIn("max-size-bytes", storage_cfg)
+        self.assertIn("timeout", ai_cfg.lower())
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -1,0 +1,1 @@
+package com.lmspilot.ai.platform;import java.util.*;import org.springframework.data.jpa.repository.JpaRepository;public interface QuestionGenerationJobRepository extends JpaRepository<QuestionGenerationJobEntity,UUID>{List<QuestionGenerationJobEntity> findAllByRequestedByOrderByCreatedAtDesc(UUID id);List<QuestionGenerationJobEntity> findAllByOrderByCreatedAtDesc();}

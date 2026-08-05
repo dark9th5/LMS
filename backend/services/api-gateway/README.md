@@ -1,37 +1,49 @@
 # api-gateway
 
-- **Sản phẩm:** LMSPilot
+- **Tên:** API Gateway
+- **Owner:** Chưa phân công
+- **Reviewer:** Chưa phân công
 - **Port mặc định:** `8080`
-- **Owner:** `TBD`
-- **Reviewer:** `TBD`
-- **Phạm vi sở hữu:** Điểm vào duy nhất của frontend; xác thực JWT, rate limit, correlation ID và định tuyến.
-- **API chính:** `/api/v1/**`, `/public/v1/**` → các service nội bộ
+- **Ngôn ngữ/runtime:** Java 21, Spring Boot 3.5.16
 - **PostgreSQL schema:** `—`
-- **DB URL local:** `Không áp dụng`
-- **Bảng sở hữu:** —
-- **Phụ thuộc:** Identity, Redis và toàn bộ service backend
 
-## Vị trí mã nguồn
+## Phạm vi sở hữu
 
-- Controller/API: `Gateway route/configuration`
-- Migration: `Không có database migration`
-- Main source: `src/main/kotlin`
-- Test: `src/test/kotlin`
-- Config: `src/main/resources/application.yml`
+Điểm vào duy nhất của frontend; xác thực JWT, rate limit, correlation ID và định tuyến API.
 
-## Chạy riêng
+## API chính
+
+- Không có public API; định tuyến gateway.
+
+## Controller Java
+
+- Gateway filter/configuration.
+
+## Bảng dữ liệu sở hữu
+
+- Không sở hữu database.
+
+## Thư mục quan trọng
+
+- Main source: `src/main/java`
+- Configuration: `src/main/resources/application.yml`
+- Flyway: `src/main/resources/db/migration`
+- Tests: `src/test/java`
+
+## Chạy và test
 
 ```bash
 cd backend
-./gradlew :services:api-gateway:test --no-daemon
 ./gradlew :services:api-gateway:bootRun
+./gradlew :services:api-gateway:test
 ```
 
 ## Checklist owner
 
-- Nghiệp vụ và authorization đúng phạm vi service.
-- API có validation, error contract và test.
-- Migration Flyway chỉ thêm mới, không sửa lịch sử đã phát hành.
-- Không truy cập trực tiếp database service khác.
-- Cập nhật `docs/API_DATABASE_MAP.md` khi thêm endpoint hoặc bảng.
-- Chạy `python scripts/validate-service-ports.py` trước pull request.
+- [ ] API/DTO tương thích contract hiện tại.
+- [ ] Có unit test cho nghiệp vụ mới.
+- [ ] Có test authorization và validation.
+- [ ] Migration mới chạy được trên database sạch và database đã có dữ liệu.
+- [ ] Không truy cập trực tiếp bảng của service khác.
+- [ ] Cập nhật `docs/API_DATABASE_MAP.md` nếu API/DB thay đổi.
+- [ ] Reviewer đã kiểm tra ảnh hưởng producer/consumer.

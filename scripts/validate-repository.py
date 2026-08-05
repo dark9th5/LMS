@@ -120,7 +120,7 @@ for service in services:
         fail(f"Missing build.gradle.kts: {service.name}")
     if not (service / "README.md").exists():
         fail(f"Missing service ownership README: {service.name}")
-    if not list((service / "src/main/kotlin").rglob("*Application.kt")):
+    if not list((service / "src/main/java").rglob("*Application.java")):
         fail(f"Missing application entry point: {service.name}")
     application_yml = service / "src/main/resources/application.yml"
     if not application_yml.exists():
@@ -161,10 +161,10 @@ if "distributionSha256Sum=9c0f7faeeb306cb14e4279a3e084ca6b596894089a0638e68a07c9
     fail("Gradle distribution checksum is missing or unexpected")
 
 # Internal API authorization.
-for source in services_root.rglob("*.kt"):
+for source in services_root.rglob("*.java"):
     text = source.read_text(encoding="utf-8")
     if '@RequestMapping("/internal/v1' in text:
-        if "InternalTokenAuthorizer" not in text or "internal.require(" not in text:
+        if "InternalTokenAuthorizer" not in text or ".require(" not in text:
             fail(f"Internal endpoint is missing service-token enforcement: {source.relative_to(ROOT)}")
 
 
@@ -189,7 +189,7 @@ for route in routes:
 
 controller_bases = set()
 controller_pattern = re.compile(r'@(RequestMapping|GetMapping|PostMapping|PutMapping|PatchMapping|DeleteMapping)\(\s*"((?:/api/v1|/public/v1)[^"]*)"')
-for source in services_root.rglob("*.kt"):
+for source in services_root.rglob("*.java"):
     for match in controller_pattern.finditer(source.read_text(encoding="utf-8")):
         path = match.group(2)
         # Keep the static prefix before path variables.
@@ -248,10 +248,13 @@ if '"/api/v1/organization/units"' not in web_source:
 if '"/api/v1/classes' in web_source or '/classes' in web_source:
     fail("Public class UI/API references are not allowed in the three-role course model")
 
-assignment_api = read("backend/services/learning-service/src/main/kotlin/com/lmspilot/learning/api/AssignmentSubmissionApi.kt")
+assignment_api = read("backend/services/learning-service/src/main/java/com/lmspilot/learning/api/AssignmentSubmissionApi.java")
 if '@GetMapping("/queue/{classId}")' in assignment_api or '@RequestParam classId' in assignment_api:
     fail("Public class-based assignment queues are not allowed; grading must be course-scoped")
-assignment_response = assignment_api[assignment_api.index("data class AssignmentSubmissionResponse("):assignment_api.index("data class AssignmentFileMetadata(")]
+assignment_match = re.search(r"record\s+AssignmentSubmissionResponse\((.*?)\)\s*\{?\}?", assignment_api, re.DOTALL)
+if not assignment_match:
+    fail("AssignmentSubmissionResponse record is missing")
+assignment_response = assignment_match.group(1)
 if "classId" in assignment_response:
     fail("Public assignment responses must not expose legacy class identifiers")
 

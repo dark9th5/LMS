@@ -1,0 +1,1 @@
+package com.lmspilot.notification.domain;import java.util.*;import org.springframework.data.jpa.repository.JpaRepository;public interface NewsAttachmentRepository extends JpaRepository<NewsAttachmentEntity,NewsAttachmentId>{List<NewsAttachmentEntity> findAllByNewsId(UUID id);void deleteAllByNewsId(UUID id);}

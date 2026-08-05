@@ -1,0 +1,1 @@
+package com.lmspilot.certificate.api;import com.lmspilot.certificate.domain.CertificateStatus;import java.time.Instant;import java.util.UUID;public record CertificateResponse(UUID id,UUID enrollmentId,UUID courseId,UUID userId,String verificationCode,int generation,CertificateStatus status,Instant issuedAt,Instant revokedAt,String revokeReason){}

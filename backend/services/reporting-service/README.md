@@ -1,37 +1,57 @@
 # reporting-service
 
-- **Sản phẩm:** LMSPilot
+- **Tên:** Reporting
+- **Owner:** Chưa phân công
+- **Reviewer:** Chưa phân công
 - **Port mặc định:** `8088`
-- **Owner:** `TBD`
-- **Reviewer:** `TBD`
-- **Phạm vi sở hữu:** Read model, dashboard, KPI, báo cáo học tập và xuất báo cáo theo lịch.
-- **API chính:** `/api/v1/reports`, `/api/v1/dashboard`, `/internal/v1/reports/reminders`
+- **Ngôn ngữ/runtime:** Java 21, Spring Boot 3.5.16
 - **PostgreSQL schema:** `reporting`
-- **DB URL local:** `jdbc:postgresql://localhost:5432/lmspilot?currentSchema=reporting`
-- **Bảng sở hữu:** report_events, learner_course_read_model, report_schedules, report_export_jobs
-- **Phụ thuộc:** PostgreSQL, RabbitMQ, Enrollment
 
-## Vị trí mã nguồn
+## Phạm vi sở hữu
 
-- Controller/API: `KpiReportingApi.kt, ReminderReportingApi.kt, ReportingApi.kt, ScheduledReportingApi.kt`
-- Migration: `V1__reporting_schema.sql, V2__scheduled_report_exports.sql, V3__reminder_due_index.sql`
-- Main source: `src/main/kotlin`
-- Test: `src/test/kotlin`
-- Config: `src/main/resources/application.yml`
+Read model báo cáo, dashboard, KPI, xuất báo cáo và lịch báo cáo.
 
-## Chạy riêng
+## API chính
+
+- `/api/v1/reports`
+- `/api/v1/reports/kpis`
+- `/internal/v1/reports/reminders`
+
+## Controller Java
+
+- `src/main/java/**/InternalReminderReportingController.java`
+- `src/main/java/**/KpiReportingController.java`
+- `src/main/java/**/ReportingController.java`
+- `src/main/java/**/ScheduledReportingController.java`
+
+## Bảng dữ liệu sở hữu
+
+- `learner_course_read_model`
+- `report_events`
+- `report_export_jobs`
+- `report_schedules`
+
+## Thư mục quan trọng
+
+- Main source: `src/main/java`
+- Configuration: `src/main/resources/application.yml`
+- Flyway: `src/main/resources/db/migration`
+- Tests: `src/test/java`
+
+## Chạy và test
 
 ```bash
 cd backend
-./gradlew :services:reporting-service:test --no-daemon
 ./gradlew :services:reporting-service:bootRun
+./gradlew :services:reporting-service:test
 ```
 
 ## Checklist owner
 
-- Nghiệp vụ và authorization đúng phạm vi service.
-- API có validation, error contract và test.
-- Migration Flyway chỉ thêm mới, không sửa lịch sử đã phát hành.
-- Không truy cập trực tiếp database service khác.
-- Cập nhật `docs/API_DATABASE_MAP.md` khi thêm endpoint hoặc bảng.
-- Chạy `python scripts/validate-service-ports.py` trước pull request.
+- [ ] API/DTO tương thích contract hiện tại.
+- [ ] Có unit test cho nghiệp vụ mới.
+- [ ] Có test authorization và validation.
+- [ ] Migration mới chạy được trên database sạch và database đã có dữ liệu.
+- [ ] Không truy cập trực tiếp bảng của service khác.
+- [ ] Cập nhật `docs/API_DATABASE_MAP.md` nếu API/DB thay đổi.
+- [ ] Reviewer đã kiểm tra ảnh hưởng producer/consumer.

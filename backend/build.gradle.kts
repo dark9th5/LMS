@@ -1,17 +1,19 @@
 plugins {
-    kotlin("jvm") version "2.0.21" apply false
-    kotlin("plugin.spring") version "2.0.21" apply false
-    kotlin("plugin.jpa") version "2.0.21" apply false
     id("org.springframework.boot") version "3.5.16" apply false
     id("io.spring.dependency-management") version "1.1.7" apply false
 }
 
 allprojects {
     group = "com.lmspilot"
-    version = "0.20.4"
+    version = "0.21.0"
 }
 
 subprojects {
+    tasks.withType<JavaCompile>().configureEach {
+        options.release.set(21)
+        options.encoding = "UTF-8"
+        options.compilerArgs.addAll(listOf("-parameters", "-Xlint:deprecation", "-Xlint:unchecked"))
+    }
     tasks.withType<Test>().configureEach {
         useJUnitPlatform()
     }

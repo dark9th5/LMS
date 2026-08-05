@@ -1,37 +1,52 @@
 # certificate-service
 
-- **Sản phẩm:** LMSPilot
+- **Tên:** Certificate
+- **Owner:** Chưa phân công
+- **Reviewer:** Chưa phân công
 - **Port mặc định:** `8093`
-- **Owner:** `TBD`
-- **Reviewer:** `TBD`
-- **Phạm vi sở hữu:** Mẫu chứng chỉ, cấp, tra cứu, in, thu hồi và cấp lại chứng chỉ.
-- **API chính:** `/api/v1/certificates`, `/public/v1/certificates`
+- **Ngôn ngữ/runtime:** Java 21, Spring Boot 3.5.16
 - **PostgreSQL schema:** `certificate`
-- **DB URL local:** `jdbc:postgresql://localhost:5432/lmspilot?currentSchema=certificate`
-- **Bảng sở hữu:** certificates, certificate_templates
-- **Phụ thuộc:** PostgreSQL
 
-## Vị trí mã nguồn
+## Phạm vi sở hữu
 
-- Controller/API: `CertificateApi.kt`
-- Migration: `V1__certificate_schema.sql, V2__certificate_templates.sql`
-- Main source: `src/main/kotlin`
-- Test: `src/test/kotlin`
-- Config: `src/main/resources/application.yml`
+Mẫu chứng chỉ, cấp, tra cứu, thu hồi và cấp lại.
 
-## Chạy riêng
+## API chính
+
+- `/api/v1/certificates`
+- `/public/v1/certificates`
+
+## Controller Java
+
+- `src/main/java/**/CertificateController.java`
+- `src/main/java/**/PublicCertificateController.java`
+
+## Bảng dữ liệu sở hữu
+
+- `certificate_templates`
+- `certificates`
+
+## Thư mục quan trọng
+
+- Main source: `src/main/java`
+- Configuration: `src/main/resources/application.yml`
+- Flyway: `src/main/resources/db/migration`
+- Tests: `src/test/java`
+
+## Chạy và test
 
 ```bash
 cd backend
-./gradlew :services:certificate-service:test --no-daemon
 ./gradlew :services:certificate-service:bootRun
+./gradlew :services:certificate-service:test
 ```
 
 ## Checklist owner
 
-- Nghiệp vụ và authorization đúng phạm vi service.
-- API có validation, error contract và test.
-- Migration Flyway chỉ thêm mới, không sửa lịch sử đã phát hành.
-- Không truy cập trực tiếp database service khác.
-- Cập nhật `docs/API_DATABASE_MAP.md` khi thêm endpoint hoặc bảng.
-- Chạy `python scripts/validate-service-ports.py` trước pull request.
+- [ ] API/DTO tương thích contract hiện tại.
+- [ ] Có unit test cho nghiệp vụ mới.
+- [ ] Có test authorization và validation.
+- [ ] Migration mới chạy được trên database sạch và database đã có dữ liệu.
+- [ ] Không truy cập trực tiếp bảng của service khác.
+- [ ] Cập nhật `docs/API_DATABASE_MAP.md` nếu API/DB thay đổi.
+- [ ] Reviewer đã kiểm tra ảnh hưởng producer/consumer.

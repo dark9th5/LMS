@@ -1,15 +1,10 @@
 plugins {
-    kotlin("jvm")
-    kotlin("plugin.spring")
-    kotlin("plugin.jpa")
+    java
     id("org.springframework.boot")
     id("io.spring.dependency-management")
 }
 
-kotlin {
-    jvmToolchain(21)
-    compilerOptions { freeCompilerArgs.add("-Xjsr305=strict") }
-}
+java { toolchain { languageVersion.set(JavaLanguageVersion.of(21)) } }
 
 dependencies {
     implementation(project(":service-support"))

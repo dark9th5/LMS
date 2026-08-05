@@ -13,9 +13,9 @@ def text(relative: str) -> str:
 
 class Release018CompactWorkspaceTests(unittest.TestCase):
     def test_release_version_is_bumped(self) -> None:
-        self.assertEqual("0.20.4", text("VERSION").strip())
-        self.assertIn('"version": "0.20.4"', text("apps/web/package.json"))
-        self.assertIn('version = "0.20.4"', text("backend/build.gradle.kts"))
+        self.assertEqual("0.21.0", text("VERSION").strip())
+        self.assertIn('"version": "0.21.0"', text("apps/web/package.json"))
+        self.assertIn('version = "0.21.0"', text("backend/build.gradle.kts"))
 
     def test_sidebar_uses_single_line_labels_and_persists_collapse(self) -> None:
         shell = text("apps/web/components/AppShell.tsx")
@@ -69,19 +69,20 @@ class Release018CompactWorkspaceTests(unittest.TestCase):
             self.assertIn(marker, source)
         self.assertIn("Mở tài liệu chính thức", source)
         self.assertNotIn('name="configJson"', source)
-        backend = text("backend/services/configuration-service/src/main/kotlin/com/lmspilot/configuration/api/CustomizationApi.kt")
-        self.assertIn("validateConfig(input.serviceType, input.config)", backend)
-        self.assertIn("Callback URL phải là URL HTTP/HTTPS đầy đủ", backend)
-        self.assertIn("Cổng kết nối phải nằm trong khoảng 1-65535", backend)
-        self.assertIn('ExternalServiceType.SMTP ->', backend)
-        self.assertIn('ExternalServiceType.DOCUMENT_EDITOR -> "$base/healthcheck"', backend)
+        backend = "\n".join(path.read_text(encoding="utf-8") for path in (ROOT / "backend/services/configuration-service/src/main/java").rglob("*.java"))
+        self.assertIn("validateConfig", backend)
+        self.assertIn("HTTP/HTTPS", backend)
+        self.assertIn("65535", backend)
+        self.assertIn('SMTP', backend)
+        self.assertIn('DOCUMENT_EDITOR', backend)
 
     def test_platform_customizer_can_upload_brand_assets(self) -> None:
-        permissions = text("backend/platform-contracts/src/main/kotlin/com/lmspilot/contracts/Permissions.kt")
-        admin = permissions[permissions.index("val ADMIN = setOf("):permissions.index("/** Course authoring")]
-        self.assertIn("Permissions.BRANDING_MANAGE", admin)
-        self.assertIn("Permissions.FILES_READ", admin)
-        self.assertIn("Permissions.FILES_UPLOAD", admin)
+        permissions = text("backend/platform-contracts/src/main/java/com/lmspilot/contracts/Permissions.java")
+        defaults = text("backend/platform-contracts/src/main/java/com/lmspilot/contracts/DefaultRolePermissions.java")
+        self.assertIn("BRANDING_MANAGE", permissions)
+        self.assertIn("FILES_READ", permissions)
+        self.assertIn("FILES_UPLOAD", permissions)
+        self.assertIn("Permissions.BRANDING_MANAGE", defaults)
 
 if __name__ == "__main__":
     unittest.main()

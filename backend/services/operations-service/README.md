@@ -1,37 +1,52 @@
 # operations-service
 
-- **Sản phẩm:** LMSPilot
+- **Tên:** Operations
+- **Owner:** Chưa phân công
+- **Reviewer:** Chưa phân công
 - **Port mặc định:** `8097`
-- **Owner:** `TBD`
-- **Reviewer:** `TBD`
-- **Phạm vi sở hữu:** Health tổng hợp, tác vụ vận hành, agent lease và lịch chạy nội bộ.
-- **API chính:** `/api/v1/operations`
+- **Ngôn ngữ/runtime:** Java 21, Spring Boot 3.5.16
 - **PostgreSQL schema:** `operations`
-- **DB URL local:** `jdbc:postgresql://localhost:5432/lmspilot?currentSchema=operations`
-- **Bảng sở hữu:** operation_jobs, operation_schedules
-- **Phụ thuộc:** PostgreSQL và các service nghiệp vụ
 
-## Vị trí mã nguồn
+## Phạm vi sở hữu
 
-- Controller/API: `OperationsApi.kt`
-- Migration: `V1__operations_schema.sql, V2__operation_agent_leases.sql, V3__operation_schedules.sql`
-- Main source: `src/main/kotlin`
-- Test: `src/test/kotlin`
-- Config: `src/main/resources/application.yml`
+Health tổng hợp, job vận hành, lịch chạy và agent lease.
 
-## Chạy riêng
+## API chính
+
+- `/api/v1/operations`
+- `/internal/v1/operations/jobs`
+
+## Controller Java
+
+- `src/main/java/**/InternalOperationsAgentController.java`
+- `src/main/java/**/OperationsController.java`
+
+## Bảng dữ liệu sở hữu
+
+- `operation_jobs`
+- `operation_schedules`
+
+## Thư mục quan trọng
+
+- Main source: `src/main/java`
+- Configuration: `src/main/resources/application.yml`
+- Flyway: `src/main/resources/db/migration`
+- Tests: `src/test/java`
+
+## Chạy và test
 
 ```bash
 cd backend
-./gradlew :services:operations-service:test --no-daemon
 ./gradlew :services:operations-service:bootRun
+./gradlew :services:operations-service:test
 ```
 
 ## Checklist owner
 
-- Nghiệp vụ và authorization đúng phạm vi service.
-- API có validation, error contract và test.
-- Migration Flyway chỉ thêm mới, không sửa lịch sử đã phát hành.
-- Không truy cập trực tiếp database service khác.
-- Cập nhật `docs/API_DATABASE_MAP.md` khi thêm endpoint hoặc bảng.
-- Chạy `python scripts/validate-service-ports.py` trước pull request.
+- [ ] API/DTO tương thích contract hiện tại.
+- [ ] Có unit test cho nghiệp vụ mới.
+- [ ] Có test authorization và validation.
+- [ ] Migration mới chạy được trên database sạch và database đã có dữ liệu.
+- [ ] Không truy cập trực tiếp bảng của service khác.
+- [ ] Cập nhật `docs/API_DATABASE_MAP.md` nếu API/DB thay đổi.
+- [ ] Reviewer đã kiểm tra ảnh hưởng producer/consumer.

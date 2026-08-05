@@ -1,0 +1,3 @@
+package com.lmspilot.assessment.domain;
+import jakarta.persistence.*; import java.time.Instant; import java.util.UUID;
+@Entity @Table(name="competition_rewards") public class CompetitionRewardEntity { @Id public UUID id=UUID.randomUUID(); @Column(name="competition_id",nullable=false) public UUID competitionId; @Column(name="rank_from",nullable=false) public int rankFrom=1; @Column(name="rank_to",nullable=false) public int rankTo=1; @Column(name="reward_type",nullable=false,length=40) public String rewardType="BADGE"; @Column(name="reward_payload_json",nullable=false,columnDefinition="text") public String rewardPayloadJson="{}"; @Column(name="created_at",nullable=false) public Instant createdAt=Instant.now(); public CompetitionRewardEntity(){} }

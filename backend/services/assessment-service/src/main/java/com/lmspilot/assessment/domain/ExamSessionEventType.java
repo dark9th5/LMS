@@ -1,0 +1,2 @@
+package com.lmspilot.assessment.domain;
+public enum ExamSessionEventType { HEARTBEAT, TAB_HIDDEN, WINDOW_BLUR, FULLSCREEN_EXIT, NETWORK_DISCONNECTED, NETWORK_RECONNECTED, CLIENT_WARNING }
