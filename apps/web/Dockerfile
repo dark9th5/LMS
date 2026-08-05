@@ -1,4 +1,3 @@
-# syntax=docker/dockerfile:1.7
 FROM node:24-alpine AS deps
 WORKDIR /app
 COPY package*.json ./
