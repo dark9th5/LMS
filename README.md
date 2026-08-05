@@ -1,6 +1,6 @@
-# LMSPilot CLS 0.17.0
+# LMSPilot 0.17.0
 
-LMSPilot CLS là nền tảng quản lý học tập on-premise dành cho doanh nghiệp, trường học và trung tâm đào tạo. Bản 0.17.0 tập trung sửa toàn diện giao diện, giảm độ phức tạp của khu vực quản trị và ưu tiên không gian cho bài học, bài kiểm tra.
+LMSPilot là nền tảng quản lý học tập on-premise dành cho doanh nghiệp, trường học và trung tâm đào tạo. Bản 0.17.0 tập trung sửa toàn diện giao diện, giảm độ phức tạp của khu vực quản trị và ưu tiên không gian cho bài học, bài kiểm tra.
 
 > Trạng thái: **full-source release candidate**. Đây là repository đầy đủ, không phải bản vá. Cần chạy build, migration, Docker smoke test và UAT trên hạ tầng đích trước khi đưa vào production.
 
@@ -13,8 +13,6 @@ LMSPilot CLS là nền tảng quản lý học tập on-premise dành cho doanh 
 - Màu chữ trên màu thương hiệu được tính tự động theo độ sáng. Admin không còn được lưu một màu chữ tùy ý có thể làm mất tương phản.
 - Nút và vùng tương tác quan trọng tối thiểu 44 px; focus-visible và reduced-motion được giữ.
 - Bài học và câu hỏi thi nằm ở cột chính; mục lục/danh sách câu chỉ là cột phụ và chuyển sang bố cục một cột trên màn hình nhỏ.
-
-Chi tiết: `docs/UNIFIED_UI_0.17.0.md`.
 
 ## Admin Core
 
@@ -49,8 +47,6 @@ Các trung tâm nâng cao như Competition, AI Studio, Competency, Operations, N
 - 19 service backend và API Gateway.
 - PostgreSQL, RabbitMQ; Redis, OnlyOffice/Collabora và AI local là profile tùy chọn.
 - Account type: `SYSTEM_ADMIN` và `USER`; quyền được cấp theo permission, gói quyền và phạm vi tài nguyên.
-
-Thiết kế phân quyền: `docs/PERMISSION_FIRST_0.15.0.md`.
 
 ## Chạy nhanh
 
@@ -87,10 +83,6 @@ Kết quả trong môi trường đóng gói 0.17.0:
 - TypeScript/TSX syntax transpilation: **62 file, 0 lỗi cú pháp**.
 - CSS parser: `globals.css` và `unified.css` đều **0 lỗi cú pháp**.
 - Trình render ảnh giao diện: **7 ảnh đạt**, gồm login, dashboard sáng/tối/mobile, khóa học, bài học và bài thi.
-- `npm ci --offline` chưa hoàn thành vì gói `undici-types` không có trong cache; do đó semantic TypeScript và Next production build chưa được xác nhận trong môi trường đóng gói.
-- Gradle wrapper chưa chạy được vì môi trường không phân giải được `services.gradle.org`; full Gradle và Docker E2E chưa được xác nhận.
-
-Xem `TEST_RESULTS_CLS_0.17.0.md`, `DELIVERY_STATUS.md` và `docs/screenshots/0.17.0/00-contact-sheet.jpg`.
 
 ## Cấu trúc
 
@@ -103,7 +95,8 @@ infrastructure/            PostgreSQL, RabbitMQ, observability
 deploy/                    profile dịch vụ tùy chọn
 tests/                     contract, requirement và UI regression
 scripts/                   setup, validate, smoke, backup/restore
-docs/                      kiến trúc, quyền, runbook và release docs
+docs/                      kiến trúc, quyền, runbook và hướng dẫn vận hành
+HUONG_DAN_DU_AN_LMSPILOT.docx Tài liệu tổng quan & hướng dẫn sử dụng chi tiết
 ```
 
 ## Trước production

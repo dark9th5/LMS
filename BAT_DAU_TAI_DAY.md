@@ -1,8 +1,8 @@
-# BẮT ĐẦU TẠI ĐÂY — LMSPilot CLS 0.17.0
+# BẮT ĐẦU TẠI ĐÂY — LMSPilot 0.17.0
 
 ## 1. Giải nén an toàn
 
-Giải nén `LMS-CLS-complete-0.17.0.zip` vào một thư mục mới. Không ghi đè trực tiếp hệ thống đang chạy trước khi tạo branch/tag và backup dữ liệu.
+Giải nén mã nguồn vào một thư mục mới. Không ghi đè trực tiếp hệ thống đang chạy trước khi tạo branch/tag và backup dữ liệu.
 
 Khi thay source trong repository Git hiện có, giữ nguyên thư mục `.git`, tạo branch riêng và sao chép nội dung bản 0.17.0 vào working tree.
 
@@ -55,4 +55,4 @@ Sau khi đăng nhập bằng System Admin:
 6. Kiểm tra sidebar admin chỉ còn các khu vực Core.
 7. Kiểm tra form câu hỏi có từng dòng phương án và nút `+ / −`.
 
-Đọc `docs/UNIFIED_UI_0.17.0.md`, `TEST_RESULTS_CLS_0.17.0.md` và `DELIVERY_STATUS.md` trước khi merge vào nhánh chính.
+Tham khảo chi tiết thêm tại `HUONG_DAN_DU_AN_LMSPILOT.docx` trước khi merge vào nhánh chính.

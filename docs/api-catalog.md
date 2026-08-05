@@ -1,4 +1,4 @@
-# API catalogue — LMSPilot CLS 0.15.0
+# API catalogue — LMSPilot 0.17.0
 
 Các API nghiệp vụ đi qua API Gateway. Route không ghi `public` đều cần JWT và được service sở hữu dữ liệu kiểm tra quyền/phạm vi lần nữa.
 
