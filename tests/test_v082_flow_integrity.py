@@ -128,9 +128,10 @@ class Release082FlowIntegrityTests(unittest.TestCase):
         self.assertIn("submitAssignmentGrade", ui)
         self.assertIn("returnForRevision", ui)
 
-    def test_news_html_and_attachments_are_object_scoped(self) -> None:
+    def test_news_html_and_attachments_are_object_scoped_while_core_ui_is_retired(self) -> None:
         news = self.read("backend/services/notification-service/src/main/kotlin/com/lmspilot/notification/api/NewsApi.kt")
-        ui = self.read("apps/web/components/WorkspaceControlCenter.tsx")
+        shell = self.read("apps/web/components/AppShell.tsx")
+        route = self.read("apps/web/app/(portal)/[section]/page.tsx")
         self.assertIn("val canonical = value", news)
         self.assertIn('.replace("&amp;", "&", ignoreCase = true)', news)
         self.assertIn("val escaped = canonical", news)
@@ -139,8 +140,9 @@ class Release082FlowIntegrityTests(unittest.TestCase):
         self.assertIn("class NewsFileClient", news)
         self.assertIn('file.purpose != "NEWS_ATTACHMENT"', news)
         self.assertIn('source" to "NEWS_FEED"', news)
-        self.assertIn("attachmentFileIds: newsAttachments.map", ui)
-        self.assertIn("/api/v1/files?purpose=NEWS_ATTACHMENT", ui)
+        self.assertNotIn('/news', shell)
+        self.assertIn('"news"', route)
+        self.assertIn("RETIRED_SECTIONS", route)
 
     def test_cross_service_urls_for_exact_file_and_course_checks_are_wired(self) -> None:
         compose = self.read("docker-compose.yml")

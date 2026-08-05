@@ -141,12 +141,12 @@ class ClsRequirementTraceTests(unittest.TestCase):
 
     def test_cosmic_ui_keeps_accessibility_and_reduced_motion(self) -> None:
         css = text("apps/web/app/globals.css") + text("apps/web/app/unified.css")
-        shell = text("apps/web/components/CosmicShell.tsx")
+        shell = text("apps/web/components/AppShell.tsx")
         login = text("apps/web/app/login/LoginForm.tsx")
         self.assertIn("prefers-reduced-motion", css)
         self.assertIn("prefers-contrast", css)
         self.assertIn(":focus-visible", css)
-        self.assertIn("visibleGroups", shell)
+        self.assertIn("groups.map", shell)
         self.assertIn("aria-describedby", login)
         self.assertIn("input:-webkit-autofill", css)
 
@@ -159,13 +159,16 @@ class ClsRequirementTraceTests(unittest.TestCase):
         self.assertIn("registrationOpensAt", competition)
         self.assertIn("registrationClosesAt", competition)
 
-    def test_learner_live_sessions_use_private_schedule_endpoint(self) -> None:
+    def test_learner_live_sessions_backend_is_retained_but_core_ui_is_retired(self) -> None:
         api = text("backend/services/enrollment-service/src/main/kotlin/com/lmspilot/enrollment/api/AssignmentAndLiveApi.kt")
-        ui = text("apps/web/components/WorkspaceControlCenter.tsx")
+        shell = text("apps/web/components/AppShell.tsx")
+        route = text("apps/web/app/(portal)/[section]/page.tsx")
         self.assertIn('@GetMapping("/me")', api)
         self.assertIn("fun mine() = service.myLiveSessions()", api)
         self.assertIn("LIVE_SESSIONS_JOIN", api)
-        self.assertIn('/api/v1/live-sessions/me', ui)
+        self.assertNotIn('/live-sessions', shell)
+        self.assertIn('"live-sessions"', route)
+        self.assertIn("RETIRED_SECTIONS", route)
 
     def test_ai_generation_is_course_scoped_and_schema_is_packaged(self) -> None:
         api = text("backend/services/ai-service/src/main/kotlin/com/lmspilot/ai/api/QuestionGenerationApi.kt")
@@ -193,12 +196,15 @@ class ClsRequirementTraceTests(unittest.TestCase):
         self.assertIn("Permissions.ENROLLMENTS_WRITE", instructor)
         self.assertIn("Permissions.LIVE_SESSIONS_MANAGE", instructor)
 
-    def test_competition_ui_uses_valid_visibility_and_exam_route(self) -> None:
-        ui = text("apps/web/components/WorkspaceControlCenter.tsx")
-        self.assertIn("ADMIN_ONLY", ui)
-        self.assertNotIn("AFTER_PUBLISH", ui)
-        self.assertIn('href={`/exams/${active.id}`}', ui)
-        self.assertIn('stem: string', ui)
+    def test_competition_backend_is_retained_but_core_ui_is_retired(self) -> None:
+        domain = text("backend/services/assessment-service/src/main/kotlin/com/lmspilot/assessment/domain/CompetitionDomain.kt")
+        shell = text("apps/web/components/AppShell.tsx")
+        route = text("apps/web/app/(portal)/[section]/page.tsx")
+        self.assertIn("ADMIN_ONLY", domain)
+        self.assertNotIn("AFTER_PUBLISH", domain)
+        self.assertNotIn('/competitions', shell)
+        self.assertIn('"competitions"', route)
+        self.assertIn("RETIRED_SECTIONS", route)
 
     def test_runtime_secrets_are_generated_not_hard_coded(self) -> None:
         setup = text("scripts/setup.sh")

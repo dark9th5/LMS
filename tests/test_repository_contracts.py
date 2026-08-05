@@ -99,14 +99,12 @@ class RepositoryContractTests(unittest.TestCase):
             for marker in markers:
                 self.assertIn(marker, text, f"{marker} missing from {relative}")
 
-    def test_sidebar_and_course_outline_hide_scrollbars(self) -> None:
-        css = (ROOT / "apps/web/app/globals.css").read_text(encoding="utf-8")
-        self.assertIn(".sidebar-nav::-webkit-scrollbar", css)
-        self.assertIn(".player-lesson-list::-webkit-scrollbar", css)
-        self.assertGreaterEqual(
-            len(re.findall(r"scrollbar-width:\s*none", css)),
-            2,
-        )
+    def test_navigation_and_course_outline_remain_scrollable(self) -> None:
+        css = (ROOT / "apps/web/app/unified.css").read_text(encoding="utf-8")
+        self.assertIn(".app-nav", css)
+        self.assertIn(".player-lesson-list", css)
+        self.assertGreaterEqual(len(re.findall(r"overflow(?:-y)?:auto", css)), 2)
+        self.assertIn("scrollbar-width:thin", css)
 
 
     def test_course_lessons_support_real_editing_and_inline_viewing(self) -> None:

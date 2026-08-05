@@ -1,10 +1,10 @@
-# BẮT ĐẦU TẠI ĐÂY — LMSPilot CLS 0.16.0
+# BẮT ĐẦU TẠI ĐÂY — LMSPilot CLS 0.17.0
 
 ## 1. Giải nén an toàn
 
-Giải nén `LMS-CLS-complete-0.16.0.zip` vào một thư mục mới. Không ghi đè trực tiếp hệ thống đang chạy trước khi tạo branch/tag và backup dữ liệu.
+Giải nén `LMS-CLS-complete-0.17.0.zip` vào một thư mục mới. Không ghi đè trực tiếp hệ thống đang chạy trước khi tạo branch/tag và backup dữ liệu.
 
-Khi thay source trong repository Git hiện có, giữ nguyên thư mục `.git`, tạo branch riêng và sao chép nội dung bản 0.16.0 vào working tree.
+Khi thay source trong repository Git hiện có, giữ nguyên thư mục `.git`, tạo branch riêng và sao chép nội dung bản 0.17.0 vào working tree.
 
 ## 2. Chuẩn bị môi trường
 
@@ -43,7 +43,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\setup.ps1
 
 Chỉ coi setup thành công khi smoke test báo `SMOKE TEST PASSED`.
 
-## 5. Kiểm tra giao diện 0.16
+## 5. Kiểm tra giao diện 0.17
 
 Sau khi đăng nhập bằng System Admin:
 
@@ -55,4 +55,4 @@ Sau khi đăng nhập bằng System Admin:
 6. Kiểm tra sidebar admin chỉ còn các khu vực Core.
 7. Kiểm tra form câu hỏi có từng dòng phương án và nút `+ / −`.
 
-Đọc `docs/UNIFIED_UI_0.16.0.md`, `TEST_RESULTS_CLS_0.16.0.md` và `DELIVERY_STATUS.md` trước khi merge vào nhánh chính.
+Đọc `docs/UNIFIED_UI_0.17.0.md`, `TEST_RESULTS_CLS_0.17.0.md` và `DELIVERY_STATUS.md` trước khi merge vào nhánh chính.

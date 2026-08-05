@@ -15,7 +15,7 @@ export async function generateMetadata(): Promise<Metadata> {
     description:
       branding.introduction ||
       "Nền tảng quản trị học tập, kỳ thi và tri thức nội bộ.",
-    icons: { icon: branding.faviconUrl || "/orbit-mark.svg" },
+    icons: { icon: branding.faviconUrl || "/lmspilot-mark.svg" },
   };
 }
 
@@ -37,6 +37,13 @@ export default async function RootLayout({
   const themeKey = normalizeThemeKey(branding.themeKey);
   return (
     <html lang="vi" data-theme={themeKey} suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem("lms-theme");if(t==="unified-light"||t==="unified-dark")document.documentElement.dataset.theme=t;}catch(e){}})();`,
+          }}
+        />
+      </head>
       <body style={brandingStyle(branding) as CSSProperties}>{children}</body>
     </html>
   );

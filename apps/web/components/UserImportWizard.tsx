@@ -206,7 +206,7 @@ export function UserImportWizard() {
     <div className="import-wizard">
       <PageHeader
         backHref="/users"
-        eyebrow="IDENTITY FORGE · NHẬP DỮ LIỆU"
+        eyebrow="Quản lý người dùng"
         title="Nhập tài khoản hàng loạt"
         description="Đọc CSV/XLSX, ánh xạ cột, kiểm tra từng dòng và nhập idempotent theo chính sách đã chọn."
       />
@@ -294,7 +294,7 @@ export function UserImportWizard() {
               }
             />
             <ColumnSelect
-              label="UUID đơn vị"
+              label="Mã đơn vị tổ chức"
               value={mapping.organizationUnitIdColumn}
               columns={columns}
               optional
@@ -303,7 +303,7 @@ export function UserImportWizard() {
               }
             />
             <ColumnSelect
-              label="Vai trò"
+              label="Gói quyền"
               value={mapping.roleCodesColumn}
               columns={columns}
               optional

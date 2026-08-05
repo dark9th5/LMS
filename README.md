@@ -1,10 +1,10 @@
-# LMSPilot CLS 0.16.0
+# LMSPilot CLS 0.17.0
 
-LMSPilot CLS là nền tảng quản lý học tập on-premise dành cho doanh nghiệp, trường học và trung tâm đào tạo. Bản 0.16.0 tập trung sửa toàn diện giao diện, giảm độ phức tạp của khu vực quản trị và ưu tiên không gian cho bài học, bài kiểm tra.
+LMSPilot CLS là nền tảng quản lý học tập on-premise dành cho doanh nghiệp, trường học và trung tâm đào tạo. Bản 0.17.0 tập trung sửa toàn diện giao diện, giảm độ phức tạp của khu vực quản trị và ưu tiên không gian cho bài học, bài kiểm tra.
 
 > Trạng thái: **full-source release candidate**. Đây là repository đầy đủ, không phải bản vá. Cần chạy build, migration, Docker smoke test và UAT trên hạ tầng đích trước khi đưa vào production.
 
-## Giao diện thống nhất 0.16
+## Giao diện thống nhất 0.17
 
 - Chỉ còn **một hệ thống thiết kế**, dùng chung typography, khoảng cách, component và bố cục.
 - Hai chế độ màu: `unified-light` và `unified-dark`. Các theme cũ tự ánh xạ sang một trong hai chế độ để giữ tương thích dữ liệu.
@@ -14,7 +14,7 @@ LMSPilot CLS là nền tảng quản lý học tập on-premise dành cho doanh 
 - Nút và vùng tương tác quan trọng tối thiểu 44 px; focus-visible và reduced-motion được giữ.
 - Bài học và câu hỏi thi nằm ở cột chính; mục lục/danh sách câu chỉ là cột phụ và chuyển sang bố cục một cột trên màn hình nhỏ.
 
-Chi tiết: `docs/UNIFIED_UI_0.16.0.md`.
+Chi tiết: `docs/UNIFIED_UI_0.17.0.md`.
 
 ## Admin Core
 
@@ -73,21 +73,24 @@ Sau khi setup và smoke test thành công, mở `http://localhost:3000`.
 
 ```bash
 python scripts/validate-repository.py
-pytest -q
-node scripts/check-typescript.js
+python -m unittest discover -s tests -p "test_*.py"
+cd apps/web
+npm ci
+npm run typecheck
+npm run build
 ```
 
-Kết quả trong môi trường đóng gói 0.16.0:
+Kết quả trong môi trường đóng gói 0.17.0:
 
-- Repository validator: PASS.
-- Python static/contract/UI suite: **111 passed, 25 skipped, 2 subtests passed**.
-- 25 test bị skip là contract giao diện của 0.11–0.14 đã được thay thế có chủ ý bởi test 0.16.
-- TypeScript/TSX syntax transpilation: **64 file, 0 lỗi cú pháp**.
-- CSS parser: `globals.css` và `unified.css` không có lỗi cú pháp.
-- Semantic TypeScript và Next production build chưa chạy được vì môi trường không tải được đầy đủ npm dependency.
-- Full Gradle multi-module test và Docker E2E chưa được xác nhận trong môi trường này.
+- Repository validator: **PASS** — 26 JSON, 28 YAML, 19 service, 18 service dùng Flyway.
+- Python static/contract/UI suite: **115 test đạt, 34 test lịch sử được skip có chủ ý (149 test tổng cộng)**.
+- TypeScript/TSX syntax transpilation: **62 file, 0 lỗi cú pháp**.
+- CSS parser: `globals.css` và `unified.css` đều **0 lỗi cú pháp**.
+- Trình render ảnh giao diện: **7 ảnh đạt**, gồm login, dashboard sáng/tối/mobile, khóa học, bài học và bài thi.
+- `npm ci --offline` chưa hoàn thành vì gói `undici-types` không có trong cache; do đó semantic TypeScript và Next production build chưa được xác nhận trong môi trường đóng gói.
+- Gradle wrapper chưa chạy được vì môi trường không phân giải được `services.gradle.org`; full Gradle và Docker E2E chưa được xác nhận.
 
-Xem `TEST_RESULTS_CLS_0.16.0.md` và `DELIVERY_STATUS.md`.
+Xem `TEST_RESULTS_CLS_0.17.0.md`, `DELIVERY_STATUS.md` và `docs/screenshots/0.17.0/00-contact-sheet.jpg`.
 
 ## Cấu trúc
 

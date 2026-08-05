@@ -136,7 +136,7 @@ export function ClassesPage({ user }: { user: PortalUser }) {
   return (
     <>
       <PageHeader
-        eyebrow="TỔ CHỨC ĐÀO TẠO"
+        eyebrow="Tổ chức đào tạo"
         title="Lớp đào tạo"
         description="Mở lớp từ khóa học đã xuất bản, phân công giảng viên và ghi danh học viên."
         icon="class"
@@ -160,7 +160,7 @@ export function ClassesPage({ user }: { user: PortalUser }) {
             <small>Trong phạm vi được phân công</small>
           </div>
           <strong>{classes.length}</strong>
-          <em>CLASS TOTAL</em>
+          <em>Danh sách</em>
         </div>
         <div className="summary-card">
           <span className="summary-index">02</span>
@@ -174,7 +174,7 @@ export function ClassesPage({ user }: { user: PortalUser }) {
           <strong>
             {classes.filter((item) => item.status === "OPEN").length}
           </strong>
-          <em>ACTIVE NOW</em>
+          <em>Đang hoạt động</em>
         </div>
         <div className="summary-card">
           <span className="summary-index">03</span>
@@ -186,7 +186,7 @@ export function ClassesPage({ user }: { user: PortalUser }) {
             <small>Đã xuất bản</small>
           </div>
           <strong>{publishedCourses.length}</strong>
-          <em>READY COURSES</em>
+          <em>Sẵn sàng</em>
         </div>
       </section>
       <section className="toolbar-card">
@@ -256,7 +256,7 @@ export function ClassesPage({ user }: { user: PortalUser }) {
                   </div>
                 </div>
                 <span className="list-entry">
-                  <small>OPEN CLASS</small>
+                  <small>Chi tiết lớp</small>
                   <Icon name="chevron" />
                 </span>
               </Link>

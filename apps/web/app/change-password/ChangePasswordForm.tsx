@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Icon } from "@/components/Icon";
 
 export function ChangePasswordForm() {
   const [currentPassword, setCurrentPassword] = useState("");
@@ -17,72 +18,83 @@ export function ChangePasswordForm() {
     }
     setBusy(true);
     setError("");
-    const response = await fetch("/api/auth/change-password", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ currentPassword, newPassword }),
-      cache: "no-store",
-    });
-    const data = (await response
-      .json()
-      .catch(() => ({ message: "Không thể đổi mật khẩu" }))) as {
-      message?: string;
-    };
-    if (!response.ok) {
-      setError(data.message ?? "Không thể đổi mật khẩu");
+    try {
+      const response = await fetch("/api/auth/change-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ currentPassword, newPassword }),
+        cache: "no-store",
+      });
+      const data = (await response
+        .json()
+        .catch(() => ({ message: "Không thể đổi mật khẩu" }))) as {
+        message?: string;
+      };
+      if (!response.ok) {
+        setError(data.message ?? "Không thể đổi mật khẩu");
+        return;
+      }
+      window.location.replace("/login?passwordChanged=1");
+    } catch {
+      setError("Không thể kết nối máy chủ. Vui lòng thử lại.");
+    } finally {
       setBusy(false);
-      return;
     }
-    window.location.replace("/login?passwordChanged=1");
   }
 
   return (
-    <form className="password-change-form" onSubmit={submit}>
-      <label>
-        Mật khẩu tạm thời
-        <input
-          type="password"
-          autoComplete="current-password"
-          value={currentPassword}
-          onChange={(event) => setCurrentPassword(event.target.value)}
-          required
-        />
+    <form className="auth-form password-change-form" onSubmit={submit}>
+      <label className="field-group">
+        <span>Mật khẩu tạm thời</span>
+        <span className="input-shell">
+          <Icon name="lock" size={19} />
+          <input
+            type="password"
+            autoComplete="current-password"
+            value={currentPassword}
+            onChange={(event) => setCurrentPassword(event.target.value)}
+            required
+          />
+        </span>
       </label>
-      <label>
-        Mật khẩu mới
-        <input
-          type="password"
-          autoComplete="new-password"
-          minLength={12}
-          maxLength={128}
-          value={newPassword}
-          onChange={(event) => setNewPassword(event.target.value)}
-          required
-        />
-        <small>
-          Ít nhất 12 ký tự, gồm chữ hoa, chữ thường, số và ký tự đặc biệt.
-        </small>
+      <label className="field-group">
+        <span>Mật khẩu mới</span>
+        <span className="input-shell">
+          <Icon name="lock" size={19} />
+          <input
+            type="password"
+            autoComplete="new-password"
+            minLength={12}
+            maxLength={128}
+            value={newPassword}
+            onChange={(event) => setNewPassword(event.target.value)}
+            required
+          />
+        </span>
+        <small>Ít nhất 12 ký tự, gồm chữ hoa, chữ thường, số và ký tự đặc biệt.</small>
       </label>
-      <label>
-        Xác nhận mật khẩu
-        <input
-          type="password"
-          autoComplete="new-password"
-          value={confirm}
-          onChange={(event) => setConfirm(event.target.value)}
-          required
-        />
+      <label className="field-group">
+        <span>Xác nhận mật khẩu</span>
+        <span className="input-shell">
+          <Icon name="check" size={19} />
+          <input
+            type="password"
+            autoComplete="new-password"
+            value={confirm}
+            onChange={(event) => setConfirm(event.target.value)}
+            required
+          />
+        </span>
       </label>
       {error && (
-        <div className="form-error" role="alert">
-          {error}
+        <div className="form-message error" role="alert">
+          <Icon name="warning" size={18} />
+          <span>{error}</span>
         </div>
       )}
-      <button className="cosmic-login-button" disabled={busy}>
-        <span>
-          {busy ? "Đang cập nhật..." : "Đổi mật khẩu và đăng nhập lại"}
-        </span>
-        <b aria-hidden="true">↗</b>
+      <button className="button primary auth-submit" disabled={busy}>
+        {busy ? "Đang cập nhật…" : "Đổi mật khẩu và đăng nhập lại"}
+        {!busy && <Icon name="arrow" size={18} />}
       </button>
     </form>
   );

@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { apiRequest, unwrapItems } from "@/lib/api";
 import type { IconName, PortalUser } from "@/lib/types";
 import { Icon } from "./Icon";
+import { ProgressBar } from "./ProgressBar";
 
 type UnknownRecord = Record<string, unknown>;
 type NotificationItem = {
@@ -35,7 +36,7 @@ type DashboardState = {
   report: ReportingDashboard | null;
 };
 
-const emptyState: DashboardState = {
+const EMPTY_STATE: DashboardState = {
   courses: [],
   rows: [],
   classes: [],
@@ -47,7 +48,7 @@ const emptyState: DashboardState = {
   report: null,
 };
 
-function number(value: unknown): number {
+function asNumber(value: unknown): number {
   const parsed = Number(value ?? 0);
   return Number.isFinite(parsed) ? parsed : 0;
 }
@@ -73,8 +74,7 @@ async function safeApi<T>(path: string, fallback: T): Promise<T> {
 
 export function Dashboard({ user }: { user: PortalUser }) {
   const isAdmin =
-    user.accountType === "SYSTEM_ADMIN" ||
-    user.permissions.includes("users:read");
+    user.accountType === "SYSTEM_ADMIN" || user.permissions.includes("users:read");
   const isStudent = !user.permissions.some((permission) =>
     [
       "reports:read:scope",
@@ -84,17 +84,14 @@ export function Dashboard({ user }: { user: PortalUser }) {
       "assessments:grade",
     ].includes(permission),
   );
-  const [state, setState] = useState<DashboardState>(emptyState);
+  const [state, setState] = useState<DashboardState>(EMPTY_STATE);
   const [loading, setLoading] = useState(true);
   const [warning, setWarning] = useState("");
 
   const load = useCallback(async () => {
     setLoading(true);
     setWarning("");
-    const coursesPayload = await safeApi<unknown>(
-      "/api/v1/courses?size=100",
-      [],
-    );
+    const coursesPayload = await safeApi<unknown>("/api/v1/courses?size=100", []);
     const courses = unwrapItems<UnknownRecord>(
       coursesPayload as UnknownRecord[] | { items?: UnknownRecord[] },
     );
@@ -104,60 +101,46 @@ export function Dashboard({ user }: { user: PortalUser }) {
     );
 
     if (isStudent) {
-      const [rowsRaw, examsRaw, gradesRaw, certificatesRaw] = await Promise.all(
-        [
-          safeApi<unknown>("/api/v1/learning/me", []),
-          safeApi<unknown>("/api/v1/exams", []),
-          safeApi<unknown>("/api/v1/grades/me", []),
-          safeApi<unknown>("/api/v1/certificates/me", []),
-        ],
-      );
+      const [rowsRaw, examsRaw, gradesRaw, certificatesRaw] = await Promise.all([
+        safeApi<unknown>("/api/v1/learning/me", []),
+        safeApi<unknown>("/api/v1/exams", []),
+        safeApi<unknown>("/api/v1/grades/me", []),
+        safeApi<unknown>("/api/v1/certificates/me", []),
+      ]);
       const rows = unwrapItems<UnknownRecord>(rowsRaw as any);
-      const exams = unwrapItems<UnknownRecord>(examsRaw as any);
-      const grades = unwrapItems<UnknownRecord>(gradesRaw as any);
-      const certificates = unwrapItems<UnknownRecord>(certificatesRaw as any);
       setState({
-        ...emptyState,
+        ...EMPTY_STATE,
         courses,
         rows,
-        exams,
-        grades,
-        certificates,
+        exams: unwrapItems<UnknownRecord>(examsRaw as any),
+        grades: unwrapItems<UnknownRecord>(gradesRaw as any),
+        certificates: unwrapItems<UnknownRecord>(certificatesRaw as any),
         notifications,
       });
-      if (courses.length === 0 && rows.length === 0)
-        setWarning(
-          "Chưa có khóa học được ghi danh hoặc hệ thống đang khởi tạo dữ liệu.",
-        );
+      if (!courses.length && !rows.length) {
+        setWarning("Chưa có khóa học được giao hoặc dịch vụ dữ liệu đang khởi động.");
+      }
     } else {
-      const [report, rowsRaw, classesRaw, gradesRaw, usersRaw] =
-        await Promise.all([
-          safeApi<ReportingDashboard | null>("/api/v1/reports/dashboard", null),
-          safeApi<unknown>("/api/v1/reports/learning", []),
-          safeApi<unknown>("/api/v1/classes", []),
-          safeApi<unknown>("/api/v1/grades/queue", []),
-          isAdmin
-            ? safeApi<unknown>("/api/v1/users?size=100", [])
-            : Promise.resolve([]),
-        ]);
-      const rows = unwrapItems<UnknownRecord>(rowsRaw as any);
-      const classes = unwrapItems<UnknownRecord>(classesRaw as any);
-      const grades = unwrapItems<UnknownRecord>(gradesRaw as any);
-      const users = unwrapItems<UnknownRecord>(usersRaw as any);
+      const [report, rowsRaw, classesRaw, gradesRaw, usersRaw] = await Promise.all([
+        safeApi<ReportingDashboard | null>("/api/v1/reports/dashboard", null),
+        safeApi<unknown>("/api/v1/reports/learning", []),
+        safeApi<unknown>("/api/v1/classes", []),
+        safeApi<unknown>("/api/v1/grades/queue", []),
+        isAdmin ? safeApi<unknown>("/api/v1/users?size=100", []) : Promise.resolve([]),
+      ]);
       setState({
-        ...emptyState,
+        ...EMPTY_STATE,
         courses,
         report,
-        rows,
-        classes,
-        grades,
-        users,
+        rows: unwrapItems<UnknownRecord>(rowsRaw as any),
+        classes: unwrapItems<UnknownRecord>(classesRaw as any),
+        grades: unwrapItems<UnknownRecord>(gradesRaw as any),
+        users: unwrapItems<UnknownRecord>(usersRaw as any),
         notifications,
       });
-      if (!report)
-        setWarning(
-          "Dữ liệu báo cáo chưa sẵn sàng; các chỉ số nghiệp vụ khác vẫn được hiển thị đầy đủ.",
-        );
+      if (!report) {
+        setWarning("Báo cáo tổng hợp chưa sẵn sàng; dữ liệu từ các khu vực khác vẫn được hiển thị.");
+      }
     }
     setLoading(false);
   }, [isAdmin, isStudent]);
@@ -167,42 +150,29 @@ export function Dashboard({ user }: { user: PortalUser }) {
   }, [load]);
 
   const metrics = useMemo(() => {
-    const coursesList = Array.isArray(state.courses) ? state.courses : [];
-    const classesList = Array.isArray(state.classes) ? state.classes : [];
-    const gradesList = Array.isArray(state.grades) ? state.grades : [];
-    const rowsList = Array.isArray(state.rows) ? state.rows : [];
-
-    const published = coursesList.filter(
-      (course) => course.status === "PUBLISHED",
+    const published = state.courses.filter((course) => course.status === "PUBLISHED").length;
+    const drafts = state.courses.filter((course) => course.status === "DRAFT").length;
+    const activeClasses = state.classes.filter((item) => item.status === "OPEN").length;
+    const pendingGrades = state.grades.filter((item) => item.status === "PENDING_MANUAL").length;
+    const completedRows = state.rows.filter(
+      (row) => row.completed === true || row.status === "COMPLETED",
     ).length;
-    const drafts = coursesList.filter(
-      (course) => course.status === "DRAFT",
-    ).length;
-    const activeClasses = classesList.filter(
-      (item) => item.status === "OPEN",
-    ).length;
-    const pendingGrades = gradesList.filter(
-      (item) => item.status === "PENDING_MANUAL",
-    ).length;
-    const isCompleted = (row: UnknownRecord) =>
-      row.completed === true || row.status === "COMPLETED";
-    const isOverdue = (row: UnknownRecord) =>
-      !isCompleted(row) &&
-      (row.status === "OVERDUE" ||
-        Boolean(
-          row.dueAt && new Date(String(row.dueAt)).getTime() < Date.now(),
-        ));
-    const completedRows = rowsList.filter(isCompleted).length;
-    const overdueRows = rowsList.filter(isOverdue).length;
-    const inProgressRows = rowsList.filter(
+    const overdueRows = state.rows.filter((row) => {
+      if (row.completed === true || row.status === "COMPLETED") return false;
+      if (row.status === "OVERDUE") return true;
+      return Boolean(row.dueAt && new Date(String(row.dueAt)).getTime() < Date.now());
+    }).length;
+    const inProgressRows = state.rows.filter(
       (row) =>
-        !isCompleted(row) && !isOverdue(row) && number(row.progressPercent) > 0,
+        row.status !== "COMPLETED" &&
+        row.status !== "OVERDUE" &&
+        asNumber(row.progressPercent) > 0,
     ).length;
     const average =
       state.report?.averageProgress ??
-      (rowsList.length
-        ? rowsList.reduce((sum, row) => sum + number(row.progressPercent), 0) /
-          rowsList.length
+      (state.rows.length
+        ? state.rows.reduce((sum, row) => sum + asNumber(row.progressPercent), 0) /
+          state.rows.length
         : 0);
     return {
       published,
@@ -212,7 +182,7 @@ export function Dashboard({ user }: { user: PortalUser }) {
       completedRows,
       overdueRows,
       inProgressRows,
-      average,
+      average: Math.max(0, Math.min(100, average)),
     };
   }, [state]);
 
@@ -226,332 +196,273 @@ export function Dashboard({ user }: { user: PortalUser }) {
       ),
     [state.courses],
   );
-  const progressRows = state.rows.slice(0, 6);
+
   const totalRows = state.report?.enrolled ?? state.rows.length;
   const completed = state.report?.completed ?? metrics.completedRows;
   const overdue = state.report?.overdue ?? metrics.overdueRows;
-  const inProgress = Math.max(
-    0,
-    state.report?.inProgress ?? metrics.inProgressRows,
-  );
-  const notStarted = Math.max(0, totalRows - completed - overdue - inProgress);
+  const inProgress = state.report?.inProgress ?? metrics.inProgressRows;
 
   const kpis = isStudent
     ? [
         {
           icon: "book" as IconName,
-          value: String(state.rows.length),
+          value: state.rows.length,
           label: "Khóa học được giao",
-          delta: `${metrics.completedRows} đã hoàn thành`,
+          detail: `${metrics.completedRows} khóa đã hoàn thành`,
+          tone: "primary",
         },
         {
           icon: "learn" as IconName,
           value: `${Math.round(metrics.average)}%`,
           label: "Tiến độ trung bình",
-          delta: metrics.overdueRows
-            ? `${metrics.overdueRows} khóa quá hạn`
-            : "Đúng tiến độ",
-          warning: metrics.overdueRows > 0,
+          detail: metrics.overdueRows ? `${metrics.overdueRows} khóa quá hạn` : "Đang đúng tiến độ",
+          tone: metrics.overdueRows ? "warning" : "success",
         },
         {
           icon: "exam" as IconName,
-          value: String(state.exams.length),
-          label: "Bài kiểm tra đang mở",
-          delta: `${state.grades.length} kết quả đã có`,
+          value: state.exams.length,
+          label: "Bài thi đang mở",
+          detail: `${state.grades.length} kết quả đã có`,
+          tone: "violet",
         },
         {
           icon: "certificate" as IconName,
-          value: String(state.certificates.length),
-          label: "Chứng chỉ đã nhận",
-          delta: `${state.notifications.unread} thông báo mới`,
+          value: state.certificates.length,
+          label: "Chứng chỉ",
+          detail: `${state.notifications.unread} thông báo mới`,
+          tone: "teal",
         },
       ]
     : [
         {
           icon: "users" as IconName,
-          value: String(
-            isAdmin
-              ? state.users.length
-              : (state.report?.enrolled ?? state.rows.length),
-          ),
-          label: isAdmin ? "Tài khoản hệ thống" : "Học viên trong phạm vi",
-          delta: `${state.report?.enrolled ?? state.rows.length} lượt ghi danh`,
+          value: isAdmin ? state.users.length : totalRows,
+          label: isAdmin ? "Người dùng" : "Học viên trong phạm vi",
+          detail: `${totalRows} lượt ghi danh`,
+          tone: "primary",
         },
         {
           icon: "book" as IconName,
-          value: String(metrics.published),
+          value: metrics.published,
           label: "Khóa học đã xuất bản",
-          delta: `${metrics.drafts} bản nháp`,
+          detail: `${metrics.drafts} bản nháp`,
+          tone: "success",
         },
         {
           icon: "class" as IconName,
-          value: String(metrics.activeClasses),
-          label: "Lớp học đang mở",
-          delta: `${state.classes.length} lớp trong phạm vi`,
+          value: metrics.activeClasses,
+          label: "Lớp đang mở",
+          detail: `${state.classes.length} lớp trong phạm vi`,
+          tone: "violet",
         },
         {
           icon: "grade" as IconName,
-          value: String(metrics.pendingGrades),
-          label: "Bài chờ chấm điểm",
-          delta: overdue ? `${overdue} lượt học quá hạn` : "Không có quá hạn",
-          warning: metrics.pendingGrades > 0 || overdue > 0,
+          value: metrics.pendingGrades,
+          label: "Bài chờ chấm",
+          detail: overdue ? `${overdue} lượt học quá hạn` : "Không có lượt quá hạn",
+          tone: metrics.pendingGrades || overdue ? "warning" : "teal",
         },
       ];
 
-  const primaryActions = isStudent
+  const quickActions = isStudent
     ? [
-        { href: "/learning", label: "Học tập của tôi", icon: "learn" as IconName },
-        { href: "/exams", label: "Bài kiểm tra", icon: "exam" as IconName },
+        { href: "/learning", icon: "play" as IconName, label: "Tiếp tục học", hint: "Mở khóa học gần nhất" },
+        { href: "/exams", icon: "exam" as IconName, label: "Làm bài thi", hint: "Xem bài đang mở" },
+        { href: "/results", icon: "grade" as IconName, label: "Xem kết quả", hint: "Điểm số và phản hồi" },
       ]
     : [
-        { href: "/courses", label: "Quản lý khóa học", icon: "book" as IconName },
-        { href: "/grading", label: "Chấm điểm bài thi", icon: "grade" as IconName },
+        { href: "/courses", icon: "plus" as IconName, label: "Tạo khóa học", hint: "Xây dựng nội dung mới" },
+        { href: "/classes", icon: "class" as IconName, label: "Quản lý lớp", hint: "Lịch và học viên" },
+        { href: "/grading", icon: "grade" as IconName, label: "Chấm điểm", hint: "Xử lý bài tự luận" },
       ];
 
+  const progressRows = state.rows.slice(0, 5);
+  const attentionItems = [
+    {
+      label: isStudent ? "Khóa học quá hạn" : "Lượt học quá hạn",
+      value: overdue,
+      href: isStudent ? "/learning" : "/reports",
+      tone: overdue ? "danger" : "neutral",
+    },
+    {
+      label: "Bài tự luận chờ chấm",
+      value: metrics.pendingGrades,
+      href: isStudent ? "/results" : "/grading",
+      tone: metrics.pendingGrades ? "warning" : "neutral",
+    },
+    {
+      label: "Thông báo chưa đọc",
+      value: state.notifications.unread,
+      href: "/dashboard",
+      tone: state.notifications.unread ? "primary" : "neutral",
+    },
+  ];
+
   return (
-    <div className="unified-dashboard">
-      {/* Header Section */}
-      <header className="unified-dashboard-header">
-        <div className="unified-dashboard-header-text">
-          <h1>Tổng quan</h1>
-          <h2>Xin chào, {user.fullName}</h2>
+    <div className="dashboard-page">
+      <section className="dashboard-welcome">
+        <div className="dashboard-welcome-copy">
+          <span className="dashboard-kicker">Tổng quan hôm nay</span>
+          <h1>Xin chào, {user.fullName}</h1>
           <p>
             {isStudent
-              ? "Theo dõi tiến độ học tập, tham gia bài kiểm tra và cập nhật thông báo mới nhất."
-              : "Quản lý hoạt động đào tạo, theo dõi các chỉ số vận hành và xử lý công việc ưu tiên."}
+              ? "Tiếp tục bài học, theo dõi tiến độ và hoàn thành các bài kiểm tra đang chờ bạn."
+              : "Theo dõi hoạt động đào tạo và xử lý các công việc quan trọng trong phạm vi được cấp."}
           </p>
+          <div className="dashboard-welcome-actions">
+            {quickActions.slice(0, 2).map((action, index) => (
+              <Link
+                key={action.href}
+                href={action.href}
+                className={`button ${index === 0 ? "primary" : "secondary"}`}
+              >
+                <Icon name={action.icon} />
+                {action.label}
+              </Link>
+            ))}
+          </div>
         </div>
-        <div className="unified-dashboard-header-actions">
-          {primaryActions.slice(0, 2).map((action, index) => (
-            <Link
-              key={action.href}
-              href={action.href}
-              className={
-                index === 0
-                  ? "unified-dashboard-btn unified-dashboard-btn-primary"
-                  : "unified-dashboard-btn unified-dashboard-btn-secondary"
-              }
-            >
-              <Icon name={action.icon} size={18} />
-              <span>{action.label}</span>
-            </Link>
-          ))}
+        <div className="dashboard-visual" aria-hidden="true">
+          <div className="dashboard-progress-card">
+            <span>Tiến độ trung bình</span>
+            <strong>{Math.round(metrics.average)}%</strong>
+            <div><i style={{ width: `${metrics.average}%` }} /></div>
+          </div>
+          <div className="dashboard-mini-card card-a">
+            <Icon name="book" />
+            <span><b>{metrics.published}</b><small>khóa đã xuất bản</small></span>
+          </div>
+          <div className="dashboard-mini-card card-b">
+            <Icon name="check" />
+            <span><b>{completed}</b><small>lượt hoàn thành</small></span>
+          </div>
+          <span className="dashboard-orb orb-a" />
+          <span className="dashboard-orb orb-b" />
         </div>
-      </header>
+      </section>
 
-      {/* Warning Notice if read model is initializing */}
       {warning && (
-        <div className="unified-dashboard-warning">
+        <div className="dashboard-warning" role="status">
+          <Icon name="warning" />
           <span>{warning}</span>
-          <button type="button" onClick={() => void load()}>
-            Tải lại
-          </button>
+          <button type="button" onClick={() => void load()}>Tải lại</button>
         </div>
       )}
 
-      {/* KPI Cards Grid */}
-      <section className="unified-dashboard-kpis">
-        {kpis.map((kpi) => (
-          <div
-            key={kpi.label}
-            className={`unified-dashboard-kpi-card ${kpi.warning ? "is-warning" : ""}`}
-          >
-            <div className="unified-dashboard-kpi-header">
-              <span className="unified-dashboard-kpi-icon">
-                <Icon name={kpi.icon} size={20} />
-              </span>
-              <span className="unified-dashboard-kpi-value">
-                {loading ? "…" : kpi.value}
-              </span>
+      <section className="metric-grid" aria-label="Chỉ số tổng quan">
+        {kpis.map((item) => (
+          <article className={`metric-card tone-${item.tone}`} key={item.label}>
+            <span className="metric-icon"><Icon name={item.icon} /></span>
+            <div>
+              <strong>{loading ? "…" : item.value}</strong>
+              <span>{item.label}</span>
+              <small>{loading ? "Đang cập nhật dữ liệu" : item.detail}</small>
             </div>
-            <div className="unified-dashboard-kpi-body">
-              <span className="unified-dashboard-kpi-label">{kpi.label}</span>
-              <span className="unified-dashboard-kpi-delta">
-                {loading ? "Đang cập nhật…" : kpi.delta}
-              </span>
-            </div>
-          </div>
+          </article>
         ))}
       </section>
 
-      {/* Grid of Main Dashboard Panels */}
-      <section className="unified-dashboard-grid">
-        {/* Panel 1: Course Progress */}
-        <article className="unified-dashboard-card">
-          <div className="unified-dashboard-card-header">
-            <h3>Tiến độ khóa học gần đây</h3>
-            <p>
-              {progressRows.length
-                ? "Tiến độ học tập ghi nhận từ hệ thống"
-                : "Chưa có tiến độ học tập nào"}
-            </p>
-          </div>
-          <div className="unified-dashboard-card-body">
+      <section className="dashboard-layout">
+        <div className="dashboard-column-main">
+          <article className="dashboard-panel progress-overview-panel">
+            <header className="panel-heading">
+              <div>
+                <span className="panel-kicker">Tiến độ học tập</span>
+                <h2>{isStudent ? "Khóa học của bạn" : "Các lượt học gần đây"}</h2>
+              </div>
+              <Link href={isStudent ? "/learning" : "/reports"}>Xem tất cả <Icon name="arrow" size={15} /></Link>
+            </header>
             {progressRows.length ? (
-              <div className="unified-dashboard-progress-list">
+              <div className="progress-list">
                 {progressRows.map((row, index) => {
-                  const pct = Math.max(
-                    0,
-                    Math.min(100, number(row.progressPercent)),
-                  );
-                  const courseName =
-                    courseNames.get(String(row.courseId)) ??
-                    `Khóa học ${index + 1}`;
+                  const value = Math.max(0, Math.min(100, asNumber(row.progressPercent)));
+                  const name = courseNames.get(String(row.courseId)) ?? `Khóa học ${index + 1}`;
                   return (
-                    <div
-                      key={String(row.enrollmentId ?? row.id ?? index)}
-                      className="unified-dashboard-progress-item"
-                    >
-                      <div className="unified-dashboard-progress-info">
-                        <span className="unified-dashboard-progress-name">
-                          {courseName}
-                        </span>
-                        <span className="unified-dashboard-progress-pct">
-                          {Math.round(pct)}%
-                        </span>
-                      </div>
-                      <div className="unified-dashboard-progress-bar">
-                        <div
-                          className="unified-dashboard-progress-fill"
-                          style={{ width: `${pct}%` }}
-                        />
+                    <div className="progress-list-item" key={String(row.enrollmentId ?? row.id ?? index)}>
+                      <span className="progress-course-icon"><Icon name="book" size={18} /></span>
+                      <div>
+                        <div className="progress-list-head"><strong>{name}</strong><span>{Math.round(value)}%</span></div>
+                        <ProgressBar value={value} label={`Tiến độ ${name}`} />
                       </div>
                     </div>
                   );
                 })}
               </div>
             ) : (
-              <p className="unified-dashboard-empty">
-                Chưa có dữ liệu tiến độ.
-              </p>
+              <EmptyDashboard text="Dữ liệu tiến độ sẽ xuất hiện khi có học viên được ghi danh." />
             )}
-          </div>
-        </article>
+          </article>
 
-        {/* Panel 2: Training Status Breakdown */}
-        <article className="unified-dashboard-card">
-          <div className="unified-dashboard-card-header">
-            <h3>Trạng thái đào tạo</h3>
-            <p>Thống kê lượt học trong phạm vi</p>
-          </div>
-          <div className="unified-dashboard-card-body">
-            <div className="unified-dashboard-stat-summary">
-              <div className="unified-dashboard-stat-row">
-                <span className="unified-dashboard-stat-label">Tổng số lượt ghi danh</span>
-                <span className="unified-dashboard-stat-val">{totalRows}</span>
+          <article className="dashboard-panel attention-panel">
+            <header className="panel-heading">
+              <div>
+                <span className="panel-kicker">Cần xử lý</span>
+                <h2>Việc cần chú ý</h2>
               </div>
-              <div className="unified-dashboard-stat-row">
-                <span className="unified-dashboard-stat-label">Đã hoàn thành</span>
-                <span className="unified-dashboard-stat-val is-success">{completed}</span>
-              </div>
-              <div className="unified-dashboard-stat-row">
-                <span className="unified-dashboard-stat-label">Đang học</span>
-                <span className="unified-dashboard-stat-val is-primary">{inProgress}</span>
-              </div>
-              <div className="unified-dashboard-stat-row">
-                <span className="unified-dashboard-stat-label">Chưa bắt đầu</span>
-                <span className="unified-dashboard-stat-val">{notStarted}</span>
-              </div>
-              <div className="unified-dashboard-stat-row">
-                <span className="unified-dashboard-stat-label">Quá hạn</span>
-                <span className="unified-dashboard-stat-val is-danger">{overdue}</span>
-              </div>
+            </header>
+            <div className="attention-list">
+              {attentionItems.map((item) => (
+                <Link href={item.href} key={item.label} className={`attention-item tone-${item.tone}`}>
+                  <span>{item.value}</span>
+                  <strong>{item.label}</strong>
+                  <Icon name="arrow" size={16} />
+                </Link>
+              ))}
             </div>
-          </div>
-        </article>
+          </article>
+        </div>
 
-        {/* Panel 3: Notifications */}
-        <article className="unified-dashboard-card">
-          <div className="unified-dashboard-card-header">
-            <h3>Thông báo gần đây</h3>
-            <p>{state.notifications.unread} thông báo chưa đọc</p>
-          </div>
-          <div className="unified-dashboard-card-body">
+        <aside className="dashboard-column-side">
+          <article className="dashboard-panel quick-actions-panel">
+            <header className="panel-heading">
+              <div>
+                <span className="panel-kicker">Truy cập nhanh</span>
+                <h2>Công việc thường dùng</h2>
+              </div>
+            </header>
+            <div className="quick-action-list">
+              {quickActions.map((action) => (
+                <Link href={action.href} key={action.href}>
+                  <span className="quick-action-icon"><Icon name={action.icon} /></span>
+                  <span><strong>{action.label}</strong><small>{action.hint}</small></span>
+                  <Icon name="arrow" size={16} />
+                </Link>
+              ))}
+            </div>
+          </article>
+
+          <article className="dashboard-panel notifications-panel">
+            <header className="panel-heading">
+              <div>
+                <span className="panel-kicker">Cập nhật mới</span>
+                <h2>Thông báo</h2>
+              </div>
+              <span className="panel-count">{state.notifications.unread} chưa đọc</span>
+            </header>
             {state.notifications.items.length ? (
-              <div className="unified-dashboard-notification-list">
-                {state.notifications.items.slice(0, 5).map((item) => (
-                  <div key={item.id} className="unified-dashboard-notification-item">
-                    <div className="unified-dashboard-notification-icon">
-                      <Icon
-                        name={
-                          item.title.includes("Chứng chỉ")
-                            ? "certificate"
-                            : item.title.includes("kiểm tra")
-                              ? "exam"
-                              : "bell"
-                        }
-                        size={16}
-                      />
-                    </div>
-                    <div className="unified-dashboard-notification-content">
-                      <div className="unified-dashboard-notification-title">
-                        {item.title}
-                      </div>
-                      <div className="unified-dashboard-notification-body">
-                        {item.body}
-                      </div>
-                      <div className="unified-dashboard-notification-time">
-                        {relativeTime(item.createdAt)}
-                      </div>
-                    </div>
+              <div className="dashboard-notification-list">
+                {state.notifications.items.slice(0, 4).map((item) => (
+                  <div key={item.id} className={item.read ? "" : "unread"}>
+                    <span className="notification-avatar"><Icon name="bell" size={17} /></span>
+                    <span><strong>{item.title}</strong><p>{item.body}</p><small>{relativeTime(item.createdAt)}</small></span>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="unified-dashboard-empty">
-                Không có thông báo mới.
-              </p>
+              <EmptyDashboard text="Chưa có thông báo mới." />
             )}
-          </div>
-        </article>
-
-        {/* Panel 4: Pending Tasks / Items requiring action */}
-        <article className="unified-dashboard-card">
-          <div className="unified-dashboard-card-header">
-            <h3>Nhiệm vụ cần xử lý</h3>
-            <p>Các công việc và phản hồi ưu tiên</p>
-          </div>
-          <div className="unified-dashboard-card-body">
-            <div className="unified-dashboard-task-list">
-              <div className="unified-dashboard-task-item">
-                <div className="unified-dashboard-task-info">
-                  <strong>{overdue}</strong>
-                  <span>{isStudent ? "Khóa học quá hạn" : "Lượt học quá hạn"}</span>
-                </div>
-                <Link
-                  href={isStudent ? "/learning" : "/reports"}
-                  className="unified-dashboard-link"
-                >
-                  Xem danh sách
-                </Link>
-              </div>
-
-              <div className="unified-dashboard-task-item">
-                <div className="unified-dashboard-task-info">
-                  <strong>{metrics.pendingGrades}</strong>
-                  <span>Bài thi tự luận chờ chấm</span>
-                </div>
-                {isStudent ? (
-                  <span className="unified-dashboard-tag">Theo dõi kết quả</span>
-                ) : (
-                  <Link href="/grading" className="unified-dashboard-link">
-                    Mở hàng chờ
-                  </Link>
-                )}
-              </div>
-
-              <div className="unified-dashboard-task-item">
-                <div className="unified-dashboard-task-info">
-                  <strong>{state.notifications.unread}</strong>
-                  <span>Thông báo chưa đọc</span>
-                </div>
-                <span className="unified-dashboard-tag">Xem ở thanh công cụ</span>
-              </div>
-            </div>
-          </div>
-        </article>
+          </article>
+        </aside>
       </section>
     </div>
   );
 }
 
+function EmptyDashboard({ text }: { text: string }) {
+  return (
+    <div className="dashboard-empty">
+      <Icon name="book" />
+      <p>{text}</p>
+    </div>
+  );
+}

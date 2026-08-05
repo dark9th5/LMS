@@ -82,59 +82,27 @@ export function LearningPage({ user }: { user: PortalUser }) {
   return (
     <>
       <PageHeader
-        eyebrow="KHÔNG GIAN HỌC TẬP"
+        eyebrow="Học tập của tôi"
         title={`Xin chào, ${user.fullName}`}
         description="Tiếp tục các khóa học được giao và theo dõi tiến độ cá nhân."
         icon="learn"
       />
-      <section className="learner-hero journey-hero">
-        <div className="journey-burst" aria-hidden="true">
-          <i />
-          <i />
-          <i />
-          <span>+</span>
-          <b>KEEP GOING</b>
-        </div>
-        <div className="journey-copy">
-          <span>HÀNH TRÌNH CỦA BẠN · LIVE</span>
-          <h2>Mỗi lần quay lại, bạn tiến gần mục tiêu hơn.</h2>
-          <p>
-            Tiến độ được lưu trên máy chủ và có thể tiếp tục từ thiết bị khác
-            trong cùng mạng LAN.
-          </p>
-          <div className="journey-stats">
-            <span>
-              <strong>{rows.length}</strong>
-              <small>Khóa được giao</small>
-            </span>
-            <span>
-              <strong>{completed}</strong>
-              <small>Đã hoàn thành</small>
-            </span>
-            <span>
-              <strong>{rows.length - completed}</strong>
-              <small>Đang tiếp tục</small>
-            </span>
+      <section className="learning-overview">
+        <div className="learning-overview-copy">
+          <span className="learning-overview-label"><Icon name="learn" size={17} /> Tiến độ cá nhân</span>
+          <h2>Mỗi bài học hoàn thành là một bước tiến mới.</h2>
+          <p>Tiếp tục đúng nơi bạn đã dừng và theo dõi toàn bộ khóa học trong một không gian tập trung.</p>
+          <div className="learning-overview-stats">
+            <span><strong>{rows.length}</strong><small>Khóa được giao</small></span>
+            <span><strong>{completed}</strong><small>Đã hoàn thành</small></span>
+            <span><strong>{rows.length - completed}</strong><small>Đang tiếp tục</small></span>
           </div>
         </div>
-        <div className="journey-progress">
-          <div
-            className="journey-disc"
-            style={{
-              background: `conic-gradient(var(--ui-primary) 0 ${average}%,var(--ui-border) ${average}% 100%)`,
-            }}
-          >
-            <div>
-              <small>MASTERY</small>
-              <strong>
-                {average}
-                <b>%</b>
-              </strong>
-              <span>tổng tiến độ</span>
-            </div>
+        <div className="learning-overview-progress" aria-label={`Tiến độ trung bình ${average}%`}>
+          <div className="learning-progress-ring" style={{ "--progress": `${average}%` } as React.CSSProperties}>
+            <span><strong>{average}%</strong><small>tiến độ trung bình</small></span>
           </div>
-          <i />
-          <i />
+          <div className="learning-progress-note"><Icon name="check" size={18} /><span>Tiến độ được lưu tự động trên mọi thiết bị.</span></div>
         </div>
       </section>
       <section className="toolbar-card">
@@ -190,9 +158,9 @@ export function LearningPage({ user }: { user: PortalUser }) {
                     <span>+</span>
                   </div>
                   <span className="learning-code">
-                    {course?.code ?? "COURSE"}
+                    {course?.code ?? "KHÓA HỌC"}
                   </span>
-                  <small>PATH {String(index + 1).padStart(2, "0")}</small>
+                  <small>Lộ trình {String(index + 1).padStart(2, "0")}</small>
                   <div className="learning-symbol">
                     <Icon name="learn" size={34} />
                     <i />
@@ -227,7 +195,7 @@ export function LearningPage({ user }: { user: PortalUser }) {
                   </div>
                   <div className="learning-action">
                     <span>
-                      <small>CONTINUE LEARNING</small>
+                      <small>Tiếp tục</small>
                       {row.status === "NOT_STARTED"
                         ? "Bắt đầu học"
                         : row.status === "COMPLETED"

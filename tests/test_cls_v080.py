@@ -10,17 +10,19 @@ def text(path: str) -> str:
 
 
 class ClsV080RequirementTests(unittest.TestCase):
-    def test_learning_paths_pin_class_course_versions_and_auto_enroll(self) -> None:
-        domain = text("backend/services/enrollment-service/src/main/kotlin/com/lmspilot/enrollment/domain/LearningPathDomain.kt")
+    def test_learning_paths_pin_versions_and_backend_remains_available(self) -> None:
         api = text("backend/services/enrollment-service/src/main/kotlin/com/lmspilot/enrollment/api/LearningPathApi.kt")
+        domain = text("backend/services/enrollment-service/src/main/kotlin/com/lmspilot/enrollment/domain/LearningPathDomain.kt")
         migration = text("backend/services/enrollment-service/src/main/resources/db/migration/V5__learning_paths.sql")
-        ui = text("apps/web/components/LearningPathCenter.tsx")
+        route = text("apps/web/app/(portal)/[section]/page.tsx")
         self.assertIn("courseVersion", domain)
-        self.assertIn("LearningPathUnlockMode", domain)
+        self.assertIn("classId", domain)
+        self.assertIn("UnlockMode", domain)
         self.assertIn("enrollments.save", api)
         self.assertIn("LEARNING_PATH_ASSIGNED", api)
         self.assertIn("learning_path_items", migration)
-        self.assertIn("Giao và ghi danh", ui)
+        self.assertIn('"learning-paths"', route)
+        self.assertIn("RETIRED_SECTIONS", route)
 
     def test_learning_path_progress_uses_internal_token_and_sequential_unlock(self) -> None:
         path_api = text("backend/services/enrollment-service/src/main/kotlin/com/lmspilot/enrollment/api/LearningPathApi.kt")
@@ -43,16 +45,16 @@ class ClsV080RequirementTests(unittest.TestCase):
         self.assertIn(catalog_guard, api)
 
 
-    def test_kpi_reporting_is_scoped_and_aggregates_operational_metrics(self) -> None:
+    def test_kpi_reporting_is_scoped_and_core_reports_ui_is_available(self) -> None:
         api = text("backend/services/reporting-service/src/main/kotlin/com/lmspilot/reporting/api/KpiReportingApi.kt")
-        ui = text("apps/web/components/AdvancedCenters.tsx")
+        reports = text("apps/web/components/SectionPage.tsx")
         self.assertIn("completionRate", api)
         self.assertIn("passRate", api)
         self.assertIn("dueSoon", api)
         self.assertIn("ReportScope.ASSIGNED", api)
         self.assertIn("REPORTS_KPI_READ", api)
-        self.assertIn('/api/v1/reports/kpis', ui)
-        self.assertIn("Hiệu quả theo khóa học", ui)
+        self.assertIn('/api/v1/reports/learning', reports)
+        self.assertIn('"reports"', reports)
 
     def test_kpi_queries_are_bounded_by_assigned_classes_and_reminder_errors_are_client_errors(self) -> None:
         kpi = text("backend/services/reporting-service/src/main/kotlin/com/lmspilot/reporting/api/KpiReportingApi.kt")
@@ -99,18 +101,17 @@ class ClsV080RequirementTests(unittest.TestCase):
         self.assertRegex(migration, r"7, 0, false,")
         self.assertIn("Safe starter assets", migration)
 
-    def test_notification_automation_is_permissioned_audited_and_visible(self) -> None:
+    def test_notification_automation_is_permissioned_audited_and_retired_from_core_ui(self) -> None:
         permissions = text("backend/platform-contracts/src/main/kotlin/com/lmspilot/contracts/Permissions.kt")
         api = text("backend/services/notification-service/src/main/kotlin/com/lmspilot/notification/api/NotificationAutomationApi.kt")
-        shell = text("apps/web/components/CosmicShell.tsx")
-        advanced = text("apps/web/components/AdvancedCenters.tsx")
+        shell = text("apps/web/components/AppShell.tsx")
+        route = text("apps/web/app/(portal)/[section]/page.tsx")
         self.assertIn("NOTIFICATION_TEMPLATES_MANAGE", permissions)
         self.assertIn("NOTIFICATION_REMINDERS_MANAGE", permissions)
         self.assertIn("AUDIT_RECORDED", api)
         self.assertNotIn('/notification-automation', shell)
-        self.assertIn("NotificationAutomationCenter", advanced)
-        route = text("apps/web/app/(portal)/[section]/page.tsx")
         self.assertIn('"notification-automation"', route)
+        self.assertIn("RETIRED_SECTIONS", route)
 
     def test_backup_covers_competency_and_handles_runtime_secrets_explicitly(self) -> None:
         backup = text("scripts/backup.sh")
@@ -127,18 +128,18 @@ class ClsV080RequirementTests(unittest.TestCase):
         self.assertIn("idx_report_due_incomplete", text("backend/services/reporting-service/src/main/resources/db/migration/V3__reminder_due_index.sql"))
         self.assertIn("varchar(2000)", text("backend/services/notification-service/src/main/resources/db/migration/V6__notification_delivery_error_length.sql"))
 
-    def test_notification_event_type_values_match_contract_constants(self) -> None:
+    def test_notification_event_type_contracts_are_stable_for_optional_automation(self) -> None:
         contracts = text("backend/platform-contracts/src/main/kotlin/com/lmspilot/contracts/DomainEvents.kt")
-        ui = text("apps/web/components/AdvancedCenters.tsx")
+        automation = text("backend/services/notification-service/src/main/kotlin/com/lmspilot/notification/api/NotificationAutomationApi.kt")
         values = dict(re.findall(r'const val (ENROLLED|EXAM_GRADED|COURSE_COMPLETED|GRADE_APPEAL_RESOLVED|CERTIFICATE_ISSUED) = "([^"]+)"', contracts))
         self.assertEqual(len(values), 5)
-        for value in values.values():
-            self.assertIn(f'value="{value}"', ui)
+        self.assertEqual(len(set(values.values())), 5)
+        self.assertIn("val eventType: String?", automation)
+        self.assertIn("normalizedEventType", automation)
 
     def test_reminder_worker_has_bounded_reporting_calls_and_failure_retry(self) -> None:
         automation = text("backend/services/notification-service/src/main/kotlin/com/lmspilot/notification/api/NotificationAutomationApi.kt")
         config = text("backend/services/notification-service/src/main/resources/application.yml")
-        ui = text("apps/web/components/AdvancedCenters.tsx")
         self.assertIn("SimpleClientHttpRequestFactory", automation)
         self.assertIn("setConnectTimeout", automation)
         self.assertIn("setReadTimeout", automation)
@@ -146,8 +147,6 @@ class ClsV080RequirementTests(unittest.TestCase):
         self.assertIn("log.error", automation)
         self.assertIn("reporting-connect-timeout-ms", config)
         self.assertIn("reminder-retry-delay-seconds", config)
-        self.assertIn("Không thể xóa quy tắc", ui)
-
 
 if __name__ == "__main__":
     unittest.main()

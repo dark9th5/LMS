@@ -242,7 +242,7 @@ export function ExamsPage({ user }: { user: PortalUser }) {
   return (
     <>
       <PageHeader
-        eyebrow={canManage ? "ĐÁNH GIÁ & KIỂM TRA" : "BÀI KIỂM TRA CỦA TÔI"}
+        eyebrow={canManage ? "Đánh giá và kiểm tra" : "Bài kiểm tra của tôi"}
         title="Bài kiểm tra & kỳ thi"
         description={
           canManage
@@ -315,7 +315,7 @@ export function ExamsPage({ user }: { user: PortalUser }) {
             >
               <div className="exam-card-scene">
                 <span className="exam-sequence">
-                  ASSESSMENT {String(index + 1).padStart(2, "0")}
+                  BÀI THI {String(index + 1).padStart(2, "0")}
                 </span>
                 <div className="exam-card-icon">
                   <Icon name="exam" size={29} />
@@ -336,7 +336,7 @@ export function ExamsPage({ user }: { user: PortalUser }) {
               <div className="exam-card-body">
                 <div>
                   <StatusBadge value={exam.status} />
-                  <span>VERSION {exam.version}</span>
+                  <span>Phiên bản {exam.version}</span>
                 </div>
                 <h2>{exam.title}</h2>
                 <p>
@@ -364,7 +364,7 @@ export function ExamsPage({ user }: { user: PortalUser }) {
                 </dl>
                 <span className="exam-open">
                   <span>
-                    <small>OPEN ASSESSMENT</small>
+                    <small>Chi tiết bài thi</small>
                     {canManage ? "Xem và chỉnh sửa" : "Mở bài kiểm tra"}
                   </span>
                   <i>

@@ -1125,7 +1125,7 @@ function CourseDiscussion({
             <div className="discussion-post-list">
               {active.posts?.map((post) => (
                 <article key={post.id}>
-                  <span className="avatar cosmic-avatar">
+                  <span className="avatar discussion-avatar">
                     {post.authorId.slice(0, 2).toUpperCase()}
                   </span>
                   <div>

@@ -52,7 +52,7 @@ class PermissionFirstV015Tests(unittest.TestCase):
     def test_frontend_assignment_lists_use_permissions_not_legacy_roles(self) -> None:
         classes = text("apps/web/components/ClassesPage.tsx")
         detail = text("apps/web/components/ClassDetail.tsx")
-        shell = text("apps/web/components/CosmicShell.tsx")
+        shell = text("apps/web/components/AppShell.tsx")
         self.assertNotIn("role=INSTRUCTOR", classes)
         self.assertNotIn("role=LEARNER", detail)
         self.assertIn('"classes:manage"', classes)

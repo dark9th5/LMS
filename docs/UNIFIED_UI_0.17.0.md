@@ -1,8 +1,8 @@
-# Unified UI — LMSPilot CLS 0.16.0
+# Unified UI — LMSPilot CLS 0.17.0
 
 ## Mục tiêu
 
-Bản 0.16 loại bỏ mô hình 10 theme thay đổi cả font, hình học, mật độ và màu sắc. Runtime chỉ còn một design system với hai chế độ sáng/tối. Mọi component phải dùng cùng typography, spacing, control states và responsive behavior.
+Bản 0.17 loại bỏ mô hình 10 theme thay đổi cả font, hình học, mật độ và màu sắc. Runtime chỉ còn một design system với hai chế độ sáng/tối. Mọi component phải dùng cùng typography, spacing, control states và responsive behavior.
 
 ## Token chính
 
@@ -29,7 +29,7 @@ Tất cả input/select/textarea khai báo riêng màu chữ, nền, placeholder
 
 ## Workspace học và thi
 
-Desktop dùng `minmax(0, 1fr) 310px`:
+Desktop dùng cột chính linh hoạt; Learning dùng `minmax(0, 1fr) 310px`, Exam dùng `minmax(0, 1fr) 260px`:
 
 - Nội dung bài học/câu hỏi: cột 1.
 - Mục lục/danh sách câu: cột 2.

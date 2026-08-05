@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getPublicBranding } from "@/lib/branding";
 import { landingForUser } from "@/lib/authorization";
 import { getUser } from "@/lib/session";
+import { Icon } from "@/components/Icon";
 import { LoginForm } from "./LoginForm";
 
 export const dynamic = "force-dynamic";
@@ -24,27 +25,51 @@ export default async function Login({
     : "";
 
   return (
-    <main className="cosmic-login-page unified-login-page">
-      <section className="login-showcase" aria-labelledby="login-system-name">
-        <div className="login-brand">
+    <main className="auth-page">
+      <section className="auth-showcase" aria-labelledby="login-system-name">
+        <div className="auth-brand">
           {branding.logoUrl ? (
-            <img className="login-logo" src={branding.logoUrl} alt="" />
+            <img className="auth-logo" src={branding.logoUrl} alt="" />
           ) : (
-            <span className="simple-brand-mark" aria-hidden="true">L</span>
+            <span className="auth-brand-mark" aria-hidden="true">L</span>
           )}
           <div>
             <strong id="login-system-name">{branding.systemName}</strong>
-            <small>Hệ thống quản lý học tập</small>
+            <small>Không gian học tập của tổ chức</small>
           </div>
         </div>
-        <div className="login-welcome">
-          <span>Học tập tập trung</span>
-          <h2>Tiếp tục công việc và bài học của bạn.</h2>
-          <p>{branding.introduction || "Không gian học tập nội bộ của tổ chức."}</p>
+
+        <div className="auth-showcase-copy">
+          <span className="auth-pill"><Icon name="learn" size={16} /> Học tập liền mạch</span>
+          <h2>Mỗi ngày tiến thêm một bước.</h2>
+          <p>
+            {branding.introduction ||
+              "Học, kiểm tra và theo dõi tiến độ trong một không gian rõ ràng, tập trung."}
+          </p>
         </div>
-        <p className="login-privacy">Dữ liệu được quản lý trong hệ thống của tổ chức.</p>
+
+        <div className="auth-preview" aria-hidden="true">
+          <article className="auth-course-card auth-course-primary">
+            <span className="auth-course-icon"><Icon name="book" size={22} /></span>
+            <div><small>Đang học</small><strong>Kỹ năng số nền tảng</strong></div>
+            <span className="auth-progress-value">72%</span>
+            <div className="auth-progress-track"><i /></div>
+          </article>
+          <article className="auth-course-card auth-course-secondary">
+            <span className="auth-course-icon"><Icon name="exam" size={22} /></span>
+            <div><small>Sắp tới</small><strong>Bài kiểm tra cuối khóa</strong></div>
+            <span className="auth-date">09:30</span>
+          </article>
+          <span className="auth-float auth-float-a"><Icon name="check" size={18} /></span>
+          <span className="auth-float auth-float-b"><Icon name="learn" size={18} /></span>
+        </div>
+
+        <p className="auth-privacy">
+          <Icon name="lock" size={16} /> Dữ liệu được bảo vệ trong hệ thống của tổ chức.
+        </p>
       </section>
-      <section className="login-access" aria-label="Biểu mẫu đăng nhập">
+
+      <section className="auth-access" aria-label="Biểu mẫu đăng nhập">
         <LoginForm
           demoEnabled={demoEnabled}
           demoPassword={demoPassword}

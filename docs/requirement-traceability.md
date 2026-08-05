@@ -14,6 +14,8 @@ Khi có xung đột, yêu cầu bổ sung đã được người dùng xác nh�
 
 - [`PERMISSION_FIRST_0.15.0.md`](PERMISSION_FIRST_0.15.0.md) truy vết mô hình quyền 0.15.
 
-## Giao diện 0.16
+## Giao diện 0.17
 
-- [`UNIFIED_UI_0.16.0.md`](UNIFIED_UI_0.16.0.md) truy vết việc hợp nhất theme, sửa tương phản login/input, bố cục học/thi, Core Admin và structured input.
+- [`UNIFIED_UI_0.17.0.md`](UNIFIED_UI_0.17.0.md) truy vết design system hiện hành, login/input, bố cục học/thi, Core Admin và structured input.
+- [`DESIGN_RESEARCH_0.17.0.md`](DESIGN_RESEARCH_0.17.0.md) ghi lại các chuẩn WCAG, GOV.UK, USWDS và Carbon được áp dụng.
+- Các tài liệu Cosmic/Theme Studio 0.11–0.14 chỉ còn giá trị lịch sử và không mô tả runtime 0.17.

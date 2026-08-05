@@ -115,7 +115,7 @@ export function CoursesPage({ user }: { user: PortalUser }) {
   return (
     <>
       <PageHeader
-        eyebrow="QUẢN LÝ NỘI DUNG"
+        eyebrow="Nội dung đào tạo"
         title="Khóa học"
         description="Tạo nội dung, tổ chức bài học và xuất bản khóa học theo đúng luồng vận hành."
         icon="book"
@@ -135,10 +135,10 @@ export function CoursesPage({ user }: { user: PortalUser }) {
           </i>
           <div>
             <span>Tổng khóa học</span>
-            <small>Dữ liệu trực tiếp từ Course Service</small>
+            <small>Trong phạm vi bạn quản lý</small>
           </div>
           <strong>{counts.all}</strong>
-          <em>COURSE TOTAL</em>
+          <em>Danh mục</em>
         </div>
         <div className="summary-card">
           <span className="summary-index">02</span>
@@ -150,7 +150,7 @@ export function CoursesPage({ user }: { user: PortalUser }) {
             <small>Sẵn sàng để mở lớp</small>
           </div>
           <strong>{counts.published}</strong>
-          <em>READY TO LEARN</em>
+          <em>Sẵn sàng</em>
         </div>
         <div className="summary-card">
           <span className="summary-index">03</span>
@@ -162,7 +162,7 @@ export function CoursesPage({ user }: { user: PortalUser }) {
             <small>Đang xây dựng nội dung</small>
           </div>
           <strong>{counts.draft}</strong>
-          <em>WORK IN PROGRESS</em>
+          <em>Đang soạn</em>
         </div>
       </section>
 
@@ -230,13 +230,13 @@ export function CoursesPage({ user }: { user: PortalUser }) {
                 </div>
                 <span className="course-code">{course.code}</span>
                 <span className="course-volume">
-                  EDITION {String(index + 1).padStart(2, "0")}
+                  KHÓA {String(index + 1).padStart(2, "0")}
                 </span>
                 <div className="course-symbol">
                   <Icon name="book" size={34} />
                   <i />
                 </div>
-                <small>LEARNING COLLECTION · v{course.contentVersion}</small>
+                <small>Bộ nội dung · phiên bản {course.contentVersion}</small>
               </div>
               <div className="course-card-body">
                 <span className="course-card-index">
@@ -244,7 +244,7 @@ export function CoursesPage({ user }: { user: PortalUser }) {
                 </span>
                 <div className="course-card-top">
                   <StatusBadge value={course.status} />
-                  <span>CONTENT v{course.contentVersion}</span>
+                  <span>Phiên bản {course.contentVersion}</span>
                 </div>
                 <h2>{course.name}</h2>
                 <p>
@@ -263,7 +263,7 @@ export function CoursesPage({ user }: { user: PortalUser }) {
                 </div>
                 <div className="course-card-footer">
                   <span>
-                    <small>OPEN COURSE</small>Mở nội dung khóa học
+                    <small>Chi tiết</small>Mở nội dung khóa học
                   </span>
                   <i>
                     <Icon name="arrow" />

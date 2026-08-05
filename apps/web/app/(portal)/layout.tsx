@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { CosmicShell } from "@/components/CosmicShell";
+import { AppShell } from "@/components/AppShell";
 import { getPublicBranding } from "@/lib/branding";
 import { getUser } from "@/lib/session";
 
@@ -15,8 +15,8 @@ export default async function PortalLayout({
   if (!user) redirect("/login");
   if (user.mustChangePassword) redirect("/change-password");
   return (
-    <CosmicShell user={user} branding={branding}>
+    <AppShell user={user} branding={branding}>
       {children}
-    </CosmicShell>
+    </AppShell>
   );
 }

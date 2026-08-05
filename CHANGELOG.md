@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.17.0 - 2026-08-04
+
+- Xóa toàn bộ runtime Cosmic/Fantasy/10-theme cũ; viết lại AppShell, Dashboard và Login bằng Unified Design System.
+- Tăng khả năng đọc, sửa contrast/focus/autofill, chuẩn hóa font và vùng tương tác.
+- Thiết kế lại catalog khóa học, workspace bài học và bài thi theo hướng task-first, nội dung chính chiếm phần lớn viewport.
+- Thu gọn Core Admin, retire route module nâng cao nhưng giữ backend để bảo toàn dữ liệu.
+- Hoàn thiện CSS cho toàn bộ class literal trong TSX, sửa selector navigator thi và thêm regression test 0.17.
+- Thêm tài liệu nghiên cứu WCAG/GOV.UK/USWDS/Carbon, script render tái lập và 7 ảnh giao diện sáng/tối/mobile.
+- Xác minh 115 test đạt, 34 test lịch sử skip (149 test tổng cộng), 62 file TS/TSX không lỗi cú pháp và hai stylesheet không lỗi parse; semantic build/Gradle/Docker cần chạy lại ở CI có dependency.
+
 ## 0.16.0 - 2026-08-04
 
 - Chuyển 10 theme sang Unified Design System với hai chế độ sáng/tối.
