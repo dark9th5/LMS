@@ -113,43 +113,101 @@ backend/services/<service>/
     └── test/java/com/lmspilot/...
 ```
 
-## Chạy nhanh
+## Hướng dẫn cài đặt và khởi chạy hệ thống (Dành cho người mới / Clone repository)
 
-### Docker Compose
+### 1. Yêu cầu môi trường (Prerequisites)
 
+- **Git** (đã cài đặt trên máy).
+- **Docker Desktop** (Windows/macOS) hoặc **Docker Engine & Docker Compose v2** (Linux).
+- *(Tùy chọn cho Developer)*: Java 21 JDK và Node.js 20+ nếu muốn phát triển/chạy từng microservice cục bộ mà không dùng Docker.
+
+---
+
+### 2. Các bước khởi chạy toàn bộ hệ thống bằng Docker Compose (Khuyên dùng)
+
+#### Bước 1: Clone Repository về máy cục bộ
 ```bash
-cp .env.example .env
-docker compose up --build
+git clone https://github.com/dark9th5/LMS.git LMSPilot
+cd LMSPilot
 ```
 
-### Chạy một backend service
+#### Bước 2: Tạo tệp cấu hình môi trường `.env`
+Sao chép tệp mẫu `.env.example` thành `.env`:
+- Trên Linux / macOS / Git Bash:
+  ```bash
+  cp .env.example .env
+  ```
+- Trên Windows PowerShell:
+  ```powershell
+  Copy-Item .env.example .env
+  ```
 
+#### Bước 3: Khởi chạy Docker Desktop
+Đảm bảo ứng dụng **Docker Desktop** đã được mở và chuyển sang trạng thái **Engine Running** (màu xanh).
+
+#### Bước 4: Build và khởi chạy toàn bộ 22 container dịch vụ
+```bash
+docker compose up -d --build
+```
+> **Lưu ý**: Nếu bạn từng chạy các phiên bản cũ và gặp lỗi dữ liệu database cũ xung đột, hãy reset sạch volume và rebuild lại bằng lệnh:
+> ```bash
+> docker compose down -v
+> docker compose up -d --build
+> ```
+
+#### Bước 5: Kiểm tra trạng thái container
+```bash
+docker compose ps
+```
+Khi toàn bộ các dịch vụ hiển thị trạng thái `Up` hoặc `healthy` là hệ thống đã sẵn sàng sử dụng.
+
+---
+
+### 3. Địa chỉ truy cập & Tài khoản đăng nhập thử nghiệm
+
+- **Giao diện người dùng Web Frontend**: [http://localhost:3000](http://localhost:3000)
+- **API Gateway**: [http://localhost:8080](http://localhost:8080)
+- **RabbitMQ Management**: [http://localhost:15672](http://localhost:15672) *(Mặc định: guest / guest hoặc theo `.env`)*
+
+#### Tài khoản đăng nhập mặc định:
+Hệ thống áp dụng mô hình một tài khoản–một vai trò độc quyền:
+
+| Cổng đăng nhập | Username | Mật khẩu mặc định | Vai trò |
+|---|---|---|---|
+| **Quản trị (Admin)** | `admin` | `admin123` | `ADMIN` |
+| **Giảng viên (Instructor)** | `instructor` | `instructor123` | `INSTRUCTOR` |
+| **Học viên (Student)** | `student` | `student123` | `STUDENT` |
+
+---
+
+### 4. Hướng dẫn dành cho Developer (Chạy & kiểm thử cục bộ)
+
+#### Chạy toàn bộ backend JARs bằng Gradle:
+```bash
+cd backend
+./gradlew bootJar -x test
+```
+
+#### Chạy một backend microservice độc lập:
 ```bash
 cd backend
 ./gradlew :services:course-service:bootRun
 ```
 
-### Test một backend service
-
-```bash
-cd backend
-./gradlew :services:course-service:test
-```
-
-### Test toàn backend
-
+#### Chạy tests cho toàn bộ backend:
 ```bash
 cd backend
 ./gradlew test
 ```
 
-### Frontend
-
+#### Chạy frontend Next.js ở chế độ Development:
 ```bash
 cd apps/web
 npm ci
 npm run dev
 ```
+Giao diện dev sẽ lắng nghe tại [http://localhost:3000](http://localhost:3000).
+
 
 ## Quy tắc làm việc theo service
 
