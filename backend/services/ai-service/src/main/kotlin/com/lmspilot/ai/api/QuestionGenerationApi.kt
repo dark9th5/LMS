@@ -407,7 +407,7 @@ class QuestionGenerationService(
             val text = runCatching { tika.parseToString(files.content(fileId).inputStream()) }
                 .getOrElse { throw ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "DOCUMENT_EXTRACTION_FAILED", "Không đọc được tài liệu ${metadata.originalName}") }
                 .take(250_000)
-            val pages = if (metadata.contentType == "application/pdf") text.split(Regex("\f+")).filter(String::isNotBlank) else emptyList()
+            val pages = if (metadata.contentType == "application/pdf") text.split(Regex("\\f+")).filter(String::isNotBlank) else emptyList()
             if (pages.size > 1) {
                 pages.forEachIndexed { index, pageText ->
                     chunks += SourceChunk(fileId, index + 1, "${metadata.originalName} · trang ${index + 1}", pageText.trim())
