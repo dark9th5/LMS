@@ -108,6 +108,14 @@ class UserController(
 }
 
 @RestController
+@RequestMapping("/api/v1/directory")
+class DirectoryController(private val service: UserManagementService) {
+    @GetMapping("/students")
+    @PreAuthorize("hasAuthority('${Permissions.COURSES_ASSIGN}')")
+    fun students() = service.studentDirectory()
+}
+
+@RestController
 @RequestMapping("/api/v1/roles")
 class RoleController(private val service: UserManagementService) {
     @GetMapping

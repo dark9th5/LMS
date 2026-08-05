@@ -1,13 +1,10 @@
 import { redirect } from "next/navigation";
-import { UserImportWizard } from "@/components/UserImportWizard";
-import { hasAnyPermission } from "@/lib/authorization";
-import { getUser } from "@/lib/session";
+import { PORTAL_PATHS } from "@/lib/portal-paths";
+import { requireAuthenticatedUser, requireRole } from "@/lib/route-access";
 
 export const dynamic = "force-dynamic";
-
 export default async function Page() {
-  const user = await getUser();
-  if (!user) redirect("/login");
-  if (!hasAnyPermission(user, ["users:bulk-manage", "users:write"])) redirect("/users");
-  return <UserImportWizard />;
+  const user = await requireAuthenticatedUser();
+  requireRole(user, "ADMIN");
+  redirect(PORTAL_PATHS.ADMIN.userImport);
 }

@@ -82,7 +82,7 @@ auth_get "$ADMIN_TOKEN" /api/v1/auth/me
 auth_get "$ADMIN_TOKEN" '/api/v1/users?size=5'
 auth_get "$ADMIN_TOKEN" /api/v1/organization/units
 auth_get "$ADMIN_TOKEN" '/api/v1/courses?size=5'
-auth_get "$ADMIN_TOKEN" /api/v1/classes
+auth_get "$ADMIN_TOKEN" /api/v1/users
 auth_get "$ADMIN_TOKEN" /api/v1/reports/dashboard
 auth_get "$ADMIN_TOKEN" /api/v1/configuration
 auth_get "$ADMIN_TOKEN" /api/v1/operations/health
@@ -92,7 +92,7 @@ INSTRUCTOR_TOKEN="$(printf '%s' "$INSTRUCTOR_JSON" | json_access_token)"
 [[ -n "$INSTRUCTOR_TOKEN" ]] || { echo "Đăng nhập instructor không trả access token: $INSTRUCTOR_JSON" >&2; exit 1; }
 assert_role "$INSTRUCTOR_JSON" "INSTRUCTOR" "instructor"
 auth_get "$INSTRUCTOR_TOKEN" '/api/v1/courses?size=5'
-auth_get "$INSTRUCTOR_TOKEN" /api/v1/classes
+auth_get "$INSTRUCTOR_TOKEN" /api/v1/courses
 auth_get "$INSTRUCTOR_TOKEN" /api/v1/grades/queue
 
 LEARNER_JSON="$(login learner)"

@@ -121,7 +121,7 @@ class DiscussionService(
     private fun requireRead(courseId: UUID) {
         val course = courses.findById(courseId).orElseThrow { ApiException(HttpStatus.NOT_FOUND, "COURSE_NOT_FOUND", "Không tìm thấy khóa học") }
         val userId = CurrentUser.id()
-        val allowed = CurrentUser.isSystemAdmin() || course.ownerId == userId || Permissions.DISCUSSIONS_MODERATE in CurrentUser.authorities() ||
+        val allowed = course.ownerId == userId || Permissions.DISCUSSIONS_MODERATE in CurrentUser.authorities() ||
             (course.status in setOf(CourseStatus.PUBLISHED, CourseStatus.HIDDEN) && courseId in enrollmentScope.activeCourseIds(userId)) ||
             courseId in enrollmentScope.assignedCourseIds(userId)
         if (!allowed) throw ApiException(HttpStatus.FORBIDDEN, "DISCUSSION_OUT_OF_SCOPE", "Thảo luận ngoài phạm vi truy cập")
@@ -134,7 +134,7 @@ class DiscussionService(
 
     private fun canModerate(courseId: UUID): Boolean {
         val course = courses.findById(courseId).orElse(null) ?: return false
-        return CurrentUser.isSystemAdmin() || course.ownerId == CurrentUser.id() || Permissions.DISCUSSIONS_MODERATE in CurrentUser.authorities()
+        return course.ownerId == CurrentUser.id() || Permissions.DISCUSSIONS_MODERATE in CurrentUser.authorities()
     }
 
     private fun requireModerate(courseId: UUID) {

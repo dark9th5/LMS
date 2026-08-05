@@ -2,8 +2,8 @@ package com.lmspilot.contracts
 
 /**
  * Human-readable permission catalog shared by backend and web clients.
- * Account types remain SYSTEM_ADMIN and USER; profiles are composable permission bundles,
- * never hard-coded account types.
+ * Product access is defined by exactly one canonical role per account:
+ * ADMIN, INSTRUCTOR or STUDENT. Permissions never cross those role boundaries.
  */
 enum class PermissionRisk { LOW, MEDIUM, HIGH, CRITICAL }
 
@@ -66,19 +66,19 @@ object PermissionCatalog {
         item(Permissions.COURSES_UPDATE, "Khóa học", "Biên tập khóa học", "Sửa cấu trúc, bài học và tài nguyên khóa học.", courseScopes, PermissionRisk.MEDIUM),
         item(Permissions.COURSES_WRITE, "Khóa học", "Quản lý khóa học (tương thích)", "Quyền tương thích cho API khóa học cũ.", courseScopes, PermissionRisk.MEDIUM, true),
         item(Permissions.COURSES_PUBLISH, "Khóa học", "Xuất bản khóa học", "Chốt phiên bản và phát hành nội dung cho người học.", courseScopes, PermissionRisk.HIGH),
-        item(Permissions.COURSES_ASSIGN, "Khóa học", "Giao khóa học", "Giao khóa học cho lớp, đơn vị hoặc người dùng.", courseScopes, PermissionRisk.MEDIUM),
+        item(Permissions.COURSES_ASSIGN, "Khóa học", "Giao khóa học", "Giao khóa học trực tiếp cho người dùng hoặc đơn vị.", courseScopes, PermissionRisk.MEDIUM),
         item(Permissions.COURSES_LEARN, "Khóa học", "Học khóa học", "Truy cập khóa học đã được ghi danh và lưu tiến độ.", courseScopes),
         item(Permissions.COURSE_CATEGORIES_MANAGE, "Khóa học", "Quản lý danh mục khóa học", "Tạo và sắp xếp nhóm chủ đề khóa học.", systemOnly, PermissionRisk.MEDIUM),
         item(Permissions.DISCUSSIONS_READ, "Khóa học", "Xem thảo luận", "Xem trao đổi trong khóa học.", courseScopes),
         item(Permissions.DISCUSSIONS_WRITE, "Khóa học", "Tham gia thảo luận", "Tạo chủ đề và trả lời thảo luận.", courseScopes),
         item(Permissions.DISCUSSIONS_MODERATE, "Khóa học", "Điều phối thảo luận", "Ghim, khóa và xử lý nội dung thảo luận.", courseScopes, PermissionRisk.MEDIUM),
 
-        item(Permissions.CLASSES_READ, "Lớp học", "Xem lớp học", "Xem lớp, lịch và danh sách ghi danh.", courseScopes),
-        item(Permissions.CLASSES_WRITE, "Lớp học", "Cập nhật lớp học", "Tạo hoặc cập nhật thông tin lớp.", courseScopes, PermissionRisk.MEDIUM),
-        item(Permissions.CLASSES_MANAGE, "Lớp học", "Quản lý lớp học", "Quản lý lớp, giảng viên phụ trách và lịch học.", courseScopes, PermissionRisk.HIGH),
-        item(Permissions.ENROLLMENTS_WRITE, "Lớp học", "Quản lý ghi danh", "Ghi danh, hủy ghi danh và đặt hạn hoàn thành.", courseScopes, PermissionRisk.HIGH),
-        item(Permissions.LIVE_SESSIONS_MANAGE, "Lớp học", "Quản lý buổi học trực tiếp", "Tạo và cập nhật lịch học trực tiếp.", courseScopes, PermissionRisk.MEDIUM),
-        item(Permissions.LIVE_SESSIONS_JOIN, "Lớp học", "Tham gia buổi học trực tiếp", "Mở liên kết buổi học được phân công.", courseScopes),
+        item(Permissions.CLASSES_READ, "Tương thích", "Xem phân phối khóa học (cũ)", "Quyền nội bộ tương thích; không có giao diện lớp học.", courseScopes, legacy = true),
+        item(Permissions.CLASSES_WRITE, "Tương thích", "Cập nhật phân phối khóa học (cũ)", "Quyền nội bộ tương thích; không có giao diện lớp học.", courseScopes, PermissionRisk.MEDIUM, true),
+        item(Permissions.CLASSES_MANAGE, "Tương thích", "Quản lý phân phối khóa học (cũ)", "Quyền nội bộ tương thích; không có giao diện lớp học.", courseScopes, PermissionRisk.HIGH, true),
+        item(Permissions.ENROLLMENTS_WRITE, "Khóa học", "Quản lý người học", "Giao hoặc thu hồi khóa học và đặt hạn hoàn thành.", courseScopes, PermissionRisk.HIGH),
+        item(Permissions.LIVE_SESSIONS_MANAGE, "Khóa học", "Quản lý buổi học trực tiếp", "Tạo lịch trực tuyến trong khóa học.", courseScopes, PermissionRisk.MEDIUM),
+        item(Permissions.LIVE_SESSIONS_JOIN, "Khóa học", "Tham gia buổi học trực tiếp", "Mở liên kết trực tuyến trong khóa học được giao.", courseScopes),
         item(Permissions.LEARNING_PATHS_READ, "Lộ trình", "Xem lộ trình", "Xem lộ trình đào tạo được phép.", organizationScopes),
         item(Permissions.LEARNING_PATHS_MANAGE, "Lộ trình", "Quản lý lộ trình", "Tạo và xuất bản lộ trình nhiều chặng.", organizationScopes, PermissionRisk.MEDIUM),
         item(Permissions.LEARNING_PATHS_ASSIGN, "Lộ trình", "Giao lộ trình", "Giao lộ trình cho cá nhân hoặc đơn vị.", organizationScopes, PermissionRisk.HIGH),
@@ -155,125 +155,30 @@ object PermissionCatalog {
 }
 
 object DefaultAccessProfiles {
+    /** Exactly three product roles. They are mutually exclusive at account level. */
     val profiles: List<AccessProfileDefinition> = listOf(
         AccessProfileDefinition(
-            code = "BASIC_USER",
-            name = "Người dùng cơ bản",
-            description = "Học khóa được giao, làm bài, xem điểm, tin tức và chứng chỉ cá nhân.",
-            permissions = DefaultRolePermissions.LEARNER,
-            recommendedScopes = setOf("SYSTEM"),
-        ),
-        AccessProfileDefinition(
-            code = "COURSE_AUTHOR",
-            name = "Biên soạn khóa học",
-            description = "Tạo và biên tập khóa học, tài liệu, thảo luận và câu hỏi; chưa có quyền xuất bản.",
-            permissions = setOf(
-                Permissions.COURSES_READ, Permissions.COURSES_CREATE, Permissions.COURSES_UPDATE,
-                Permissions.DISCUSSIONS_READ, Permissions.DISCUSSIONS_WRITE, Permissions.DISCUSSIONS_MODERATE,
-                Permissions.FILES_READ, Permissions.FILES_UPLOAD, Permissions.FILES_DOWNLOAD, Permissions.FILES_EDIT, Permissions.FILES_VERSION_READ,
-                Permissions.ASSESSMENTS_READ, Permissions.ASSESSMENTS_CREATE, Permissions.ASSESSMENTS_UPDATE,
-                Permissions.QUESTIONS_READ, Permissions.QUESTIONS_MANAGE, Permissions.QUESTIONS_GENERATE_AI,
-            ),
-            recommendedScopes = setOf("SYSTEM", "COURSE"),
-            risk = PermissionRisk.MEDIUM,
-        ),
-        AccessProfileDefinition(
-            code = "TRAINING_MANAGER",
-            name = "Quản lý đào tạo",
-            description = "Xuất bản/giao khóa học, quản lý lớp, ghi danh, lịch học và lộ trình.",
-            permissions = setOf(
-                Permissions.COURSES_READ, Permissions.COURSES_UPDATE, Permissions.COURSES_PUBLISH, Permissions.COURSES_ASSIGN,
-                Permissions.CLASSES_READ, Permissions.CLASSES_WRITE, Permissions.CLASSES_MANAGE, Permissions.ENROLLMENTS_WRITE,
-                Permissions.LIVE_SESSIONS_MANAGE, Permissions.LIVE_SESSIONS_JOIN,
-                Permissions.LEARNING_PATHS_READ, Permissions.LEARNING_PATHS_MANAGE, Permissions.LEARNING_PATHS_ASSIGN,
-                Permissions.LEARNING_READ_SCOPE, Permissions.REPORTS_READ_SCOPE, Permissions.REPORTS_KPI_READ,
-            ),
-            recommendedScopes = setOf("BRANCH", "DEPARTMENT", "GROUP", "COURSE"),
-            risk = PermissionRisk.HIGH,
-        ),
-        AccessProfileDefinition(
-            code = "EXAM_MANAGER",
-            name = "Quản lý thi & cuộc thi",
-            description = "Tạo, giao và vận hành bài thi độc lập, cuộc thi, bảng xếp hạng và ngân hàng câu hỏi.",
-            permissions = setOf(
-                Permissions.ASSESSMENTS_READ, Permissions.ASSESSMENTS_CREATE, Permissions.ASSESSMENTS_UPDATE,
-                Permissions.EXAMS_MANAGE, Permissions.EXAMS_ASSIGN,
-                Permissions.COMPETITIONS_MANAGE, Permissions.COMPETITIONS_REWARD,
-                Permissions.QUESTIONS_READ, Permissions.QUESTIONS_MANAGE, Permissions.QUESTIONS_GENERATE_AI, Permissions.QUESTIONS_APPROVE_AI,
-                Permissions.REPORTS_READ_SCOPE, Permissions.REPORTS_EXPORT,
-            ),
-            recommendedScopes = setOf("SYSTEM", "BRANCH", "DEPARTMENT", "GROUP", "COURSE", "EXAM"),
-            risk = PermissionRisk.HIGH,
-        ),
-        AccessProfileDefinition(
-            code = "GRADER",
-            name = "Chấm điểm & phúc khảo",
-            description = "Xem bài cần chấm, chấm tự luận và xử lý phúc khảo trong phạm vi phụ trách.",
-            permissions = setOf(
-                Permissions.ASSESSMENTS_READ, Permissions.ASSESSMENTS_GRADE,
-                Permissions.GRADE_APPEALS_MANAGE, Permissions.LEARNING_READ_SCOPE,
-                Permissions.REPORTS_READ_SCOPE,
-            ),
-            recommendedScopes = setOf("COURSE", "EXAM"),
-            risk = PermissionRisk.HIGH,
-        ),
-        AccessProfileDefinition(
-            code = "ORGANIZATION_MANAGER",
-            name = "Quản lý đơn vị",
-            description = "Quản lý cơ cấu, thành viên và báo cáo trong chi nhánh/phòng ban/nhóm được giao.",
-            permissions = setOf(
-                Permissions.USERS_READ, Permissions.ORGANIZATION_READ, Permissions.ORGANIZATION_MANAGE,
-                Permissions.ORGANIZATION_MEMBERSHIP_MANAGE, Permissions.REPORTS_READ_SCOPE, Permissions.REPORTS_KPI_READ,
-                Permissions.COMPETENCIES_READ_SCOPE, Permissions.COMPETENCIES_ASSESS,
-            ),
-            recommendedScopes = setOf("BRANCH", "DEPARTMENT", "GROUP"),
-            risk = PermissionRisk.HIGH,
-        ),
-        AccessProfileDefinition(
-            code = "COMMUNICATIONS_EDITOR",
-            name = "Biên tập tin tức",
-            description = "Tạo, đính kèm tài liệu và xuất bản thông báo cho đúng đối tượng.",
-            permissions = setOf(
-                Permissions.NEWS_READ, Permissions.NEWS_MANAGE, Permissions.NEWS_PUBLISH,
-                Permissions.FILES_READ, Permissions.FILES_UPLOAD, Permissions.FILES_DOWNLOAD,
-            ),
-            recommendedScopes = setOf("SYSTEM", "BRANCH", "DEPARTMENT", "GROUP"),
-            risk = PermissionRisk.HIGH,
-        ),
-        AccessProfileDefinition(
-            code = "ACCOUNT_MANAGER",
-            name = "Quản lý tài khoản",
-            description = "Tạo, nhập, cập nhật và khóa tài khoản; không được tự cấp quyền nhạy cảm.",
-            permissions = setOf(
-                Permissions.USERS_READ, Permissions.USERS_CREATE, Permissions.USERS_UPDATE,
-                Permissions.USERS_LOCK, Permissions.USERS_BULK_MANAGE, Permissions.ROLES_READ,
-                Permissions.ORGANIZATION_READ,
-            ),
-            recommendedScopes = setOf("SYSTEM"),
-            risk = PermissionRisk.HIGH,
-        ),
-        AccessProfileDefinition(
-            code = "ACCESS_ADMINISTRATOR",
-            name = "Quản trị phân quyền",
-            description = "Tạo gói quyền, cấp/thu hồi quyền và kiểm tra quyền hiệu lực. Chỉ nên giao cho nhóm tin cậy.",
-            permissions = setOf(
-                Permissions.USERS_READ, Permissions.ROLES_READ, Permissions.ROLES_MANAGE,
-                Permissions.AUTHORIZATION_GRANT, Permissions.AUTHORIZATION_REVOKE,
-                Permissions.AUDIT_READ,
-            ),
+            code = "ADMIN",
+            name = "Quản trị viên",
+            description = "Quản trị tài khoản, tổ chức, thương hiệu, tích hợp, vận hành và báo cáo hệ thống.",
+            permissions = DefaultRolePermissions.ADMIN,
             recommendedScopes = setOf("SYSTEM"),
             risk = PermissionRisk.CRITICAL,
         ),
         AccessProfileDefinition(
-            code = "PLATFORM_CUSTOMIZER",
-            name = "Cấu hình & cá nhân hóa",
-            description = "Quản lý thương hiệu, giao diện, AI và dịch vụ tích hợp của khách hàng.",
-            permissions = setOf(
-                Permissions.BRANDING_MANAGE, Permissions.CONFIGURATION_MANAGE, Permissions.INTEGRATIONS_MANAGE,
-                Permissions.NOTIFICATION_TEMPLATES_MANAGE, Permissions.NOTIFICATION_REMINDERS_MANAGE,
-            ),
+            code = "INSTRUCTOR",
+            name = "Giảng viên",
+            description = "Biên soạn khóa học, tạo bài kiểm tra từ tài liệu, vận hành bài thi và chấm điểm.",
+            permissions = DefaultRolePermissions.INSTRUCTOR,
+            recommendedScopes = setOf("SYSTEM", "COURSE", "EXAM"),
+            risk = PermissionRisk.HIGH,
+        ),
+        AccessProfileDefinition(
+            code = "STUDENT",
+            name = "Học viên",
+            description = "Học khóa được giao, làm bài kiểm tra trong khóa học, thi độc lập và xem kết quả cá nhân.",
+            permissions = DefaultRolePermissions.STUDENT,
             recommendedScopes = setOf("SYSTEM"),
-            risk = PermissionRisk.CRITICAL,
         ),
     )
 

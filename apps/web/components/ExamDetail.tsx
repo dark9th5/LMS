@@ -13,6 +13,8 @@ import type {
 } from "@/lib/models";
 import { formatDate, formatDuration } from "@/lib/models";
 import type { PortalUser } from "@/lib/types";
+import { resolvePortalRole } from "@/lib/role";
+import { instructorCoursePath, standaloneExamPath, studentCoursePath } from "@/lib/portal-paths";
 import { EmptyState, ErrorState, LoadingState, Toast } from "./Feedback";
 import { Icon } from "./Icon";
 import { PageHeader } from "./PageHeader";
@@ -71,20 +73,19 @@ type AssessmentAssignment = {
 export function ExamDetail({
   examId,
   user,
+  standaloneOnly = false,
+  enrollmentIdOverride,
 }: {
   examId: string;
   user: PortalUser;
+  standaloneOnly?: boolean;
+  enrollmentIdOverride?: string;
 }) {
   const searchParams = useSearchParams();
-  const enrollmentId = searchParams.get("enrollmentId");
-  const canManage =
-    user.accountType === "SYSTEM_ADMIN" ||
-    ["assessments:update", "exams:manage", "assessment:manage"].some(
-      (permission) => user.permissions.includes(permission),
-    );
-  const canAssign =
-    user.accountType === "SYSTEM_ADMIN" ||
-    user.permissions.includes("exams:assign");
+  const enrollmentId = enrollmentIdOverride ?? searchParams.get("enrollmentId");
+  const role = resolvePortalRole(user);
+  const canManage = role === "INSTRUCTOR";
+  const canAssign = role === "INSTRUCTOR";
   const [exam, setExam] = useState<Exam | null>(null);
   const [course, setCourse] = useState<Course | null>(null);
   const [session, setSession] = useState<ExamSession | null>(null);
@@ -115,6 +116,16 @@ export function ExamDetail({
     setError("");
     try {
       const data = await apiRequest<Exam>(`/api/v1/exams/${examId}`);
+      if (standaloneOnly && data.courseId) {
+        setExam(null);
+        setError("Bài kiểm tra này thuộc khóa học. Hãy mở bài từ nội dung khóa học tương ứng.");
+        return;
+      }
+      if (!standaloneOnly && !data.courseId) {
+        setExam(null);
+        setError("Đây là kỳ thi độc lập. Hãy mở từ mục Bài thi.");
+        return;
+      }
       setExam(data);
       if (data.courseId) {
         try {
@@ -172,7 +183,7 @@ export function ExamDetail({
     } finally {
       setLoading(false);
     }
-  }, [examId, canAssign, canManage, enrollmentId]);
+  }, [examId, canAssign, canManage, enrollmentId, standaloneOnly]);
   useEffect(() => {
     void load();
   }, [load]);
@@ -429,7 +440,7 @@ export function ExamDetail({
         }),
       });
       setEditOpen(false);
-      setToast("Đã lưu cấu hình bài kiểm tra.");
+      setToast(exam.courseId ? "Đã lưu cấu hình bài kiểm tra." : "Đã lưu cấu hình bài thi.");
       await load();
     } catch (caught) {
       setFormError(
@@ -446,14 +457,14 @@ export function ExamDetail({
     if (!exam || !canManage) return;
     if (
       !window.confirm(
-        "Xóa bài kiểm tra khỏi danh sách? Hệ thống sẽ lưu trữ đề và giữ nguyên mọi lượt làm, đáp án và điểm đã phát sinh.",
+        exam.courseId ? "Lưu trữ bài kiểm tra khỏi khóa học? Mọi lượt làm, đáp án và điểm vẫn được giữ nguyên." : "Lưu trữ bài thi khỏi danh sách? Mọi lượt làm, đáp án và điểm vẫn được giữ nguyên.",
       )
     )
       return;
     setBusy(true);
     try {
       await apiRequest(`/api/v1/exams/${exam.id}`, { method: "DELETE" });
-      window.location.assign("/exams");
+      window.location.assign(exam.courseId ? `/courses/${exam.courseId}` : "/exams");
     } catch (caught) {
       setToast(
         caught instanceof Error
@@ -539,17 +550,25 @@ export function ExamDetail({
   if (!exam)
     return (
       <EmptyState
-        title="Không tìm thấy bài kiểm tra"
-        description="Bài kiểm tra có thể đã bị đóng hoặc không thuộc phạm vi của bạn."
+        title={standaloneOnly ? "Không tìm thấy bài thi" : "Không tìm thấy bài kiểm tra"}
+        description={error || "Nội dung có thể đã bị đóng hoặc không thuộc phạm vi của vai trò đang đăng nhập."}
       />
     );
+
+  const backHref = exam.courseId
+    ? role === "INSTRUCTOR"
+      ? instructorCoursePath(exam.courseId)
+      : enrollmentId
+        ? studentCoursePath(enrollmentId)
+        : studentCoursePath()
+    : standaloneExamPath(role);
 
   if (canManage)
     return (
       <>
         <PageHeader
-          backHref="/exams"
-          eyebrow="CẤU HÌNH BÀI KIỂM TRA"
+          backHref={backHref}
+          eyebrow={exam.courseId ? "BÀI KIỂM TRA KHÓA HỌC" : "CẤU HÌNH BÀI THI"}
           title={exam.title}
           description={course?.name ?? "Kỳ thi độc lập — không thuộc khóa học"}
           actions={
@@ -654,7 +673,7 @@ export function ExamDetail({
             {course && (
               <Link
                 className="button secondary full"
-                href={`/courses/${course.id}`}
+                href={instructorCoursePath(course.id)}
               >
                 <Icon name="book" />
                 Mở khóa học
@@ -973,7 +992,7 @@ export function ExamDetail({
     return (
       <>
         <PageHeader
-          backHref="/exams"
+          backHref={backHref}
           eyebrow="PHIÊN ĐÃ HẾT HẠN"
           title={exam.title}
           description={`Lần thi ${session.attemptNo} không được ghi nhận vì máy chủ nhận yêu cầu sau thời gian ân hạn.`}
@@ -987,7 +1006,7 @@ export function ExamDetail({
             Hệ thống đã khóa phiên và không gửi dữ liệu sang chấm điểm. Nếu còn
             lượt làm, bạn có thể bắt đầu lại theo quy định của đề.
           </p>
-          <Link className="button primary" href="/exams">
+          <Link className="button primary" href={backHref}>
             Về danh sách bài kiểm tra
           </Link>
         </section>
@@ -999,7 +1018,7 @@ export function ExamDetail({
     return (
       <>
         <PageHeader
-          backHref="/exams"
+          backHref={backHref}
           eyebrow="ĐÃ NỘP BÀI"
           title={exam.title}
           description={`Lần thi ${session.attemptNo} đã được ghi nhận lúc ${formatDate(session.submittedAt, true)}.`}
@@ -1037,7 +1056,7 @@ export function ExamDetail({
               </button>
             </>
           )}
-          <Link className="button primary" href="/exams">
+          <Link className="button primary" href={backHref}>
             Về danh sách bài kiểm tra
           </Link>
         </section>
@@ -1049,7 +1068,7 @@ export function ExamDetail({
     return (
       <>
         <PageHeader
-          backHref="/exams"
+          backHref={backHref}
           eyebrow="BÀI KIỂM TRA ĐƯỢC GIAO"
           title={exam.title}
           description={course?.name ?? "Kỳ thi độc lập được cấp quyền"}
@@ -1118,7 +1137,7 @@ export function ExamDetail({
     <div className="exam-taking">
       <header className="exam-taking-header">
         <div>
-          <Link href="/exams" className="icon-button">
+          <Link href={backHref} className="icon-button">
             <Icon name="close" />
           </Link>
           <div>
@@ -1311,37 +1330,59 @@ function QuestionEditor({
       <h2>{question.prompt}</h2>
       {question.type === "MULTIPLE_CHOICE" ? (
         <div className="answer-options">
-          {options.map((option) => (
-            <label key={option}>
-              <input
-                type="checkbox"
-                checked={selected.includes(option)}
-                onChange={(event) =>
-                  onChange(
-                    event.target.checked
-                      ? [...selected, option]
-                      : selected.filter((item) => item !== option),
-                  )
-                }
-              />
-              <span>{option}</span>
-            </label>
-          ))}
+          {options.map((option, optionIndex) => {
+            const optionLetter = String.fromCharCode(65 + optionIndex);
+            const visibleOption = option.replace(/^\s*[A-Z][.)\-:]?\s+/, "");
+            const checked = selected.includes(option);
+            return (
+              <label
+                className={`answer-choice ${checked ? "selected" : ""}`}
+                key={option}
+              >
+                <input
+                  type="checkbox"
+                  checked={checked}
+                  onChange={(event) =>
+                    onChange(
+                      event.target.checked
+                        ? [...selected, option]
+                        : selected.filter((item) => item !== option),
+                    )
+                  }
+                />
+                <span className="answer-letter" aria-hidden="true">
+                  {optionLetter}
+                </span>
+                <span className="answer-text">{visibleOption}</span>
+              </label>
+            );
+          })}
         </div>
       ) : question.type === "SINGLE_CHOICE" ||
         question.type === "TRUE_FALSE" ? (
         <div className="answer-options">
-          {options.map((option) => (
-            <label key={option}>
-              <input
-                type="radio"
-                name={question.id}
-                checked={String(value ?? "") === option}
-                onChange={() => onChange(option)}
-              />
-              <span>{option}</span>
-            </label>
-          ))}
+          {options.map((option, optionIndex) => {
+            const optionLetter = String.fromCharCode(65 + optionIndex);
+            const visibleOption = option.replace(/^\s*[A-Z][.)\-:]?\s+/, "");
+            const checked = String(value ?? "") === option;
+            return (
+              <label
+                className={`answer-choice ${checked ? "selected" : ""}`}
+                key={option}
+              >
+                <input
+                  type="radio"
+                  name={question.id}
+                  checked={checked}
+                  onChange={() => onChange(option)}
+                />
+                <span className="answer-letter" aria-hidden="true">
+                  {optionLetter}
+                </span>
+                <span className="answer-text">{visibleOption}</span>
+              </label>
+            );
+          })}
         </div>
       ) : (
         <label className="essay-answer">

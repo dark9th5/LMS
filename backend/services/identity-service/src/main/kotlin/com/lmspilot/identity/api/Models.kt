@@ -19,6 +19,13 @@ data class TokenResponse(
     val user: UserSummary,
 )
 
+data class StudentDirectoryItem(
+    val id: UUID,
+    val code: String,
+    val fullName: String,
+    val email: String?,
+)
+
 data class UserSummary(
     val id: UUID,
     val code: String,
@@ -30,6 +37,7 @@ data class UserSummary(
     val accountType: AccountType,
     val protectedAccount: Boolean,
     val roles: Set<String>,
+    val primaryRole: String,
     val permissions: Set<String>,
     val lastLoginAt: Instant?,
     val mustChangePassword: Boolean,
@@ -42,7 +50,7 @@ data class CreateUserRequest(
     @field:NotBlank @field:Size(max = 180) val fullName: String,
     @field:Email val email: String? = null,
     val organizationUnitId: UUID? = null,
-    @field:NotEmpty val roleCodes: Set<String>,
+    @field:Size(min = 1, max = 1) val roleCodes: Set<String>,
     val mustChangePassword: Boolean = true,
 )
 
@@ -60,7 +68,7 @@ data class UpdateUserRequest(
     @field:NotBlank @field:Size(max = 180) val fullName: String,
     @field:Email val email: String? = null,
     val organizationUnitId: UUID? = null,
-    @field:NotEmpty val roleCodes: Set<String>,
+    @field:Size(min = 1, max = 1) val roleCodes: Set<String>,
     val status: AccountStatus,
 )
 
@@ -175,7 +183,7 @@ data class UserImportMappingRequest(
     val roleCodesColumn: String? = "roles",
     val passwordColumn: String? = "password",
     val statusColumn: String? = "status",
-    val defaultRoleCodes: Set<String> = setOf("BASIC_USER"),
+    val defaultRoleCodes: Set<String> = setOf("STUDENT"),
     @field:Size(max = 128) val defaultPassword: String? = null,
     val mode: UserImportMode = UserImportMode.CREATE_ONLY,
     val failurePolicy: UserImportFailurePolicy = UserImportFailurePolicy.PARTIAL,

@@ -96,7 +96,7 @@ class CompetencyService(
     fun assess(input: AssessmentRequest): AssessmentView {
         val actor = CurrentUser.id()
         val target = input.userId ?: actor
-        if (target != actor && Permissions.COMPETENCIES_ASSESS !in CurrentUser.authorities() && !CurrentUser.isSystemAdmin()) throw ApiException(HttpStatus.FORBIDDEN, "COMPETENCY_SCOPE_DENIED", "Không có quyền đánh giá người dùng khác")
+        if (target != actor && Permissions.COMPETENCIES_ASSESS !in CurrentUser.authorities()) throw ApiException(HttpStatus.FORBIDDEN, "COMPETENCY_SCOPE_DENIED", "Không có quyền đánh giá người dùng khác")
         if (input.source == AssessmentSource.SELF && target != actor) throw ApiException(HttpStatus.BAD_REQUEST, "INVALID_ASSESSMENT_SOURCE", "Đánh giá SELF chỉ áp dụng cho chính người đang đăng nhập")
         val competency = competencies.findById(input.competencyId).orElseThrow { notFound("COMPETENCY_NOT_FOUND", "Không tìm thấy năng lực") }
         if (input.level > competency.maxLevel) throw ApiException(HttpStatus.BAD_REQUEST, "LEVEL_EXCEEDS_MAX", "Mức năng lực vượt quá giới hạn ${competency.maxLevel}")

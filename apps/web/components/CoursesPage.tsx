@@ -6,6 +6,7 @@ import { apiRequest, unwrapItems } from "@/lib/api";
 import type { Course, PageResponse } from "@/lib/models";
 import { formatDuration } from "@/lib/models";
 import type { PortalUser } from "@/lib/types";
+import { instructorCoursePath } from "@/lib/portal-paths";
 import { Icon } from "./Icon";
 import { PageHeader } from "./PageHeader";
 import { EmptyState, ErrorState, LoadingState, Toast } from "./Feedback";
@@ -21,6 +22,7 @@ const statusOptions = [
 ];
 
 export function CoursesPage({ user }: { user: PortalUser }) {
+  const canCreate = user.permissions.some((permission) => ["courses:create", "courses:write"].includes(permission));
   const [courses, setCourses] = useState<Course[]>([]);
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("");
@@ -100,7 +102,7 @@ export function CoursesPage({ user }: { user: PortalUser }) {
       );
       await load();
       window.setTimeout(
-        () => window.location.assign(`/courses/${created.id}`),
+        () => window.location.assign(instructorCoursePath(created.id)),
         450,
       );
     } catch (caught) {
@@ -120,10 +122,12 @@ export function CoursesPage({ user }: { user: PortalUser }) {
         description="Tạo nội dung, tổ chức bài học và xuất bản khóa học theo đúng luồng vận hành."
         icon="book"
         actions={
-          <button className="button primary" onClick={() => setOpen(true)}>
-            <Icon name="plus" />
-            Tạo khóa học
-          </button>
+          canCreate ? (
+            <button className="button primary" onClick={() => setOpen(true)}>
+              <Icon name="plus" />
+              Tạo khóa học
+            </button>
+          ) : undefined
         }
       />
 
@@ -147,7 +151,7 @@ export function CoursesPage({ user }: { user: PortalUser }) {
           </i>
           <div>
             <span>Đã xuất bản</span>
-            <small>Sẵn sàng để mở lớp</small>
+            <small>Sẵn sàng giao học viên</small>
           </div>
           <strong>{counts.published}</strong>
           <em>Sẵn sàng</em>
@@ -205,19 +209,21 @@ export function CoursesPage({ user }: { user: PortalUser }) {
       ) : courses.length === 0 ? (
         <EmptyState
           title="Chưa có khóa học"
-          description="Tạo khóa học đầu tiên để thêm bài học, xuất bản và mở lớp đào tạo."
+          description="Tạo khóa học đầu tiên để thêm bài học, bài kiểm tra, xuất bản và giao cho học viên."
           action={
-            <button className="button primary" onClick={() => setOpen(true)}>
-              <Icon name="plus" />
-              Tạo khóa học
-            </button>
+            canCreate ? (
+              <button className="button primary" onClick={() => setOpen(true)}>
+                <Icon name="plus" />
+                Tạo khóa học
+              </button>
+            ) : undefined
           }
         />
       ) : (
         <section className="course-grid">
           {courses.map((course, index) => (
             <Link
-              href={`/courses/${course.id}`}
+              href={instructorCoursePath(course.id)}
               className="course-card"
               key={course.id}
             >

@@ -11,7 +11,7 @@ def text(relative: str) -> str:
     return (ROOT / relative).read_text(encoding="utf-8")
 
 
-@unittest.skip("Superseded by the complete CLS 0.17 interface rebuild")
+@unittest.skip("Superseded by the complete LMSPilot 0.17 interface rebuild")
 class Release016UnifiedUiTests(unittest.TestCase):
     def test_only_unified_runtime_styles_are_loaded(self) -> None:
         layout = text("apps/web/app/layout.tsx")

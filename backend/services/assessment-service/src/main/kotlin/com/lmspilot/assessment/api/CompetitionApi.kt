@@ -1,9 +1,9 @@
 package com.lmspilot.assessment.api
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.lmspilot.assessment.cls.AssessmentContextType
-import com.lmspilot.assessment.cls.CompetitionRanker
-import com.lmspilot.assessment.cls.RankedAttempt
+import com.lmspilot.assessment.platform.AssessmentContextType
+import com.lmspilot.assessment.platform.CompetitionRanker
+import com.lmspilot.assessment.platform.RankedAttempt
 import com.lmspilot.assessment.domain.*
 import com.lmspilot.contracts.Permissions
 import com.lmspilot.support.api.ApiException
@@ -316,7 +316,7 @@ class CompetitionService(
     }
 
     private fun manageable(exam: ExamEntity, permission: String): Boolean =
-        CurrentUser.isSystemAdmin() || permission in CurrentUser.authorities() ||
+        permission in CurrentUser.authorities() ||
             Permissions.COMPETITIONS_MANAGE in CurrentUser.authorities() || exam.ownerId == CurrentUser.id() ||
             scopedAuthorization.allowed(permission, "EXAM", exam.id) ||
             scopedAuthorization.allowed(Permissions.COMPETITIONS_MANAGE, "EXAM", exam.id)

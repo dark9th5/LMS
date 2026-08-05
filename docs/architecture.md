@@ -1,47 +1,41 @@
-# Architecture
+# Kiến trúc LMSPilot
 
-## Product boundary
+## Nguyên tắc
 
-LMSPilot runs on customer-controlled infrastructure in a LAN. Runtime operation does not require public Internet. Customer data, files, exam answers, grades, reports, certificates, audit records and license state stay on the customer's infrastructure.
+- Mỗi microservice sở hữu API và schema dữ liệu riêng.
+- Frontend chỉ đi qua API Gateway; không hard-code URL nội bộ.
+- Giao tiếp liên service qua HTTP nội bộ hoặc RabbitMQ, không truy cập chéo database.
+- PostgreSQL mặc định dùng database `lmspilot`; mỗi service dùng một schema riêng.
+- API công khai yêu cầu JWT; API `/internal/v1/**` yêu cầu service token và không dành cho trình duyệt.
+- Mỗi tài khoản chỉ có một vai trò `ADMIN`, `INSTRUCTOR` hoặc `STUDENT`.
+- Bài kiểm tra thuộc khóa học; bài thi là nghiệp vụ độc lập.
 
-## Logical flow
+## Luồng chính
 
-```text
-Browser / Desktop shell
-        |
-        v
-API Gateway -- JWT, rate limit, access log, correlation ID
-        |
-        +--> Identity ---- Organization
-        +--> Course ------ File Storage
-        +--> Enrollment -- Learning
-        +--> Assessment -- Grading
-        +--> Reporting --- Certificate
-        +--> License ----- Configuration
-        +--> Audit ------- Notification
-        +--> AI ---------- Integration adapters
+### Đăng nhập
 
-All services publish/consume versioned events through RabbitMQ.
-```
+`Web → API Gateway → Identity Service → JWT/refresh token`.
 
-## Data ownership
+### Học khóa học
 
-Each service owns its schema and Flyway migrations. Services must not read another service's tables. Synchronous validation uses versioned internal REST endpoints protected by a service token; asynchronous state propagation uses domain events with event IDs and idempotent consumers.
+`Web → Gateway → Enrollment → Course → Learning → File Storage`.
 
-The development compose file uses one PostgreSQL instance with isolated schemas and accounts. Production may split high-load services into independent PostgreSQL instances without changing the public contracts.
+### Làm bài kiểm tra hoặc bài thi
 
-## Reliability rules
+`Web → Gateway → Assessment → Grading → Reporting/Certificate`.
 
-- Write operations accept an `Idempotency-Key` where duplicate submission would be harmful.
-- Event envelopes contain `eventId`, `eventType`, `occurredAt`, `correlationId`, `producer` and `payload`.
-- Consumers persist processed event IDs before acknowledging work.
-- Notification, reporting and AI failures never roll back core learning, grading or enrollment transactions.
-- Assessment, Reporting and File Storage are stateless at the application layer and can scale horizontally.
+### Sinh câu hỏi bằng AI
 
-## Security layers
+`Instructor → AI Service → File Storage/Course → AI provider → quality validator → review → Assessment import`.
 
-1. Gateway validates the token and applies rate limiting.
-2. Every business service validates the token again and enforces method-level permissions.
-3. Internal service calls use a separate service token.
-4. Secrets are injected through environment variables or mounted secret files.
-5. Databases, RabbitMQ and Redis are on an internal Docker network and are not published to the customer LAN by default.
+### Cấu hình thương hiệu
+
+`Admin → Configuration Service → File Storage → public branding API → Login/Web`.
+
+## Database
+
+Một PostgreSQL database mặc định tên `lmspilot`, tách schema:
+
+`identity`, `organization`, `course`, `enrollment`, `learning`, `assessment`, `grading`, `reporting`, `file_storage`, `license`, `audit`, `notification`, `certificate`, `ai`, `configuration`, `integration`, `operations`, `competency`.
+
+API Gateway và frontend không sở hữu database.

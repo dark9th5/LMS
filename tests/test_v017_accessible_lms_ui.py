@@ -56,30 +56,23 @@ class Release017AccessibleLmsUiTests(unittest.TestCase):
         self.assertIn('autoComplete="current-password"', form)
 
     def test_dashboard_has_no_legacy_hero_or_neon_copy(self) -> None:
-        source = text("apps/web/components/Dashboard.tsx")
-        for marker in ("dashboard-welcome", "metric-grid", "dashboard-layout", "quick-action-list"):
-            self.assertIn(marker, source)
-        for obsolete in (
-            "LEARNING MANAGEMENT / OPERATIONS",
-            "TRUNG TÂM HỌC TẬP",
-            "sẵn sàng cho hôm nay",
-            "cosmic-dashboard-hero",
-            "dashboard-starfield",
-            "progress-loop",
-        ):
-            self.assertNotIn(obsolete, source)
+        source = text("apps/web/components/RoleDashboard.tsx")
+        self.assertNotIn("cosmic-dashboard-hero", source)
+        self.assertNotIn("neon", source.lower())
+        self.assertIn("role-dashboard", source)
+        self.assertIn("roleLabel(role)", source)
 
     def test_core_navigation_is_short_permission_filtered_and_accessible(self) -> None:
         shell = text("apps/web/components/AppShell.tsx")
-        for marker in ('label: "Học tập"', 'label: "Đánh giá"', 'label: "Quản trị"'):
-            self.assertIn(marker, shell)
-        for route in ("/courses", "/classes", "/exams", "/users", "/organization", "/settings"):
-            self.assertIn(route, shell)
-        for retired in ("/competitions", "/ai-lab", "/competencies", "/operations", "/notification-automation"):
-            self.assertNotIn(retired, shell)
-        self.assertIn("permissionSet.has(permission)", shell)
-        self.assertIn('aria-label="Điều hướng chính"', shell)
-        self.assertIn('className="skip-link"', shell)
+        paths = text("apps/web/lib/portal-paths.ts")
+        self.assertIn("ROLE_NAVIGATION", shell)
+        self.assertIn("navigation.items.map", shell)
+        self.assertIn('href="#main-content"', shell)
+        for label in ("Người dùng", "Tổ chức", "Khóa học", "Bài thi", "Chấm điểm", "Kết quả"):
+            self.assertIn(f'label: "{label}"', shell)
+        for route in ("/admin", "/instructor", "/student"):
+            self.assertIn(route, paths)
+        self.assertNotIn('label: "Lớp học"', shell)
 
     def test_learning_and_exam_give_content_primary_space(self) -> None:
         css = text("apps/web/app/unified.css")
@@ -94,14 +87,12 @@ class Release017AccessibleLmsUiTests(unittest.TestCase):
 
     def test_catalog_copy_is_vietnamese_and_plain(self) -> None:
         combined = "".join(text(f"apps/web/components/{name}") for name in (
-            "CoursesPage.tsx", "ClassesPage.tsx", "LearningPage.tsx", "ExamsPage.tsx"
+            "CoursesPage.tsx", "CourseAssessmentsPanel.tsx", "LearningPage.tsx", "ExamsPage.tsx"
         ))
-        for obsolete in (
-            "COURSE TOTAL", "READY TO LEARN", "WORK IN PROGRESS", "OPEN COURSE",
-            "CLASS TOTAL", "ACTIVE NOW", "READY COURSES", "KEEP GOING", "MASTERY",
-            "CONTINUE LEARNING", "OPEN ASSESSMENT",
-        ):
-            self.assertNotIn(obsolete, combined)
+        for marker in ("Khóa học", "Bài kiểm tra", "Bài thi"):
+            self.assertIn(marker, combined)
+        self.assertNotIn("Lớp học", combined)
+        self.assertNotIn("cosmic", combined.lower())
 
     def test_repeatable_fields_and_number_steppers_remain(self) -> None:
         exams = text("apps/web/components/ExamsPage.tsx")

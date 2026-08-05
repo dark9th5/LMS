@@ -6,11 +6,14 @@ import { apiRequest } from "@/lib/api";
 import type { Course, CourseStatus, Lesson, LessonType } from "@/lib/models";
 import { formatDate, formatDuration } from "@/lib/models";
 import type { PortalUser } from "@/lib/types";
+import { instructorCoursePath } from "@/lib/portal-paths";
 import { Icon } from "./Icon";
 import { PageHeader } from "./PageHeader";
 import { EmptyState, ErrorState, LoadingState, Toast } from "./Feedback";
 import { Modal } from "./Modal";
 import { LessonResource } from "./LessonResource";
+import { CourseAssessmentsPanel } from "./CourseAssessmentsPanel";
+import { CourseLearnersPanel } from "./CourseLearnersPanel";
 import { StatusBadge } from "./StatusBadge";
 
 const lessonTypeLabels: Record<LessonType, string> = {
@@ -40,9 +43,9 @@ export function CourseDetail({
   const [selectedLessonId, setSelectedLessonId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [tab, setTab] = useState<"content" | "information" | "discussion">(
-    "content",
-  );
+  const [tab, setTab] = useState<
+    "content" | "assessments" | "learners" | "information" | "discussion"
+  >("content");
   const [lessonModal, setLessonModal] = useState(false);
   const [editingLesson, setEditingLesson] = useState<Lesson | null>(null);
   const [saving, setSaving] = useState(false);
@@ -52,20 +55,13 @@ export function CourseDetail({
     tone?: "success" | "error" | "info";
   } | null>(null);
 
-  const ownsCourse = Boolean(
-    course &&
-      (user.accountType === "SYSTEM_ADMIN" || course.ownerId === user.id),
-  );
   const canEdit = Boolean(
     course &&
-      (user.accountType === "SYSTEM_ADMIN" ||
-        user.permissions.includes("courses:update") ||
+      (user.permissions.includes("courses:update") ||
         user.permissions.includes("courses:write")),
   );
   const canPublish = Boolean(
-    course &&
-      (user.accountType === "SYSTEM_ADMIN" ||
-        user.permissions.includes("courses:publish")),
+    course && user.permissions.includes("courses:publish"),
   );
   const load = useCallback(async () => {
     setLoading(true);
@@ -111,7 +107,7 @@ export function CourseDetail({
       setToast({
         message:
           target === "PUBLISHED"
-            ? "Khóa học đã được xuất bản và có thể dùng để mở lớp."
+            ? "Khóa học đã được xuất bản và có thể giao trực tiếp cho học viên."
             : "Đã cập nhật trạng thái khóa học.",
       });
       await load();
@@ -264,14 +260,14 @@ export function CourseDetail({
     if (!course || !canEdit) return;
     if (
       !window.confirm(
-        "Xóa khóa học khỏi danh sách đang dùng? Hệ thống sẽ lưu trữ thay vì xóa vật lý để giữ nguyên lớp, tiến độ và điểm đã phát sinh.",
+        "Xóa khóa học khỏi danh sách đang dùng? Hệ thống sẽ lưu trữ thay vì xóa vật lý để giữ nguyên tiến độ và điểm đã phát sinh.",
       )
     )
       return;
     setSaving(true);
     try {
       await apiRequest(`/api/v1/courses/${course.id}`, { method: "DELETE" });
-      router.replace("/courses");
+      router.replace(instructorCoursePath());
       router.refresh();
     } catch (caught) {
       setToast({
@@ -298,7 +294,7 @@ export function CourseDetail({
   return (
     <>
       <PageHeader
-        backHref="/courses"
+        backHref={instructorCoursePath()}
         eyebrow={`${course.code} · PHIÊN BẢN ${course.contentVersion}`}
         title={course.name}
         description={course.description || "Khóa học chưa có mô tả."}
@@ -373,6 +369,18 @@ export function CourseDetail({
         >
           Nội dung khóa học
         </button>
+        <button
+          className={tab === "assessments" ? "active" : ""}
+          onClick={() => setTab("assessments")}
+        >
+          Bài kiểm tra
+        </button>
+        <button
+          className={tab === "learners" ? "active" : ""}
+          onClick={() => setTab("learners")}
+        >
+          Học viên
+        </button>
         {user.permissions.includes("discussions:read") && (
           <button
             className={tab === "discussion" ? "active" : ""}
@@ -423,7 +431,6 @@ export function CourseDetail({
                         {lesson.estimatedMinutes || 0} phút
                       </small>
                     </span>
-                    <Icon name="chevron" size={18} />
                   </button>
                 ))
               ) : (
@@ -501,7 +508,7 @@ export function CourseDetail({
                         selectedLesson.textContent ||
                         (selectedLesson.type === "ASSIGNMENT"
                           ? "Bài thực hành sẽ được học viên nộp trong luồng học tập."
-                          : "Bài kiểm tra được quản lý tại chức năng Bài kiểm tra.")
+                          : "Bài kiểm tra được quản lý ngay trong tab Bài kiểm tra của khóa học.")
                       }
                     />
                   )}
@@ -512,7 +519,7 @@ export function CourseDetail({
                 title="Bắt đầu xây dựng khóa học"
                 description={
                   canEdit
-                    ? "Thêm bài học đầu tiên. Sau khi có nội dung, bạn có thể xuất bản khóa học để mở lớp."
+                    ? "Thêm bài học đầu tiên. Sau khi có nội dung, bạn có thể xuất bản và giao khóa học cho học viên."
                     : "Khóa học chưa có nội dung được công bố."
                 }
                 action={
@@ -530,6 +537,10 @@ export function CourseDetail({
             )}
           </article>
         </section>
+      ) : tab === "assessments" ? (
+        <CourseAssessmentsPanel course={course} />
+      ) : tab === "learners" ? (
+        <CourseLearnersPanel course={course} />
       ) : tab === "discussion" ? (
         <CourseDiscussion
           courseId={course.id}
@@ -545,7 +556,7 @@ export function CourseDetail({
                 <p>
                   {canEdit
                     ? "Các thay đổi được lưu trực tiếp vào Course Service."
-                    : "Bạn đang xem khóa học thuộc lớp được phân công. Chỉ chủ sở hữu hoặc quản trị viên được chỉnh sửa."}
+                    : "Bạn đang xem khóa học ở chế độ chỉ đọc. Chỉ giảng viên sở hữu khóa học được chỉnh sửa."}
                 </p>
               </div>
             </div>
@@ -633,8 +644,8 @@ export function CourseDetail({
               <div>
                 <strong>Xóa khỏi danh sách đang dùng</strong>
                 <p>
-                  Đây là xóa an toàn: khóa học được chuyển sang lưu trữ, còn lớp
-                  học, tiến độ, điểm và lịch sử vẫn được giữ nguyên.
+                  Đây là xóa an toàn: khóa học được chuyển sang lưu trữ, còn ghi
+                  danh, tiến độ, điểm và lịch sử vẫn được giữ nguyên.
                 </p>
               </div>
               <button
@@ -858,12 +869,8 @@ function CourseDiscussion({
   user: PortalUser;
   lessons: Lesson[];
 }) {
-  const canWrite =
-    user.accountType === "SYSTEM_ADMIN" ||
-    user.permissions.includes("discussions:write");
-  const canModerate =
-    user.accountType === "SYSTEM_ADMIN" ||
-    user.permissions.includes("discussions:moderate");
+  const canWrite = user.permissions.includes("discussions:write");
+  const canModerate = user.permissions.includes("discussions:moderate");
   const [threads, setThreads] = useState<DiscussionThread[]>([]);
   const [active, setActive] = useState<DiscussionThread | null>(null);
   const [loading, setLoading] = useState(true);

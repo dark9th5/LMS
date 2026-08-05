@@ -42,6 +42,9 @@ import java.security.MessageDigest
 import java.time.Instant
 import java.util.Locale
 import java.util.UUID
+import java.util.zip.ZipFile
+import javax.xml.XMLConstants
+import javax.xml.parsers.DocumentBuilderFactory
 
 private const val MAX_PURPOSE_LENGTH = 50
 
@@ -54,6 +57,13 @@ data class StoredFileResponse(
     val purpose: String,
     val status: StoredFileStatus,
     val createdAt: Instant,
+)
+
+
+data class DocumentPreviewResponse(
+    val fileId: UUID,
+    val originalName: String,
+    val paragraphs: List<String>,
 )
 
 data class InternalStoredFileResponse(
@@ -87,6 +97,7 @@ class FileStorageService(
         "png" to "image/png",
         "jpg" to "image/jpeg",
         "jpeg" to "image/jpeg",
+        "webp" to "image/webp",
         "txt" to "text/plain",
         "csv" to "text/csv",
     )
@@ -113,6 +124,7 @@ class FileStorageService(
             throw ApiException(HttpStatus.UNSUPPORTED_MEDIA_TYPE, "FILE_TYPE_NOT_ALLOWED", "Định dạng tệp không nằm trong danh sách cho phép")
         }
         val purpose = normalizePurpose(purposeInput)
+        requirePurposeForRole(purpose)
 
         val id = UUID.randomUUID()
         val storageKey = "${id.toString().substring(0, 2)}/$id"
@@ -165,7 +177,7 @@ class FileStorageService(
     }
 
     @Transactional(readOnly = true)
-    fun list(): List<StoredFileResponse> = (if (Permissions.OPERATIONS_MANAGE in CurrentUser.authorities()) repository.findAll() else repository.findAllByOwnerIdOrderByCreatedAtDesc(CurrentUser.id()))
+    fun list(): List<StoredFileResponse> = repository.findAllByOwnerIdOrderByCreatedAtDesc(CurrentUser.id())
         .filter { it.status == StoredFileStatus.AVAILABLE }
         .sortedByDescending { it.createdAt }
         .map { it.response() }
@@ -185,6 +197,47 @@ class FileStorageService(
     @Transactional(readOnly = true)
     fun internalDownload(id: UUID, inline: Boolean = false): ResponseEntity<*> =
         fileResponse(available(id), inline)
+
+    @Transactional(readOnly = true)
+    fun docxPreview(id: UUID): DocumentPreviewResponse {
+        val entity = readable(id)
+        val docxType = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        if (entity.contentType != docxType && !entity.originalName.lowercase(Locale.ROOT).endsWith(".docx")) {
+            throw ApiException(HttpStatus.UNSUPPORTED_MEDIA_TYPE, "DOCX_REQUIRED", "Chỉ hỗ trợ xem trước tài liệu DOCX")
+        }
+        val path = checkedPath(entity.storageKey)
+        if (!Files.isRegularFile(path)) throw ApiException(HttpStatus.NOT_FOUND, "FILE_BYTES_MISSING", "Dữ liệu tệp không còn tồn tại")
+        val paragraphs = ZipFile(path.toFile()).use { archive ->
+            val entry = archive.getEntry("word/document.xml")
+                ?: throw ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "DOCX_DOCUMENT_MISSING", "Tệp DOCX không chứa nội dung tài liệu")
+            archive.getInputStream(entry).use { input ->
+                val factory = DocumentBuilderFactory.newInstance().apply {
+                    isNamespaceAware = true
+                    setFeature("http://apache.org/xml/features/disallow-doctype-decl", true)
+                    setFeature("http://xml.org/sax/features/external-general-entities", false)
+                    setFeature("http://xml.org/sax/features/external-parameter-entities", false)
+                    setAttribute(XMLConstants.ACCESS_EXTERNAL_DTD, "")
+                    setAttribute(XMLConstants.ACCESS_EXTERNAL_SCHEMA, "")
+                }
+                val document = factory.newDocumentBuilder().parse(input)
+                val nodes = document.getElementsByTagNameNS("http://schemas.openxmlformats.org/wordprocessingml/2006/main", "p")
+                buildList {
+                    for (index in 0 until nodes.length) {
+                        val paragraph = nodes.item(index)
+                        val textNodes = (paragraph as org.w3c.dom.Element).getElementsByTagNameNS(
+                            "http://schemas.openxmlformats.org/wordprocessingml/2006/main",
+                            "t",
+                        )
+                        val text = buildString {
+                            for (textIndex in 0 until textNodes.length) append(textNodes.item(textIndex).textContent)
+                        }.trim()
+                        if (text.isNotBlank()) add(text)
+                    }
+                }
+            }
+        }
+        return DocumentPreviewResponse(entity.id, entity.originalName, paragraphs.take(3000))
+    }
 
     @Transactional
     fun grantAccess(userId: UUID, fileIds: Set<UUID>, sourceInput: String, ttlSeconds: Long) {
@@ -251,7 +304,7 @@ class FileStorageService(
     @Transactional
     fun delete(id: UUID) {
         val entity = available(id)
-        if (entity.ownerId != CurrentUser.id() && Permissions.OPERATIONS_MANAGE !in CurrentUser.authorities()) {
+        if (entity.ownerId != CurrentUser.id()) {
             throw ApiException(HttpStatus.FORBIDDEN, "FILE_OWNER_MISMATCH", "Bạn không có quyền xóa tệp")
         }
         entity.status = StoredFileStatus.DELETED
@@ -271,18 +324,13 @@ class FileStorageService(
      */
     private fun readable(id: UUID): StoredFileEntity {
         val entity = available(id)
-        if (entity.ownerId == CurrentUser.id() || hasAdministrativeFileAccess()) return entity
+        if (entity.ownerId == CurrentUser.id()) return entity
 
         if (grants.findByFileIdAndUserId(entity.id, CurrentUser.id())?.expiresAt?.isAfter(Instant.now()) == true) return entity
 
         throw ApiException(HttpStatus.FORBIDDEN, "FILE_READ_FORBIDDEN", "Bạn không có quyền đọc tệp này")
     }
 
-    private fun hasAdministrativeFileAccess(): Boolean =
-        CurrentUser.isSystemAdmin() ||
-            Permissions.FILES_EDIT in CurrentUser.authorities() ||
-            Permissions.FILES_PUBLISH in CurrentUser.authorities() ||
-            Permissions.OPERATIONS_MANAGE in CurrentUser.authorities()
 
     private fun checkedPath(storageKey: String): Path {
         val path = rootPath.resolve(storageKey).normalize()
@@ -318,6 +366,24 @@ class FileStorageService(
         return purpose
     }
 
+    private fun requirePurposeForRole(purpose: String) {
+        val role = CurrentUser.roles().singleOrNull()?.uppercase(Locale.ROOT)
+            ?: throw ApiException(HttpStatus.FORBIDDEN, "SINGLE_ROLE_REQUIRED", "Tài khoản phải có đúng một vai trò")
+        val allowed = when (role) {
+            "ADMIN" -> setOf("BRANDING_LOGO", "BRANDING_BACKGROUND", "NEWS_ATTACHMENT", "GENERAL")
+            "INSTRUCTOR" -> setOf("COURSE_CONTENT", "COURSE_DOCUMENT", "QUESTION_SOURCE", "GENERAL")
+            "STUDENT" -> setOf("ASSIGNMENT_SUBMISSION")
+            else -> emptySet()
+        }
+        if (purpose !in allowed) {
+            throw ApiException(
+                HttpStatus.FORBIDDEN,
+                "FILE_PURPOSE_ROLE_FORBIDDEN",
+                "Vai trò $role không được tải tệp cho mục đích $purpose",
+            )
+        }
+    }
+
     private fun moveAtomically(source: Path, target: Path) {
         try {
             Files.move(source, target, StandardCopyOption.ATOMIC_MOVE)
@@ -344,6 +410,10 @@ class FileController(private val service: FileStorageService) {
     @GetMapping("/{id}")
     @PreAuthorize("hasAuthority('${Permissions.FILES_DOWNLOAD}')")
     fun metadata(@PathVariable id: UUID) = service.metadata(id)
+
+    @GetMapping("/{id}/docx-preview")
+    @PreAuthorize("hasAuthority('${Permissions.FILES_DOWNLOAD}')")
+    fun docxPreview(@PathVariable id: UUID) = service.docxPreview(id)
 
     @GetMapping("/{id}/content")
     @PreAuthorize("hasAuthority('${Permissions.FILES_DOWNLOAD}')")

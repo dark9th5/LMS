@@ -1,0 +1,68 @@
+{
+  "release": "LMSPilot 0.17.0",
+  "version": "0.17.0",
+  "date": "2026-08-04",
+  "status": "Accessible Learning Workspace full-source release candidate",
+  "sourceFileCount": 565,
+  "backendServiceCount": 19,
+  "flywayServiceCount": 18,
+  "accountTypes": [
+    "SYSTEM_ADMIN",
+    "USER"
+  ],
+  "runtimeThemes": [
+    "unified-light",
+    "unified-dark"
+  ],
+  "coreNavigation": [
+    "dashboard",
+    "learning",
+    "courses",
+    "classes",
+    "exams",
+    "grading",
+    "reports",
+    "users",
+    "organization",
+    "settings"
+  ],
+  "retiredCoreUiAreas": [
+    "learning-paths",
+    "live-sessions",
+    "news",
+    "competitions",
+    "ai-lab",
+    "documents",
+    "competencies",
+    "certificates",
+    "notification-automation",
+    "operations"
+  ],
+  "visualPreviews": [
+    "docs/screenshots/0.17.0/01-login.png",
+    "docs/screenshots/0.17.0/02-dashboard-light.png",
+    "docs/screenshots/0.17.0/03-course-catalog.png",
+    "docs/screenshots/0.17.0/04-learning-player.png",
+    "docs/screenshots/0.17.0/05-exam-focus.png",
+    "docs/screenshots/0.17.0/06-dashboard-dark.png",
+    "docs/screenshots/0.17.0/07-dashboard-mobile.png"
+  ],
+  "verification": {
+    "repositoryValidator": "PASS - 26 JSON, 28 YAML, 19 services, 18 Flyway services",
+    "staticContractUiRegression": "115 passed, 34 historical tests skipped intentionally, 149 total",
+    "typescriptSyntax": "PASS - 62 TS/TSX files, 0 syntax errors",
+    "cssSyntax": "PASS - globals.css and unified.css, 0 parse errors",
+    "visualPreviewRender": "PASS - 7 Chromium screenshots",
+    "semanticTypeScript": "NOT VERIFIED - npm dependency undici-types was not cached",
+    "frontendProductionBuild": "NOT VERIFIED - node_modules unavailable",
+    "gradleBuild": "NOT VERIFIED - Gradle distribution could not be downloaded",
+    "dockerE2E": "NOT VERIFIED - Docker stack not run"
+  },
+  "authorizationDesign": "docs/PERMISSION_FIRST_0.15.0.md",
+  "uiDesign": "docs/UNIFIED_UI_0.17.0.md",
+  "designResearch": "docs/DESIGN_RESEARCH_0.17.0.md",
+  "testResults": "TEST_RESULTS_LMSPILOT_0.17.0.md",
+  "releaseNotes": "RELEASE_LMSPILOT_0.17.0.md",
+  "startHere": "BAT_DAU_TAI_DAY.md",
+  "deliveryStatus": "DELIVERY_STATUS.md"
+}

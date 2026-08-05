@@ -1,0 +1,52 @@
+{
+  "release": "LMSPilot 0.20.3",
+  "version": "0.20.3",
+  "releaseDate": "2026-08-05",
+  "type": "full-source release candidate",
+  "base": "LMSPilot 0.20.2 visual spacing fix",
+  "focus": "AI difficulty controls, grounded PDF/DOCX question generation and instructor review",
+  "roles": ["ADMIN", "INSTRUCTOR", "STUDENT"],
+  "backendServices": 19,
+  "servicePortRange": "8080-8098",
+  "highlights": [
+    "Difficulty presets Basic, Balanced, Advanced and Custom for AI question generation",
+    "Exact EASY/MEDIUM/HARD allocation with live question counts and sum-to-100 validation",
+    "PDF/DOCX source extraction with page or section citations",
+    "Quality validator for count, difficulty distribution, question types, duplicates, options, explanations and grounded citations",
+    "One automatic model correction attempt when generated output fails validation",
+    "Instructor review and editing before approval and import",
+    "Only explicitly selected questions are imported into the question bank",
+    "The same reviewed AI flow is used for course quizzes and standalone exams"
+  ],
+  "verification": {
+    "pythonTestsPassed": 152,
+    "pythonTestsSkipped": 34,
+    "pythonTestsTotal": 186,
+    "repositoryValidator": "PASS",
+    "servicePortValidator": "PASS (19 unique ports)",
+    "typescriptSyntax": "PASS (89 TS/TSX files)",
+    "offlineOpenAiCompatibleMock": "PASS (10 questions, EASY 3, MEDIUM 5, HARD 2)",
+    "groundedCitations": "PASS (10/10)",
+    "uniqueOptions": "PASS (10/10)",
+    "completeExplanations": "PASS (10/10)",
+    "duplicateStems": 0,
+    "negativeControl": "PASS - detected wrong distribution and fabricated citation",
+    "fullNpmBuild": "NOT RUN - React/Next dependencies unavailable in packaging environment",
+    "fullGradle": "NOT RUN - Gradle 8.14.5 distribution unavailable in packaging environment",
+    "dockerE2E": "NOT RUN",
+    "liveAiProvider": "NOT RUN - no customer API key or endpoint"
+  },
+  "qualityArtifacts": [
+    "docs/ai-quality/0.20.3/AI_QUESTION_QUALITY_REPORT.md",
+    "docs/ai-quality/0.20.3/mock-generated-question-set.json",
+    "docs/ai-quality/0.20.3/ai-difficulty-review-preview.png",
+    "backend/services/ai-service/src/test/resources/fixtures/an-toan-thong-tin.pdf",
+    "backend/services/ai-service/src/test/resources/fixtures/an-toan-thong-tin.docx"
+  ],
+  "documentation": [
+    "README.md",
+    "RELEASE_LMSPILOT_0.20.3.md",
+    "TEST_RESULTS_LMSPILOT_0.20.3.md",
+    "DELIVERY_STATUS.md"
+  ]
+}

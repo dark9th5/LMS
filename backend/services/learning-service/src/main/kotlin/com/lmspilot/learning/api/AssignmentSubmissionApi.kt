@@ -39,7 +39,6 @@ data class GradeAssignmentRequest(
 data class AssignmentSubmissionResponse(
     val id: UUID,
     val enrollmentId: UUID,
-    val classId: UUID,
     val courseId: UUID,
     val courseVersion: Int,
     val lessonId: UUID,
@@ -178,8 +177,12 @@ class AssignmentSubmissionService(
     @Transactional(readOnly = true)
     fun attempts(enrollmentId: UUID, lessonId: UUID): List<AssignmentSubmissionResponse> {
         val enrollment = enrollments.get(enrollmentId)
-        if (enrollment.userId != CurrentUser.id() && !canManageClass(enrollment.classId)) {
-            throw ApiException(HttpStatus.FORBIDDEN, "ASSIGNMENT_OUT_OF_SCOPE", "Bài nộp ngoài phạm vi")
+        if (enrollment.userId != CurrentUser.id()) {
+            requireCourseScope(enrollment.courseId, enrollment.courseVersion)
+        }
+        val metadata = courses.get(enrollment.courseId, enrollment.courseVersion)
+        if (metadata.lessonTypes[lessonId] != "ASSIGNMENT") {
+            throw ApiException(HttpStatus.BAD_REQUEST, "NOT_ASSIGNMENT_LESSON", "Bài học không phải bài thực hành")
         }
         val items = repository.findAllByEnrollmentIdAndLessonIdOrderByAttemptNumberDesc(enrollmentId, lessonId)
         if (enrollment.userId != CurrentUser.id()) {
@@ -189,21 +192,17 @@ class AssignmentSubmissionService(
     }
 
     @Transactional(readOnly = true)
-    fun queue(classId: UUID): List<AssignmentSubmissionResponse> {
-        requireClassScope(classId)
-        val items = repository.findAllByClassIdOrderBySubmittedAtDesc(classId).filter { it.status == AssignmentSubmissionStatus.SUBMITTED }
-        fileAccess.grant(CurrentUser.id(), items.map { it.fileId }.toSet(), "ASSIGNMENT_QUEUE:$classId")
-        return items.map { it.response() }
-    }
-
-    @Transactional(readOnly = true)
-    fun queue(classIds: Set<UUID>): List<AssignmentSubmissionResponse> {
-        if (classIds.size > 100) {
-            throw ApiException(HttpStatus.BAD_REQUEST, "ASSIGNMENT_QUEUE_CLASS_LIMIT", "Mỗi lần chỉ tải tối đa 100 lớp")
+    fun queueByCourses(courseIds: Set<UUID>): List<AssignmentSubmissionResponse> {
+        if (courseIds.size > 100) {
+            throw ApiException(HttpStatus.BAD_REQUEST, "ASSIGNMENT_QUEUE_COURSE_LIMIT", "Mỗi lần chỉ tải tối đa 100 khóa học")
         }
-        classIds.forEach(::requireClassScope)
-        val items = if (classIds.isEmpty()) emptyList() else repository.findAllByClassIdInOrderBySubmittedAtDesc(classIds).filter { it.status == AssignmentSubmissionStatus.SUBMITTED }
-        fileAccess.grant(CurrentUser.id(), items.map { it.fileId }.toSet(), "ASSIGNMENT_QUEUE_MULTI")
+        if (courseIds.isEmpty()) return emptyList()
+        val items = repository.findAllByCourseIdInOrderBySubmittedAtDesc(courseIds)
+            .filter { it.status == AssignmentSubmissionStatus.SUBMITTED }
+        items.map { it.courseId to it.courseVersion }.distinct().forEach { (courseId, version) ->
+            requireCourseScope(courseId, version)
+        }
+        fileAccess.grant(CurrentUser.id(), items.map { it.fileId }.toSet(), "ASSIGNMENT_QUEUE_COURSES")
         return items.map { it.response() }
     }
 
@@ -215,7 +214,7 @@ class AssignmentSubmissionService(
         val entity = repository.findById(id).orElseThrow {
             ApiException(HttpStatus.NOT_FOUND, "ASSIGNMENT_SUBMISSION_NOT_FOUND", "Không tìm thấy bài nộp")
         }
-        requireClassScope(entity.classId)
+        requireCourseScope(entity.courseId, entity.courseVersion)
         val latest = repository.findAllByEnrollmentIdAndLessonIdOrderByAttemptNumberDesc(entity.enrollmentId, entity.lessonId).firstOrNull()
         if (latest?.id != entity.id) {
             throw ApiException(HttpStatus.CONFLICT, "ASSIGNMENT_SUPERSEDED", "Chỉ có thể chấm lần nộp mới nhất")
@@ -242,16 +241,12 @@ class AssignmentSubmissionService(
         return entity.response()
     }
 
-    private fun requireClassScope(classId: UUID) {
-        if (!canManageClass(classId)) {
-            throw ApiException(HttpStatus.FORBIDDEN, "ASSIGNMENT_CLASS_OUT_OF_SCOPE", "Lớp ngoài phạm vi được phân công")
+    private fun requireCourseScope(courseId: UUID, courseVersion: Int) {
+        val metadata = courses.get(courseId, courseVersion)
+        if (metadata.ownerId != CurrentUser.id()) {
+            throw ApiException(HttpStatus.FORBIDDEN, "ASSIGNMENT_COURSE_OUT_OF_SCOPE", "Khóa học ngoài phạm vi được phân công")
         }
     }
-
-    private fun canManageClass(classId: UUID): Boolean = CurrentUser.isSystemAdmin() ||
-        Permissions.ASSESSMENTS_GRADE in CurrentUser.authorities() ||
-        Permissions.GRADING_MANAGE in CurrentUser.authorities() ||
-        classId in enrollments.assignedClassIds(CurrentUser.id())
 
     private fun digest(value: String): String = MessageDigest.getInstance("SHA-256")
         .digest(value.toByteArray(StandardCharsets.UTF_8))
@@ -259,7 +254,7 @@ class AssignmentSubmissionService(
 }
 
 private fun AssignmentSubmissionEntity.response() = AssignmentSubmissionResponse(
-    id, enrollmentId, classId, courseId, courseVersion, lessonId, userId, attemptNumber, fileId,
+    id, enrollmentId, courseId, courseVersion, lessonId, userId, attemptNumber, fileId,
     comment, submittedAt, late, status, score, maxScore, feedback, gradedBy, gradedAt,
 )
 
@@ -283,13 +278,9 @@ class AssignmentSubmissionController(private val service: AssignmentSubmissionSe
         @RequestHeader("Idempotency-Key") idempotencyKey: String,
     ) = service.submit(lessonId, input, idempotencyKey)
 
-    @GetMapping("/queue/{classId}")
+    @GetMapping("/queue-by-course")
     @PreAuthorize("hasAnyAuthority('${Permissions.ASSESSMENTS_GRADE}','${Permissions.GRADING_MANAGE}')")
-    fun queue(@PathVariable classId: UUID) = service.queue(classId)
-
-    @GetMapping("/queue")
-    @PreAuthorize("hasAnyAuthority('${Permissions.ASSESSMENTS_GRADE}','${Permissions.GRADING_MANAGE}')")
-    fun queueMany(@RequestParam classId: Set<UUID>) = service.queue(classId)
+    fun queueByCourse(@RequestParam courseId: Set<UUID>) = service.queueByCourses(courseId)
 
     @PutMapping("/submissions/{id}/grade")
     @PreAuthorize("hasAnyAuthority('${Permissions.ASSESSMENTS_GRADE}','${Permissions.GRADING_MANAGE}')")

@@ -15,7 +15,7 @@ from typing import Callable
 from playwright.async_api import async_playwright
 
 ROOT = Path(__file__).resolve().parents[1]
-OUT = ROOT / "docs" / "screenshots" / "0.17.0"
+OUT = ROOT / "docs" / "screenshots" / "0.18.0-readable"
 TMP = ROOT / ".preview-render"
 
 PATHS = {
@@ -47,28 +47,27 @@ def icon(name: str, size: int = 20) -> str:
 
 
 def nav_item(label: str, hint: str, icon_name: str, active: bool = False) -> str:
+    del hint
     return f'''<a class="app-nav-link {'active' if active else ''}">
       <span class="app-nav-icon">{icon(icon_name, 19)}</span>
-      <span class="app-nav-copy"><strong>{html.escape(label)}</strong><small>{html.escape(hint)}</small></span>
-      {icon('chevron', 15)}
+      <span class="app-nav-copy"><strong>{html.escape(label)}</strong></span>
     </a>'''
 
 
 def shell(content: str, *, active: str = "Tổng quan", dark: bool = False) -> str:
     items = [
-        ("Tổng quan", "Việc cần làm hôm nay", "dashboard"),
-        ("Học tập của tôi", "Tiếp tục bài đang học", "learn"),
-        ("Khóa học", "Nội dung và tài liệu", "book"),
-        ("Lớp học", "Lịch và học viên", "class"),
-        ("Bài kiểm tra & kỳ thi", "Đề thi và phiên làm bài", "exam"),
-        ("Chấm điểm", "Bài tự luận và phản hồi", "grade"),
-        ("Báo cáo", "Tiến độ và kết quả", "report"),
-        ("Người dùng", "Tài khoản và gói quyền", "users"),
-        ("Cài đặt", "Giao diện và kết nối", "settings"),
+        ("Tổng quan", "", "dashboard"),
+        ("Học tập", "", "learn"),
+        ("Khóa học", "", "book"),
+        ("Bài thi", "", "exam"),
+        ("Người dùng", "", "users"),
+        ("Tổ chức", "", "class"),
+        ("Báo cáo", "", "report"),
+        ("Cài đặt", "", "settings"),
     ]
-    learning = ''.join(nav_item(*item, active=item[0] == active) for item in items[:4])
-    assessment = ''.join(nav_item(*item, active=item[0] == active) for item in items[4:7])
-    admin = ''.join(nav_item(*item, active=item[0] == active) for item in items[7:])
+    learning = ''.join(nav_item(*item, active=item[0] == active) for item in items[:3])
+    assessment = ''.join(nav_item(*item, active=item[0] == active) for item in items[3:4])
+    admin = ''.join(nav_item(*item, active=item[0] == active) for item in items[4:])
     theme = "unified-dark" if dark else "unified-light"
     return f'''<!doctype html><html lang="vi" data-theme="{theme}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><style>{{CSS}}</style></head><body>
     <div class="app-shell">
@@ -111,7 +110,7 @@ def courses() -> str:
 def learning() -> str:
     lessons=''.join(f'<button class="player-lesson {"active" if i==3 else ""}"><span class="completion-dot {"done" if i<3 else ""}">{icon("check",14) if i<3 else i}</span><span><strong>{name}</strong><small>{mins} phút · {"Đã hoàn thành" if i<3 else "Đang học" if i==3 else "Chưa học"}</small></span></button>' for i,(name,mins) in enumerate([("Tổng quan khóa học",8),("Nhận diện nguy cơ",18),("Bảo vệ tài khoản",22),("Xử lý sự cố",25),("Bài kiểm tra cuối chương",15)],1))
     content=f'''<div class="learning-player"><header class="player-header"><div class="player-title"><button class="icon-button">{icon('arrow')}</button><div><small>AT-204</small><strong>An toàn thông tin</strong></div></div><div class="player-progress"><div class="progress-track"><span style="width:42%"></span></div><span>42% hoàn thành</span></div><button class="button secondary player-outline-toggle">{icon('menu')}Mục lục</button></header><div class="player-layout"><main class="player-content"><article class="learning-lesson"><header><span class="content-type">Bài học văn bản</span><h1>Bảo vệ tài khoản và dữ liệu cá nhân</h1><p>22 phút · Chương 2/5</p></header><div class="lesson-body"><div class="learning-rich-text"><p>Mật khẩu mạnh chỉ là bước đầu. Một tài khoản an toàn cần kết hợp xác thực nhiều lớp, thói quen kiểm tra đường dẫn và khả năng nhận biết những yêu cầu bất thường.</p><h2>Ba nguyên tắc cần ghi nhớ</h2><p><strong>1. Không dùng lại mật khẩu.</strong> Mỗi dịch vụ quan trọng nên có một mật khẩu riêng và được lưu bằng trình quản lý mật khẩu đáng tin cậy.</p><div class="learning-callout">{icon('lock',30)}<div><strong>Thực hành ngay</strong><p>Kiểm tra các tài khoản quan trọng và bật xác thực hai bước ở nơi được hỗ trợ.</p><button class="button primary">Mở bài thực hành {icon('arrow',16)}</button></div></div><p><strong>2. Xác minh trước khi thao tác.</strong> Không đăng nhập từ liên kết lạ trong email hoặc tin nhắn. Hãy mở trực tiếp trang chính thức.</p></div></div><footer class="lesson-navigation"><button class="button secondary">Bài trước</button><div><button class="button secondary">Đánh dấu hoàn thành</button><button class="button primary">Hoàn thành và tiếp tục {icon('arrow',16)}</button></div></footer></article></main><aside class="player-outline open"><header class="player-outline-header"><div><strong>Nội dung khóa học</strong><small>2/5 bài đã hoàn thành</small></div></header><div class="player-lesson-list">{lessons}</div></aside></div></div>'''
-    return shell(content, active="Học tập của tôi")
+    return shell(content, active="Học tập")
 
 
 def exam() -> str:
@@ -119,7 +118,7 @@ def exam() -> str:
     answers=['Dùng cùng một mật khẩu mạnh cho mọi dịch vụ','Bật xác thực hai bước và dùng mật khẩu riêng','Đổi mật khẩu mỗi ngày nhưng ghi ra giấy','Chỉ đăng nhập bằng mạng Wi-Fi công cộng']
     opts=''.join(f'<label class="question-option"><input type="radio" name="q"><span>{answer}</span></label>' for answer in answers)
     content=f'''<div class="exam-taking"><header class="player-header exam-taking-header"><div><button class="icon-button">{icon('arrow')}</button><span><small>BÀI KIỂM TRA CUỐI KHÓA</small><h1>An toàn thông tin cơ bản</h1></span></div><div class="exam-session-signals"><span class="status-pill success">Đã lưu</span><div class="exam-timer">{icon('clock',19)}<span><small>Thời gian còn lại</small><strong>28:42</strong></span></div></div></header><div class="exam-progress-row"><div class="progress-track"><span style="width:27%"></span></div><span>4/15 câu</span></div><div class="exam-taking-layout"><main class="exam-question-panel"><div class="question-editor"><div class="question-editor-head"><span>Câu 4 trên 15</span><strong>1 điểm</strong></div><h2>Phương án nào giúp bảo vệ tài khoản hiệu quả nhất?</h2><div class="answer-options">{opts}</div></div><footer class="exam-actions"><button class="button secondary">Câu trước</button><div><button class="button secondary">Đánh dấu xem lại</button><button class="button primary">Lưu và sang câu tiếp {icon('arrow',16)}</button></div></footer></main><aside class="exam-navigator"><h2>Danh sách câu hỏi</h2><div>{buttons}</div><div class="exam-legend"><span><i class="answered"></i>Đã trả lời</span><span><i></i>Chưa trả lời</span></div></aside></div></div>'''
-    return shell(content, active="Bài kiểm tra & kỳ thi")
+    return shell(content, active="Bài thi")
 
 
 def login() -> str:

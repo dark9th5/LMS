@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1.7
 ARG SERVICE
 
 FROM eclipse-temurin:21-jdk-alpine AS build

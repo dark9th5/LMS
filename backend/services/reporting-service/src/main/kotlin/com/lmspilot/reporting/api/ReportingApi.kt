@@ -40,9 +40,9 @@ class EnrollmentScopeClient(
 ) {
     private val client = builder.baseUrl(baseUrl).build()
 
-    fun assignedClassIds(userId: UUID): Set<UUID> = runCatching {
+    fun assignedDeliveryIds(userId: UUID): Set<UUID> = runCatching {
         client.get()
-            .uri("/internal/v1/classes/assigned/{userId}", userId)
+            .uri("/internal/v1/course-access/instructors/{userId}/delivery-ids", userId)
             .header("X-Service-Token", serviceToken)
             .retrieve()
             .body(Array<String>::class.java)
@@ -115,8 +115,8 @@ class ReportingProjectionService(
     }
 
     private fun scopedRows(): List<LearnerCourseReadModel> {
-        if (CurrentUser.isSystemAdmin()) return readModels.findAll()
-        val assigned = enrollmentScope.assignedClassIds(CurrentUser.id())
+        if (CurrentUser.hasRole("ADMIN")) return readModels.findAll()
+        val assigned = enrollmentScope.assignedDeliveryIds(CurrentUser.id())
         return readModels.findAll().filter { it.classId in assigned }
     }
 

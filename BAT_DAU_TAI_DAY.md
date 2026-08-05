@@ -1,58 +1,31 @@
-# BẮT ĐẦU TẠI ĐÂY — LMSPilot 0.17.0
+# BẮT ĐẦU TẠI ĐÂY — LMSPilot 0.20.4
 
-## 1. Giải nén an toàn
+Đây là repository đầy đủ của LMSPilot. Giải nén vào một thư mục mới, tạo branch/tag và backup dữ liệu trước khi thay thế hệ thống đang chạy.
 
-Giải nén mã nguồn vào một thư mục mới. Không ghi đè trực tiếp hệ thống đang chạy trước khi tạo branch/tag và backup dữ liệu.
+## Dành cho PM/Tech Lead
 
-Khi thay source trong repository Git hiện có, giữ nguyên thư mục `.git`, tạo branch riêng và sao chép nội dung bản 0.17.0 vào working tree.
+1. Đọc `README.md`.
+2. Mở `docs/TEAM_SERVICE_ASSIGNMENT.md` và gán owner/reviewer.
+3. Mỗi người đọc `backend/services/<service-name>/README.md`.
+4. Tạo Epic cho từng service; tách Issue nâng cấp, bug và test.
+5. Bảo vệ nhánh `main`, yêu cầu ít nhất một review và CI đạt.
 
-## 2. Chuẩn bị môi trường
-
-- Java 21
-- Node.js 22–24 và npm 10+
-- Docker/Docker Compose khi chạy full stack
-- Python 3.13 và PyYAML/pytest cho kiểm tra repository
-
-## 3. Kiểm tra source
+## Dành cho developer
 
 ```bash
 python scripts/validate-repository.py
-pytest -q
-cd apps/web
-npm ci
-npm run typecheck
-npm run build
-cd ../../backend
-./gradlew test
+python scripts/validate-service-ports.py
+cd backend
+./gradlew :services:<service-name>:test --no-daemon
 ```
 
-## 4. Chạy hệ thống
+Không truy cập database của service khác và không tự approve pull request của mình.
 
-Linux:
+## Tài liệu chính
 
-```bash
-chmod +x scripts/*.sh
-./scripts/setup.sh
-```
-
-Windows:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\setup.ps1
-```
-
-Chỉ coi setup thành công khi smoke test báo `SMOKE TEST PASSED`.
-
-## 5. Kiểm tra giao diện 0.17
-
-Sau khi đăng nhập bằng System Admin:
-
-1. Mở `Cài đặt` và chọn giao diện sáng hoặc tối.
-2. Chọn màu chủ đạo và màu nền; kiểm tra bản xem trước tự chọn màu chữ.
-3. Kiểm tra login ở default, focus, filled, error và browser autofill.
-4. Mở một bài học; nội dung phải nằm ở cột lớn, mục lục ở cột phụ.
-5. Mở một bài thi; câu hỏi phải nằm ở cột lớn, danh sách câu ở cột phụ.
-6. Kiểm tra sidebar admin chỉ còn các khu vực Core.
-7. Kiểm tra form câu hỏi có từng dòng phương án và nút `+ / −`.
-
-Tham khảo chi tiết thêm tại `HUONG_DAN_DU_AN_LMSPILOT.docx` trước khi merge vào nhánh chính.
+- `docs/ARCHITECTURE.md`
+- `docs/SERVICE_CATALOG.md`
+- `docs/API_DATABASE_MAP.md`
+- `docs/TEAM_SERVICE_ASSIGNMENT.md`
+- `DELIVERY_STATUS.md`
+- `TEST_RESULTS_LMSPILOT_0.20.4.md`

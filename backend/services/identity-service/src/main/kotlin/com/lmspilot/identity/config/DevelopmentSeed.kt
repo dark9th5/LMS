@@ -29,13 +29,12 @@ class DevelopmentSeed(
             val definition = requireNotNull(profileByCode[code])
             return ensureRole(definition.code, definition.name, definition.permissions)
         }
-        val basic = profile("BASIC_USER")
-        val author = profile("COURSE_AUTHOR")
-        val trainingManager = profile("TRAINING_MANAGER")
-        val grader = profile("GRADER")
-        ensureUser(UUID.fromString("00000000-0000-0000-0000-000000000001"), "ADM001", "admin", "Quản trị hệ thống", setOf(basic), AccountType.SYSTEM_ADMIN, true)
-        ensureUser(UUID.fromString("00000000-0000-0000-0000-000000000002"), "INS001", "instructor", "Người phụ trách đào tạo mẫu", setOf(basic, author, trainingManager, grader))
-        ensureUser(UUID.fromString("00000000-0000-0000-0000-000000000003"), "LEA001", "learner", "Người học mẫu", setOf(basic))
+        val admin = profile("ADMIN")
+        val instructor = profile("INSTRUCTOR")
+        val student = profile("STUDENT")
+        ensureUser(UUID.fromString("00000000-0000-0000-0000-000000000001"), "ADM001", "admin", "Quản trị hệ thống", setOf(admin), AccountType.SYSTEM_ADMIN, true)
+        ensureUser(UUID.fromString("00000000-0000-0000-0000-000000000002"), "INS001", "instructor", "Giảng viên mẫu", setOf(instructor))
+        ensureUser(UUID.fromString("00000000-0000-0000-0000-000000000003"), "STU001", "student", "Học viên mẫu", setOf(student))
         log.warn("Development seed is enabled. Change temporary passwords immediately outside local development.")
     }
 

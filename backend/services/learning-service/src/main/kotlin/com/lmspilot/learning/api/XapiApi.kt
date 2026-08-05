@@ -130,7 +130,7 @@ class XapiService(
 
     @Transactional(readOnly = true)
     fun byUser(userId: UUID): List<XapiStatementResponse> {
-        if (userId != CurrentUser.id() && !CurrentUser.isSystemAdmin() && Permissions.XAPI_READ_SCOPE !in CurrentUser.authorities()) {
+        if (userId != CurrentUser.id() && Permissions.XAPI_READ_SCOPE !in CurrentUser.authorities()) {
             throw ApiException(HttpStatus.FORBIDDEN, "XAPI_OUT_OF_SCOPE", "Không có quyền xem hoạt động của người dùng này")
         }
         return repository.findTop200ByActorUserIdOrderByOccurredAtDesc(userId).map { it.response(mapper) }

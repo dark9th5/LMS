@@ -1,0 +1,408 @@
+{
+  "schemaVersion": "1.0",
+  "source": {
+    "courseId": "33333333-3333-3333-3333-333333333333",
+    "documentVersionIds": [
+      "11111111-1111-1111-1111-111111111111",
+      "22222222-2222-2222-2222-222222222222"
+    ],
+    "provider": "LOCAL_OPENAI_COMPATIBLE",
+    "model": "quality-mock-v1",
+    "generatedAt": "2026-08-05T13:00:00Z"
+  },
+  "language": "vi",
+  "questions": [
+    {
+      "externalId": "q-1",
+      "type": "SINGLE_CHOICE",
+      "stem": "Mật khẩu mạnh trong tài liệu phải có độ dài tối thiểu bao nhiêu ký tự?",
+      "difficulty": "EASY",
+      "points": 1,
+      "options": [
+        {
+          "id": "A",
+          "text": "8 ký tự"
+        },
+        {
+          "id": "B",
+          "text": "10 ký tự"
+        },
+        {
+          "id": "C",
+          "text": "12 ký tự"
+        },
+        {
+          "id": "D",
+          "text": "16 ký tự"
+        }
+      ],
+      "correctOptionIds": [
+        "C"
+      ],
+      "explanation": "Tài liệu quy định độ dài tối thiểu là 12 ký tự.",
+      "tags": [
+        "an-toan-thong-tin"
+      ],
+      "citations": [
+        {
+          "documentVersionId": "11111111-1111-1111-1111-111111111111",
+          "page": 1,
+          "section": "An toàn thông tin cơ bản",
+          "quote": "Mật khẩu mạnh phải có độ dài tối thiểu 12 ký tự và kết hợp chữ hoa, chữ thường, chữ số và ký tự đặc biệt."
+        }
+      ]
+    },
+    {
+      "externalId": "q-2",
+      "type": "SINGLE_CHOICE",
+      "stem": "Xác thực đa yếu tố bổ sung lớp bảo vệ nào?",
+      "difficulty": "EASY",
+      "points": 1,
+      "options": [
+        {
+          "id": "A",
+          "text": "Một lớp ngoài mật khẩu"
+        },
+        {
+          "id": "B",
+          "text": "Chỉ thay đổi tên tài khoản"
+        },
+        {
+          "id": "C",
+          "text": "Loại bỏ mọi mật khẩu"
+        },
+        {
+          "id": "D",
+          "text": "Tắt phân quyền"
+        }
+      ],
+      "correctOptionIds": [
+        "A"
+      ],
+      "explanation": "Xác thực đa yếu tố bổ sung một lớp bảo vệ ngoài mật khẩu.",
+      "tags": [
+        "an-toan-thong-tin"
+      ],
+      "citations": [
+        {
+          "documentVersionId": "11111111-1111-1111-1111-111111111111",
+          "page": 1,
+          "section": "An toàn thông tin cơ bản",
+          "quote": "Xác thực đa yếu tố bổ sung một lớp bảo vệ ngoài mật khẩu và làm giảm nguy cơ tài khoản bị chiếm đoạt."
+        }
+      ]
+    },
+    {
+      "externalId": "q-3",
+      "type": "SINGLE_CHOICE",
+      "stem": "Dữ liệu nhạy cảm cần được mã hóa khi nào?",
+      "difficulty": "EASY",
+      "points": 1,
+      "options": [
+        {
+          "id": "A",
+          "text": "Chỉ khi lưu trữ"
+        },
+        {
+          "id": "B",
+          "text": "Chỉ khi truyền"
+        },
+        {
+          "id": "C",
+          "text": "Khi lưu trữ và khi truyền"
+        },
+        {
+          "id": "D",
+          "text": "Không cần mã hóa"
+        }
+      ],
+      "correctOptionIds": [
+        "C"
+      ],
+      "explanation": "Tài liệu yêu cầu mã hóa ở cả hai trạng thái: lưu trữ và truyền qua mạng.",
+      "tags": [
+        "an-toan-thong-tin"
+      ],
+      "citations": [
+        {
+          "documentVersionId": "22222222-2222-2222-2222-222222222222",
+          "page": null,
+          "section": "An toàn thông tin cơ bản",
+          "quote": "Dữ liệu nhạy cảm phải được mã hóa khi lưu trữ và khi truyền qua mạng."
+        }
+      ]
+    },
+    {
+      "externalId": "q-4",
+      "type": "SINGLE_CHOICE",
+      "stem": "Một nhân viên được cấp quyền quản trị dù chỉ cần xem báo cáo. Nguyên tắc nào đang bị vi phạm?",
+      "difficulty": "MEDIUM",
+      "points": 1,
+      "options": [
+        {
+          "id": "A",
+          "text": "Đặc quyền tối thiểu"
+        },
+        {
+          "id": "B",
+          "text": "Sao lưu định kỳ"
+        },
+        {
+          "id": "C",
+          "text": "Mã hóa khi truyền"
+        },
+        {
+          "id": "D",
+          "text": "Xác thực đa yếu tố"
+        }
+      ],
+      "correctOptionIds": [
+        "A"
+      ],
+      "explanation": "Quyền quản trị vượt quá nhu cầu công việc, trái với nguyên tắc đặc quyền tối thiểu.",
+      "tags": [
+        "an-toan-thong-tin"
+      ],
+      "citations": [
+        {
+          "documentVersionId": "11111111-1111-1111-1111-111111111111",
+          "page": 1,
+          "section": "An toàn thông tin cơ bản",
+          "quote": "Nguyên tắc đặc quyền tối thiểu yêu cầu người dùng chỉ được cấp đúng quyền cần thiết để hoàn thành công việc."
+        }
+      ]
+    },
+    {
+      "externalId": "q-5",
+      "type": "SINGLE_CHOICE",
+      "stem": "Khi nhận email có liên kết không xác định, hành động phù hợp nhất là gì?",
+      "difficulty": "MEDIUM",
+      "points": 1,
+      "options": [
+        {
+          "id": "A",
+          "text": "Nhấp để kiểm tra"
+        },
+        {
+          "id": "B",
+          "text": "Chuyển cho mọi đồng nghiệp"
+        },
+        {
+          "id": "C",
+          "text": "Báo cáo bộ phận an toàn thông tin và không nhấp liên kết"
+        },
+        {
+          "id": "D",
+          "text": "Trả lời người gửi để hỏi mật khẩu"
+        }
+      ],
+      "correctOptionIds": [
+        "C"
+      ],
+      "explanation": "Tài liệu hướng dẫn báo cáo email đáng ngờ và không nhấp vào liên kết không xác định.",
+      "tags": [
+        "an-toan-thong-tin"
+      ],
+      "citations": [
+        {
+          "documentVersionId": "22222222-2222-2222-2222-222222222222",
+          "page": null,
+          "section": "An toàn thông tin cơ bản",
+          "quote": "Nhân viên phải báo cáo email đáng ngờ cho bộ phận an toàn thông tin và không nhấp vào liên kết không xác định."
+        }
+      ]
+    },
+    {
+      "externalId": "q-6",
+      "type": "TRUE_FALSE",
+      "stem": "Nhận định 'Có bản sao lưu là đủ, không cần thử khôi phục' đúng hay sai?",
+      "difficulty": "MEDIUM",
+      "points": 1,
+      "options": [
+        {
+          "id": "A",
+          "text": "Đúng"
+        },
+        {
+          "id": "B",
+          "text": "Sai"
+        }
+      ],
+      "correctOptionIds": [
+        "B"
+      ],
+      "explanation": "Sai, vì tài liệu yêu cầu bản sao lưu phải được kiểm tra khả năng khôi phục.",
+      "tags": [
+        "an-toan-thong-tin"
+      ],
+      "citations": [
+        {
+          "documentVersionId": "22222222-2222-2222-2222-222222222222",
+          "page": null,
+          "section": "An toàn thông tin cơ bản",
+          "quote": "Sao lưu dữ liệu cần được thực hiện định kỳ và bản sao lưu phải được kiểm tra khả năng khôi phục."
+        }
+      ]
+    },
+    {
+      "externalId": "q-7",
+      "type": "SINGLE_CHOICE",
+      "stem": "Biện pháp nào trực tiếp làm giảm nguy cơ tài khoản bị chiếm đoạt ngoài việc dùng mật khẩu mạnh?",
+      "difficulty": "MEDIUM",
+      "points": 1,
+      "options": [
+        {
+          "id": "A",
+          "text": "Xác thực đa yếu tố"
+        },
+        {
+          "id": "B",
+          "text": "Tăng quyền quản trị"
+        },
+        {
+          "id": "C",
+          "text": "Tắt mã hóa"
+        },
+        {
+          "id": "D",
+          "text": "Không sao lưu"
+        }
+      ],
+      "correctOptionIds": [
+        "A"
+      ],
+      "explanation": "Xác thực đa yếu tố bổ sung lớp bảo vệ ngoài mật khẩu và giảm nguy cơ chiếm đoạt tài khoản.",
+      "tags": [
+        "an-toan-thong-tin"
+      ],
+      "citations": [
+        {
+          "documentVersionId": "11111111-1111-1111-1111-111111111111",
+          "page": 1,
+          "section": "An toàn thông tin cơ bản",
+          "quote": "Xác thực đa yếu tố bổ sung một lớp bảo vệ ngoài mật khẩu và làm giảm nguy cơ tài khoản bị chiếm đoạt."
+        }
+      ]
+    },
+    {
+      "externalId": "q-8",
+      "type": "SINGLE_CHOICE",
+      "stem": "Cấu hình nào phù hợp nhất với nguyên tắc đặc quyền tối thiểu?",
+      "difficulty": "MEDIUM",
+      "points": 1,
+      "options": [
+        {
+          "id": "A",
+          "text": "Mọi người đều là quản trị viên"
+        },
+        {
+          "id": "B",
+          "text": "Chỉ cấp đúng quyền cần cho công việc"
+        },
+        {
+          "id": "C",
+          "text": "Dùng chung một tài khoản"
+        },
+        {
+          "id": "D",
+          "text": "Không phân quyền dữ liệu"
+        }
+      ],
+      "correctOptionIds": [
+        "B"
+      ],
+      "explanation": "Nguyên tắc đặc quyền tối thiểu yêu cầu chỉ cấp đúng quyền cần thiết.",
+      "tags": [
+        "an-toan-thong-tin"
+      ],
+      "citations": [
+        {
+          "documentVersionId": "11111111-1111-1111-1111-111111111111",
+          "page": 1,
+          "section": "An toàn thông tin cơ bản",
+          "quote": "Nguyên tắc đặc quyền tối thiểu yêu cầu người dùng chỉ được cấp đúng quyền cần thiết để hoàn thành công việc."
+        }
+      ]
+    },
+    {
+      "externalId": "q-9",
+      "type": "SINGLE_CHOICE",
+      "stem": "Doanh nghiệp đã mã hóa dữ liệu trên máy chủ nhưng gửi dữ liệu nhạy cảm qua mạng ở dạng rõ. Đánh giá nào đúng?",
+      "difficulty": "HARD",
+      "points": 2,
+      "options": [
+        {
+          "id": "A",
+          "text": "Đã đáp ứng đầy đủ"
+        },
+        {
+          "id": "B",
+          "text": "Chưa đáp ứng vì phải mã hóa cả khi truyền"
+        },
+        {
+          "id": "C",
+          "text": "Chỉ cần đổi mật khẩu"
+        },
+        {
+          "id": "D",
+          "text": "Không liên quan an toàn thông tin"
+        }
+      ],
+      "correctOptionIds": [
+        "B"
+      ],
+      "explanation": "Tài liệu yêu cầu mã hóa dữ liệu nhạy cảm cả khi lưu trữ và khi truyền qua mạng.",
+      "tags": [
+        "an-toan-thong-tin"
+      ],
+      "citations": [
+        {
+          "documentVersionId": "22222222-2222-2222-2222-222222222222",
+          "page": null,
+          "section": "An toàn thông tin cơ bản",
+          "quote": "Dữ liệu nhạy cảm phải được mã hóa khi lưu trữ và khi truyền qua mạng."
+        }
+      ]
+    },
+    {
+      "externalId": "q-10",
+      "type": "SINGLE_CHOICE",
+      "stem": "Một kế hoạch ứng phó email lừa đảo chỉ yêu cầu nhân viên xóa thư. Thành phần nào còn thiếu theo tài liệu?",
+      "difficulty": "HARD",
+      "points": 2,
+      "options": [
+        {
+          "id": "A",
+          "text": "Báo cáo cho bộ phận an toàn thông tin và tránh nhấp liên kết"
+        },
+        {
+          "id": "B",
+          "text": "Cấp thêm quyền quản trị"
+        },
+        {
+          "id": "C",
+          "text": "Tắt xác thực đa yếu tố"
+        },
+        {
+          "id": "D",
+          "text": "Ngừng sao lưu dữ liệu"
+        }
+      ],
+      "correctOptionIds": [
+        "A"
+      ],
+      "explanation": "Ngoài việc không tương tác với liên kết, nhân viên còn phải báo cáo email đáng ngờ cho bộ phận an toàn thông tin.",
+      "tags": [
+        "an-toan-thong-tin"
+      ],
+      "citations": [
+        {
+          "documentVersionId": "22222222-2222-2222-2222-222222222222",
+          "page": null,
+          "section": "An toàn thông tin cơ bản",
+          "quote": "Nhân viên phải báo cáo email đáng ngờ cho bộ phận an toàn thông tin và không nhấp vào liên kết không xác định."
+        }
+      ]
+    }
+  ]
+}

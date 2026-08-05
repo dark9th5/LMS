@@ -135,7 +135,7 @@ class OrganizationService(
         if (!allowed) throw ApiException(HttpStatus.FORBIDDEN, "ORGANIZATION_OUT_OF_SCOPE", "Đơn vị ngoài phạm vi được cấp")
     }
 
-    private fun isGlobal(permission: String): Boolean = CurrentUser.isSystemAdmin() ||
+    private fun isGlobal(permission: String): Boolean = CurrentUser.hasRole("ADMIN") ||
         permission in CurrentUser.authorities() ||
         Permissions.ORGANIZATION_MANAGE in CurrentUser.authorities() ||
         Permissions.ORGANIZATION_WRITE in CurrentUser.authorities() ||

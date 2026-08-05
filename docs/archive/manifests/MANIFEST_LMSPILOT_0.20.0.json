@@ -1,0 +1,46 @@
+{
+  "release": "LMSPilot 0.20.0",
+  "version": "0.20.0",
+  "date": "2026-08-05",
+  "type": "full-source release candidate",
+  "base": "LMSPilot 0.18.0 readable UI",
+  "highlights": [
+    "Exactly three mutually exclusive product roles: ADMIN, INSTRUCTOR and STUDENT",
+    "Separate admin, instructor and student portals with route guards and role-owned navigation",
+    "Course-only public product with no class routes or class navigation",
+    "Course quizzes live inside their owning course and can be generated from course PDF/DOCX resources",
+    "Standalone exams remain separate and can be generated from instructor-owned PDF/DOCX files",
+    "Learning player supports video, PDF, safe DOCX text preview and direct assignment submission",
+    "Customer-configurable login background, logo, brand name and theme color",
+    "Dark theme uses muted blue-gray separators instead of white borders",
+    "Nineteen backend services have separate folders, README ownership notes and unique ports 8080-8098"
+  ],
+  "verification": {
+    "pythonTestsPassed": 139,
+    "pythonTestsSkipped": 34,
+    "pythonTestsTotal": 173,
+    "repositoryValidator": "PASS",
+    "servicePortValidator": "PASS (19 unique ports)",
+    "typescriptSyntax": "PASS (88 TS/TSX files)",
+    "platformContractsKotlinc": "PASS",
+    "gitDiffCheck": "PASS",
+    "fullNpmBuild": "NOT RUN - dependency registry unavailable in packaging environment",
+    "fullGradle": "NOT RUN - Gradle distribution unavailable in packaging environment",
+    "dockerE2E": "NOT RUN",
+    "liveAiProvider": "NOT RUN"
+  },
+  "knownLimitations": [
+    "DOCX preview is a safe extracted text/paragraph preview, not pixel-perfect Microsoft Word rendering",
+    "Production deployment requires full Next.js, Gradle, migration, Docker, browser E2E, three-role UAT and live AI provider verification"
+  ],
+  "documentation": [
+    "README.md",
+    "BAT_DAU_TAI_DAY.md",
+    "RELEASE_LMSPILOT_0.20.0.md",
+    "TEST_RESULTS_LMSPILOT_0.20.0.md",
+    "DELIVERY_STATUS.md",
+    "docs/THREE_ROLE_ARCHITECTURE_0.20.0.md",
+    "docs/SERVICE_CATALOG_0.20.0.md",
+    "docs/screenshots/0.20.0"
+  ]
+}

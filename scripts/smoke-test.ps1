@@ -65,14 +65,14 @@ Assert-Role $admin "ADMIN" "admin"
 Auth-Get $admin.accessToken "/api/v1/users"
 Auth-Get $admin.accessToken "/api/v1/organization/units"
 Auth-Get $admin.accessToken "/api/v1/courses"
-Auth-Get $admin.accessToken "/api/v1/classes"
+Auth-Get $admin.accessToken "/api/v1/users"
 Auth-Get $admin.accessToken "/api/v1/reports/dashboard"
 
 $instructor = Login "instructor"
 if (-not $instructor.accessToken) { throw "Dang nhap instructor khong tra access token." }
 Assert-Role $instructor "INSTRUCTOR" "instructor"
 Auth-Get $instructor.accessToken "/api/v1/courses"
-Auth-Get $instructor.accessToken "/api/v1/classes"
+Auth-Get $instructor.accessToken "/api/v1/courses"
 Auth-Get $instructor.accessToken "/api/v1/questions"
 Auth-Get $instructor.accessToken "/api/v1/grades/queue"
 

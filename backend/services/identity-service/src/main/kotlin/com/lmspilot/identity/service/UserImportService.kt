@@ -410,7 +410,9 @@ class UserImportService(
             if (password.length !in 12..128 && !(mapping.mode == UserImportMode.UPSERT && password.isBlank() && !mapping.updatePasswordOnUpsert)) {
                 errors += "Mật khẩu tạm thời phải có 12-128 ký tự"
             }
-            if (roleCodes.isEmpty()) errors += "Phải có ít nhất một vai trò"
+            if (roleCodes.size != 1) errors += "Mỗi tài khoản phải có đúng một vai trò"
+            val invalidProductRoles = roleCodes.filterNot { it in setOf("ADMIN", "INSTRUCTOR", "STUDENT") }
+            if (invalidProductRoles.isNotEmpty()) errors += "Chỉ chấp nhận ADMIN, INSTRUCTOR hoặc STUDENT"
             val unknownRoles = roleCodes.filterNot { roleCatalog.containsKey(it) }
             if (unknownRoles.isNotEmpty()) errors += "Vai trò không tồn tại: ${unknownRoles.joinToString()}"
 

@@ -20,7 +20,7 @@ THEME_KEYS = (
 )
 
 
-@unittest.skip("Superseded by the CLS 0.16 unified design system")
+@unittest.skip("Superseded by the LMSPilot 0.16 unified design system")
 class Release012ThemeStudioTests(unittest.TestCase):
     def read(self, relative: str) -> str:
         return (ROOT / relative).read_text(encoding="utf-8")

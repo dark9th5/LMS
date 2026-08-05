@@ -114,11 +114,26 @@ for path in yaml_files:
 settings = read("backend/settings.gradle.kts")
 services_root = ROOT / "backend/services"
 services = sorted(path for path in services_root.iterdir() if path.is_dir())
+service_ports: dict[int, str] = {}
 for service in services:
     if not (service / "build.gradle.kts").exists():
         fail(f"Missing build.gradle.kts: {service.name}")
+    if not (service / "README.md").exists():
+        fail(f"Missing service ownership README: {service.name}")
     if not list((service / "src/main/kotlin").rglob("*Application.kt")):
         fail(f"Missing application entry point: {service.name}")
+    application_yml = service / "src/main/resources/application.yml"
+    if not application_yml.exists():
+        fail(f"Missing application.yml: {service.name}")
+    port_match = re.search(r"(?m)^\s*port:\s*\$\{SERVER_PORT:(\d+)\}\s*$", application_yml.read_text(encoding="utf-8"))
+    if not port_match:
+        fail(f"Service does not declare a default SERVER_PORT: {service.name}")
+    port = int(port_match.group(1))
+    if port in service_ports:
+        fail(f"Duplicate service port {port}: {service_ports[port]} and {service.name}")
+    service_ports[port] = service.name
+    if f"`{port}`" not in (service / "README.md").read_text(encoding="utf-8"):
+        fail(f"Service README port does not match application.yml: {service.name}")
     if f'":services:{service.name}"' not in settings:
         fail(f"Service is not included in Gradle settings: {service.name}")
     migration_dir = service / "src/main/resources/db/migration"
@@ -230,6 +245,23 @@ if '"/api/v1/organization"' in web_source:
 if '"/api/v1/organization/units"' not in web_source:
     fail("Frontend organization endpoint is missing")
 
+if '"/api/v1/classes' in web_source or '/classes' in web_source:
+    fail("Public class UI/API references are not allowed in the three-role course model")
+
+assignment_api = read("backend/services/learning-service/src/main/kotlin/com/lmspilot/learning/api/AssignmentSubmissionApi.kt")
+if '@GetMapping("/queue/{classId}")' in assignment_api or '@RequestParam classId' in assignment_api:
+    fail("Public class-based assignment queues are not allowed; grading must be course-scoped")
+assignment_response = assignment_api[assignment_api.index("data class AssignmentSubmissionResponse("):assignment_api.index("data class AssignmentFileMetadata(")]
+if "classId" in assignment_response:
+    fail("Public assignment responses must not expose legacy class identifiers")
+
+role_source = read("apps/web/lib/role.ts")
+for role in ("ADMIN", "INSTRUCTOR", "STUDENT"):
+    if f'"{role}"' not in role_source:
+        fail(f"Missing canonical portal role: {role}")
+if 'roles.length === 1' not in read("apps/web/app/api/auth/login/route.ts"):
+    fail("Login must reject sessions that do not contain exactly one canonical role")
+
 compose_text = read("docker-compose.yml")
 for required_setting in (
     "LMSPILOT_COOKIE_SECURE",
@@ -301,5 +333,5 @@ for key in ("LMSPILOT_JWT_SECRET", "LMSPILOT_INTERNAL_TOKEN"):
 
 print(
     f"OK: {len(json_files)} JSON, {len(yaml_files)} YAML, {len(services)} services, "
-    f"{len(migration_services)} Flyway services, API wiring, wrapper, scripts and Docker layout validated."
+    f"{len(migration_services)} Flyway services, {len(service_ports)} unique ports, API wiring, wrapper, scripts and Docker layout validated."
 )

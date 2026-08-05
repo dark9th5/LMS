@@ -33,6 +33,8 @@ import java.util.UUID
 import javax.crypto.Cipher
 import javax.crypto.spec.GCMParameterSpec
 import javax.crypto.spec.SecretKeySpec
+import javax.net.ssl.SSLSocket
+import javax.net.ssl.SSLSocketFactory
 
 private const val DEFAULT_PROFILE = "default"
 private const val COLOR_PATTERN = "^#[0-9A-Fa-f]{6}([0-9A-Fa-f]{2})?$"
@@ -116,14 +118,45 @@ class ConfigurationSecretCipher(@Value("\${configuration.secret-key}") secret: S
     }
 }
 
+data class BrandingFileMetadata(
+    val id: UUID,
+    val ownerId: UUID,
+    val originalName: String,
+    val contentType: String,
+    val purpose: String,
+    val status: String,
+)
+
 @Service
-class BrandingService(private val repository: BrandingProfileRepository) {
+class BrandingFileClient(
+    builder: RestClient.Builder,
+    @Value("\${file-storage-service.url:http://localhost:8089}") baseUrl: String,
+    @Value("\${lmspilot.internal-token}") private val serviceToken: String,
+) {
+    private val client = builder.baseUrl(baseUrl).build()
+
+    fun metadata(fileId: UUID): BrandingFileMetadata = client.get()
+        .uri("/internal/v1/files/{id}", fileId)
+        .header("X-Service-Token", serviceToken)
+        .retrieve()
+        .body(BrandingFileMetadata::class.java)
+        ?: throw ApiException(HttpStatus.SERVICE_UNAVAILABLE, "FILE_SERVICE_UNAVAILABLE", "Không đọc được thông tin tệp thương hiệu")
+}
+
+@Service
+class BrandingService(
+    private val repository: BrandingProfileRepository,
+    private val files: BrandingFileClient,
+) {
     @Transactional(readOnly = true)
     fun publicBranding(): BrandingResponse = getEntity().response()
 
     @Transactional
     fun update(input: BrandingRequest): BrandingResponse {
         val entity = getEntity()
+        validateChangedAsset(input.logoFileId, entity.logoFileId, "BRANDING_LOGO", setOf("image/png", "image/jpeg"), "logo")
+        validateChangedAsset(input.faviconFileId, entity.faviconFileId, "BRANDING_LOGO", setOf("image/png", "image/jpeg"), "favicon")
+        validateChangedAsset(input.backgroundFileId, entity.backgroundFileId, "BRANDING_BACKGROUND", setOf("image/png", "image/jpeg", "image/webp"), "ảnh nền đăng nhập")
         entity.systemName = input.systemName.trim()
         entity.introduction = input.introduction?.trim()?.takeIf { it.isNotBlank() }
         entity.logoFileId = input.logoFileId
@@ -138,6 +171,23 @@ class BrandingService(private val repository: BrandingProfileRepository) {
         entity.updatedBy = CurrentUser.id()
         entity.updatedAt = Instant.now()
         return repository.save(entity).response()
+    }
+
+    private fun validateChangedAsset(
+        requestedId: UUID?,
+        currentId: UUID?,
+        expectedPurpose: String,
+        allowedTypes: Set<String>,
+        label: String,
+    ) {
+        if (requestedId == null || requestedId == currentId) return
+        val metadata = files.metadata(requestedId)
+        if (metadata.ownerId != CurrentUser.id()) {
+            throw ApiException(HttpStatus.FORBIDDEN, "BRANDING_FILE_OWNER_MISMATCH", "Tệp $label không thuộc quản trị viên hiện tại")
+        }
+        if (metadata.status != "AVAILABLE" || metadata.purpose != expectedPurpose || metadata.contentType !in allowedTypes) {
+            throw ApiException(HttpStatus.BAD_REQUEST, "INVALID_BRANDING_FILE", "Tệp $label không đúng định dạng hoặc mục đích sử dụng")
+        }
     }
 
     private fun getEntity(): BrandingProfileEntity = repository.findByProfileKey(DEFAULT_PROFILE)
@@ -206,6 +256,7 @@ class ExternalServiceConfigurationService(
 
     @Transactional
     fun save(id: UUID?, input: ExternalServiceRequest): ExternalServiceResponse {
+        validateConfig(input.serviceType, input.config)
         val normalizedKey = input.configKey.trim().lowercase()
         val entity = when {
             id != null -> repository.findById(id).orElseThrow { notFound() }
@@ -235,27 +286,110 @@ class ExternalServiceConfigurationService(
         val secret = entity.encryptedSecret?.let(cipher::decrypt)
         val result = runCatching { performHealthCheck(entity.serviceType, config, secret) }
         entity.lastCheckedAt = Instant.now()
-        entity.healthStatus = result.getOrElse { ExternalServiceHealth.UNREACHABLE }
+        entity.healthStatus = result.getOrElse { cause ->
+            if (cause is ApiException || cause is IllegalArgumentException) {
+                ExternalServiceHealth.MISCONFIGURED
+            } else {
+                ExternalServiceHealth.UNREACHABLE
+            }
+        }
         entity.lastError = result.exceptionOrNull()?.message?.take(1000)
         entity.updatedAt = Instant.now()
         return entity.response(mapper)
     }
 
+    private fun requiredText(config: Map<String, Any?>, key: String, label: String): String =
+        config[key]?.toString()?.trim()?.takeIf { it.isNotBlank() }
+            ?: throw ApiException(HttpStatus.BAD_REQUEST, "EXTERNAL_SERVICE_CONFIG_INVALID", "Thiếu $label")
+
+    private fun port(config: Map<String, Any?>, fallback: Int): Int {
+        val raw = config["port"]?.toString()?.trim().orEmpty()
+        if (raw.isBlank()) return fallback
+        return raw.toIntOrNull()?.takeIf { it in 1..65535 }
+            ?: throw ApiException(HttpStatus.BAD_REQUEST, "EXTERNAL_SERVICE_CONFIG_INVALID", "Cổng kết nối phải nằm trong khoảng 1-65535")
+    }
+
+    private fun httpEndpoint(config: Map<String, Any?>): URI {
+        val value = (config["endpoint"] ?: config["baseUrl"])?.toString()?.trim()
+            ?.takeIf { it.isNotBlank() }
+            ?: throw ApiException(HttpStatus.BAD_REQUEST, "EXTERNAL_SERVICE_CONFIG_INVALID", "Thiếu endpoint")
+        val uri = runCatching { URI(value) }.getOrElse {
+            throw ApiException(HttpStatus.BAD_REQUEST, "EXTERNAL_SERVICE_CONFIG_INVALID", "Endpoint không hợp lệ")
+        }
+        if (uri.scheme !in setOf("http", "https") || uri.host.isNullOrBlank()) {
+            throw ApiException(HttpStatus.BAD_REQUEST, "EXTERNAL_SERVICE_CONFIG_INVALID", "Endpoint phải là URL HTTP/HTTPS đầy đủ")
+        }
+        return uri
+    }
+
+    private fun validateConfig(type: ExternalServiceType, config: Map<String, Any?>) {
+        when (type) {
+            ExternalServiceType.REDIS -> {
+                requiredText(config, "host", "máy chủ Redis")
+                port(config, 6379)
+            }
+            ExternalServiceType.SMTP -> {
+                requiredText(config, "host", "máy chủ SMTP")
+                port(config, 587)
+                requiredText(config, "fromEmail", "email gửi")
+            }
+            ExternalServiceType.AI_PROVIDER -> {
+                httpEndpoint(config)
+                requiredText(config, "model", "model AI")
+            }
+            ExternalServiceType.OBJECT_STORAGE -> {
+                httpEndpoint(config)
+                requiredText(config, "bucket", "bucket")
+                requiredText(config, "region", "region")
+                requiredText(config, "accessKey", "access key")
+            }
+            ExternalServiceType.DOCUMENT_EDITOR -> {
+                httpEndpoint(config)
+                val callback = requiredText(config, "callbackUrl", "callback URL")
+                val callbackUri = runCatching { URI(callback) }.getOrNull()
+                if (callbackUri?.scheme !in setOf("http", "https") || callbackUri?.host.isNullOrBlank()) {
+                    throw ApiException(HttpStatus.BAD_REQUEST, "EXTERNAL_SERVICE_CONFIG_INVALID", "Callback URL phải là URL HTTP/HTTPS đầy đủ")
+                }
+            }
+            ExternalServiceType.VIDEO_CONFERENCE -> httpEndpoint(config)
+        }
+    }
+
     private fun performHealthCheck(type: ExternalServiceType, config: Map<String, Any?>, secret: String?): ExternalServiceHealth = when (type) {
         ExternalServiceType.REDIS -> {
-            val host = config["host"]?.toString()?.takeIf { it.isNotBlank() } ?: throw IllegalArgumentException("Thiếu host Redis")
-            val port = config["port"]?.toString()?.toIntOrNull() ?: 6379
-            Socket().use { it.connect(InetSocketAddress(host, port), 2500) }
+            val host = requiredText(config, "host", "máy chủ Redis")
+            val targetPort = port(config, 6379)
+            val tls = config["tls"]?.toString()?.toBooleanStrictOrNull() == true
+            val socket = if (tls) SSLSocketFactory.getDefault().createSocket() else Socket()
+            socket.use {
+                it.connect(InetSocketAddress(host, targetPort), 3000)
+                if (it is SSLSocket) it.startHandshake()
+            }
+            ExternalServiceHealth.HEALTHY
+        }
+        ExternalServiceType.SMTP -> {
+            val host = requiredText(config, "host", "máy chủ SMTP")
+            val targetPort = port(config, 587)
+            val implicitTls = config["security"]?.toString()?.uppercase() == "TLS"
+            val socket = if (implicitTls) SSLSocketFactory.getDefault().createSocket() else Socket()
+            socket.use { it.connect(InetSocketAddress(host, targetPort), 3000) }
             ExternalServiceHealth.HEALTHY
         }
         else -> {
-            val endpoint = config["endpoint"]?.toString() ?: config["baseUrl"]?.toString()
-                ?: throw IllegalArgumentException("Thiếu endpoint")
-            val connection = URI(endpoint).toURL().openConnection() as HttpURLConnection
-            connection.connectTimeout = 3000
-            connection.readTimeout = 3000
-            connection.requestMethod = "GET"
-            if (!secret.isNullOrBlank()) connection.setRequestProperty("Authorization", "Bearer $secret")
+            val base = httpEndpoint(config).toString().trimEnd('/')
+            val target = when (type) {
+                ExternalServiceType.DOCUMENT_EDITOR -> "$base/healthcheck"
+                ExternalServiceType.AI_PROVIDER -> "$base/models"
+                ExternalServiceType.OBJECT_STORAGE -> "$base/${requiredText(config, "bucket", "bucket")}"
+                else -> base
+            }
+            val connection = URI(target).toURL().openConnection() as HttpURLConnection
+            connection.connectTimeout = 4000
+            connection.readTimeout = 4000
+            connection.requestMethod = if (type == ExternalServiceType.OBJECT_STORAGE) "HEAD" else "GET"
+            if (type == ExternalServiceType.AI_PROVIDER && !secret.isNullOrBlank()) {
+                connection.setRequestProperty("Authorization", "Bearer $secret")
+            }
             val status = connection.responseCode
             if (status in 200..499) ExternalServiceHealth.HEALTHY else ExternalServiceHealth.DEGRADED
         }

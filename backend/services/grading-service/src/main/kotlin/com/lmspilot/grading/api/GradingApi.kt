@@ -105,11 +105,8 @@ class GradingService(
     @Transactional(readOnly = true)
     fun queue(): List<GradeResponse> {
         val source = repository.findAllByStatusOrderByCreatedAtAsc(GradeStatus.PENDING_MANUAL)
-        val scoped = if (isAdmin()) source else {
-            val allowed = manageableExamIds(CurrentUser.id())
-            source.filter { it.examId in allowed }
-        }
-        return scoped.map { it.response(mapper) }
+        val allowed = manageableExamIds(CurrentUser.id())
+        return source.filter { it.examId in allowed }.map { it.response(mapper) }
     }
 
     @Transactional
@@ -161,7 +158,6 @@ class GradingService(
     @Transactional(readOnly = true)
     fun appealQueue(): List<GradeAppealResponse> {
         val open = appeals.findAllByStatusInOrderByCreatedAtAsc(listOf(GradeAppealStatus.OPEN, GradeAppealStatus.UNDER_REVIEW))
-        if (isAdmin()) return open.map { it.appealResponse() }
         val allowed = manageableExamIds(CurrentUser.id())
         val gradeById = repository.findAllById(open.map { it.gradeId }).associateBy { it.id }
         return open.filter { gradeById[it.gradeId]?.examId in allowed }.map { it.appealResponse() }
@@ -247,12 +243,11 @@ class GradingService(
     }
 
     private fun requireManageable(examId: UUID) {
-        if (!isAdmin() && examId !in manageableExamIds(CurrentUser.id())) {
+        if (examId !in manageableExamIds(CurrentUser.id())) {
             throw ApiException(HttpStatus.FORBIDDEN, "GRADE_OUT_OF_SCOPE", "Kết quả ngoài phạm vi được phân công")
         }
     }
 
-    private fun isAdmin() = CurrentUser.isSystemAdmin()
 
     private fun matches(answer: JsonNode?, expected: List<String>, type: String): Boolean {
         if (answer == null || answer.isNull) return false

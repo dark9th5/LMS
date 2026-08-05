@@ -1,3 +1,5 @@
+import type { PortalRole } from "./role";
+
 export type ScopeType =
   | "SYSTEM"
   | "BRANCH"
@@ -14,7 +16,7 @@ export type ScopedPermission = {
 };
 
 export type SessionAuthorization = {
-  accountType: "SYSTEM_ADMIN" | "USER";
+  role: PortalRole;
   permissions: ReadonlySet<string>;
   scopedPermissions?: readonly ScopedPermission[];
 };
@@ -24,8 +26,6 @@ export function can(
   permission: string,
   scope?: { type: ScopeType; id?: string },
 ): boolean {
-  if (auth.accountType === "SYSTEM_ADMIN") return true;
-
   const relevant = (auth.scopedPermissions ?? []).filter((grant) => {
     if (grant.permission !== permission) return false;
     if (grant.scopeType === "SYSTEM") return true;
@@ -36,13 +36,9 @@ export function can(
   return auth.permissions.has(permission) || relevant.some((grant) => grant.effect === "ALLOW");
 }
 
-/** UI navigation must be permission-based; never branch on role code. */
+/** Product navigation is role-owned; permissions only narrow actions inside that role. */
 export const navigationRules = {
-  administration: ["users:read", "roles:read", "organization:read"],
-  courseAuthoring: ["courses:create", "courses:update"],
-  learning: ["courses:learn"],
-  exams: ["assessments:take", "exams:manage"],
-  reports: ["reports:read:self", "reports:read:scope"],
-  newsManagement: ["news:manage"],
-  branding: ["branding:manage"],
+  ADMIN: ["users:read", "organization:read", "reports:read:scope", "configuration:manage"],
+  INSTRUCTOR: ["courses:create", "assessments:create", "assessments:grade", "reports:read:scope"],
+  STUDENT: ["courses:learn", "assessments:take", "grades:read:self", "certificates:read:self"],
 } as const;

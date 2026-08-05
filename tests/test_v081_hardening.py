@@ -94,11 +94,11 @@ class Release081HardeningTests(unittest.TestCase):
         self.assertIn("fun metadata(id: UUID): StoredFileResponse = readable(id).response()", storage)
         self.assertIn("val entity = readable(id)", storage)
         self.assertIn('"FILE_READ_FORBIDDEN"', storage)
-        self.assertIn("file.ownerId != CurrentUser.id() && !hasAdministrativeFileAccess()", editing)
+        self.assertIn("file.ownerId != CurrentUser.id()", editing)
+        self.assertIn('"FILE_READ_FORBIDDEN"', editing)
         self.assertIn("effectivePort(uri) != effectivePort(configured)", editing)
         self.assertIn("followRedirects(HttpClient.Redirect.NEVER)", editing)
         self.assertIn("if (total > maxSizeBytes)", editing)
-
 
 if __name__ == "__main__":
     unittest.main()

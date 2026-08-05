@@ -92,6 +92,7 @@ class UserManagementService(
         user.organizationUnitId = input.organizationUnitId
         val rolesChanged = user.roles.map { it.code }.toSet() != input.roleCodes.map(String::uppercase).toSet()
         user.roles = resolveRoles(input.roleCodes)
+        user.accountType = if (user.protectedAccount) AccountType.SYSTEM_ADMIN else AccountType.USER
         user.status = input.status
         if (rolesChanged || input.status != AccountStatus.ACTIVE) refreshTokens.revokeAllByUserId(user.id, Instant.now(), if (rolesChanged) "ROLE_CHANGED" else "ACCOUNT_STATUS_CHANGED")
         user.updatedAt = Instant.now()
@@ -111,39 +112,32 @@ class UserManagementService(
     }
 
     @Transactional(readOnly = true)
-    fun listRoles(): List<RoleResponse> = roles.findAll(Sort.by("name")).map { it.toResponse() }
+    fun studentDirectory(): List<StudentDirectoryItem> =
+        users.findAll(Sort.by(Sort.Direction.ASC, "fullName"))
+            .asSequence()
+            .filter { it.status == AccountStatus.ACTIVE }
+            .filter { account -> account.roles.any { it.code.equals("STUDENT", ignoreCase = true) } }
+            .map { StudentDirectoryItem(it.id, it.code, it.fullName, it.email) }
+            .toList()
+
+    @Transactional(readOnly = true)
+    fun listRoles(): List<RoleResponse> = roles.findAll(Sort.by("name")).filter { it.code.uppercase() in setOf("ADMIN", "INSTRUCTOR", "STUDENT") }.map { it.toResponse() }
 
     @Transactional
-    fun createRole(input: RoleRequest): RoleResponse {
-        if (roles.existsByCodeIgnoreCase(input.code)) conflict("Mã vai trò đã tồn tại")
-        validatePermissions(input.permissions)
-        return roles.save(
-            RoleEntity(
-                code = input.code.trim().uppercase(),
-                name = input.name.trim(),
-                permissions = input.permissions.toMutableSet(),
-            )
-        ).toResponse()
-    }
+    fun createRole(input: RoleRequest): RoleResponse =
+        throw ApiException(
+            HttpStatus.CONFLICT,
+            "FIXED_ROLE_MODEL",
+            "Hệ thống sử dụng cố định ba vai trò ADMIN, INSTRUCTOR và STUDENT",
+        )
 
     @Transactional
-    fun updateRole(id: UUID, input: RoleRequest): RoleResponse {
-        val role = roles.findById(id).orElseThrow {
-            ApiException(HttpStatus.NOT_FOUND, "ROLE_NOT_FOUND", "Không tìm thấy vai trò")
-        }
-        validatePermissions(input.permissions)
-        if (role.systemRole && (input.permissions != role.permissions || input.name.trim() != role.name)) {
-            throw ApiException(
-                HttpStatus.CONFLICT,
-                "PROTECTED_ACCESS_PROFILE",
-                "Gói quyền hệ thống là mẫu chuẩn chỉ đọc. Hãy tạo gói tùy chỉnh nếu cần thay đổi.",
-            )
-        }
-        role.name = input.name.trim()
-        role.permissions = input.permissions.toMutableSet()
-        role.updatedAt = Instant.now()
-        return role.toResponse()
-    }
+    fun updateRole(id: UUID, input: RoleRequest): RoleResponse =
+        throw ApiException(
+            HttpStatus.CONFLICT,
+            "FIXED_ROLE_MODEL",
+            "Ba vai trò hệ thống là cố định và không cho phép thay đổi permission",
+        )
 
     private fun createEntity(input: CreateUserRequest, validateUnique: Boolean = true): UserAccountEntity {
         if (validateUnique) validateUnique(input)
@@ -188,14 +182,23 @@ class UserManagementService(
         if (input.status != AccountStatus.ACTIVE) {
             throw ApiException(HttpStatus.CONFLICT, "PROTECTED_ACCOUNT", "Không thể khóa tài khoản quản trị gốc")
         }
+        val requestedRole = input.roleCodes.singleOrNull()?.trim()?.uppercase()
+        if (requestedRole != "ADMIN") {
+            throw ApiException(HttpStatus.CONFLICT, "PROTECTED_ACCOUNT", "Tài khoản quản trị gốc phải giữ vai trò ADMIN")
+        }
     }
 
     private fun resolveRoles(codes: Set<String>): MutableSet<RoleEntity> {
-        if (codes.isEmpty()) throw ApiException(HttpStatus.BAD_REQUEST, "ROLE_REQUIRED", "Phải gán ít nhất một vai trò")
-        return codes.map { code ->
-            roles.findByCodeIgnoreCase(code)
-                ?: throw ApiException(HttpStatus.BAD_REQUEST, "ROLE_NOT_FOUND", "Vai trò $code không tồn tại")
-        }.toMutableSet()
+        if (codes.size != 1) {
+            throw ApiException(HttpStatus.BAD_REQUEST, "SINGLE_ROLE_REQUIRED", "Mỗi tài khoản phải có đúng một vai trò: ADMIN, INSTRUCTOR hoặc STUDENT")
+        }
+        val code = codes.single().trim().uppercase()
+        if (code !in setOf("ADMIN", "INSTRUCTOR", "STUDENT")) {
+            throw ApiException(HttpStatus.BAD_REQUEST, "ROLE_NOT_ALLOWED", "Chỉ chấp nhận vai trò ADMIN, INSTRUCTOR hoặc STUDENT")
+        }
+        val role = roles.findByCodeIgnoreCase(code)
+            ?: throw ApiException(HttpStatus.BAD_REQUEST, "ROLE_NOT_FOUND", "Vai trò $code không tồn tại")
+        return mutableSetOf(role)
     }
 
     private fun validatePermissions(input: Set<String>) {

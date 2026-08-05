@@ -85,7 +85,7 @@ class KpiReportingService(
         return when (scope) {
             ReportScope.SELF -> readModels.findAllByUserId(CurrentUser.id())
             ReportScope.ASSIGNED -> {
-                val classIds = enrollmentScope.assignedClassIds(CurrentUser.id())
+                val classIds = enrollmentScope.assignedDeliveryIds(CurrentUser.id())
                 if (classIds.isEmpty()) emptyList() else readModels.findAllByClassIdIn(classIds)
             }
             ReportScope.SYSTEM -> readModels.findAll()
@@ -126,7 +126,7 @@ class KpiReportingService(
     }
 
     private fun validateScope(scope: ReportScope) {
-        if (scope == ReportScope.SYSTEM && !CurrentUser.isSystemAdmin() &&
+        if (scope == ReportScope.SYSTEM && !CurrentUser.hasRole("ADMIN") &&
             Permissions.REPORTS_KPI_READ !in CurrentUser.globalAuthorities() && Permissions.REPORTS_READ_SCOPE !in CurrentUser.globalAuthorities()) {
             throw ApiException(HttpStatus.FORBIDDEN, "REPORT_SCOPE_DENIED", "Chỉ quản trị hệ thống được xem KPI toàn hệ thống")
         }

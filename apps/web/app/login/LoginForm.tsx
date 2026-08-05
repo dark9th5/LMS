@@ -146,11 +146,27 @@ export function LoginForm({
 
       {demoEnabled && (
         <details className="demo-access">
-          <summary>Thông tin tài khoản trình diễn</summary>
-          <div>
-            <code>admin</code>
-            <code>{demoPassword || "Mật khẩu được cấu hình trong .env"}</code>
+          <summary>Ba tài khoản trình diễn tách biệt</summary>
+          <div className="demo-role-grid">
+            {[
+              ["admin", "Quản trị viên"],
+              ["instructor", "Giảng viên"],
+              ["student", "Học viên"],
+            ].map(([account, label]) => (
+              <button
+                type="button"
+                key={account}
+                onClick={() => {
+                  setUsername(account);
+                  if (demoPassword) setPassword(demoPassword);
+                }}
+              >
+                <strong>{label}</strong>
+                <code>{account}</code>
+              </button>
+            ))}
           </div>
+          <p>Mật khẩu: <code>{demoPassword || "Được cấu hình trong .env"}</code></p>
         </details>
       )}
     </div>

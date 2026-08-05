@@ -36,6 +36,7 @@ object Permissions {
     const val DISCUSSIONS_WRITE = "discussions:write"
     const val DISCUSSIONS_MODERATE = "discussions:moderate"
 
+    // Legacy internal aliases retained only for upgrade compatibility. No public class UI/API exists.
     const val CLASSES_READ = "classes:read"
     const val CLASSES_WRITE = "classes:write"
     const val CLASSES_MANAGE = "classes:manage"
@@ -114,74 +115,58 @@ object Permissions {
 }
 
 object DefaultRolePermissions {
+    /** Platform administration only. Teaching and learning APIs are intentionally absent. */
     val ADMIN = setOf(
         Permissions.USERS_READ, Permissions.USERS_CREATE, Permissions.USERS_UPDATE,
         Permissions.USERS_LOCK, Permissions.USERS_BULK_MANAGE, Permissions.USERS_WRITE,
         Permissions.USERS_SESSIONS_MANAGE, Permissions.USERS_PASSWORD_POLICY_MANAGE,
-        Permissions.ROLES_READ, Permissions.ROLES_MANAGE,
-        Permissions.AUTHORIZATION_GRANT, Permissions.AUTHORIZATION_REVOKE,
-        Permissions.ORGANIZATION_READ, Permissions.ORGANIZATION_MANAGE,
+        Permissions.ROLES_READ, Permissions.ORGANIZATION_READ, Permissions.ORGANIZATION_MANAGE,
         Permissions.ORGANIZATION_MEMBERSHIP_MANAGE, Permissions.ORGANIZATION_WRITE,
-        Permissions.COURSES_READ, Permissions.COURSES_CREATE, Permissions.COURSES_UPDATE,
-        Permissions.COURSES_WRITE, Permissions.COURSES_PUBLISH, Permissions.COURSES_ASSIGN,
-        Permissions.COURSE_CATEGORIES_MANAGE, Permissions.DISCUSSIONS_READ, Permissions.DISCUSSIONS_WRITE, Permissions.DISCUSSIONS_MODERATE,
-        Permissions.CLASSES_READ, Permissions.CLASSES_WRITE, Permissions.CLASSES_MANAGE,
-        Permissions.ENROLLMENTS_WRITE, Permissions.LIVE_SESSIONS_MANAGE,
-        Permissions.LEARNING_PATHS_READ, Permissions.LEARNING_PATHS_MANAGE, Permissions.LEARNING_PATHS_ASSIGN,
-        Permissions.LEARNING_READ_SCOPE, Permissions.XAPI_WRITE, Permissions.XAPI_READ_SCOPE,
-        Permissions.ASSESSMENTS_READ, Permissions.ASSESSMENTS_CREATE,
-        Permissions.ASSESSMENTS_UPDATE, Permissions.ASSESSMENTS_GRADE,
-        Permissions.ASSESSMENT_MANAGE, Permissions.GRADING_MANAGE,
-        Permissions.GRADE_APPEALS_CREATE, Permissions.GRADE_APPEALS_MANAGE,
-        Permissions.EXAMS_MANAGE, Permissions.EXAMS_ASSIGN,
-        Permissions.COMPETITIONS_MANAGE, Permissions.COMPETITIONS_REWARD,
-        Permissions.QUESTIONS_READ, Permissions.QUESTIONS_MANAGE,
-        Permissions.QUESTIONS_GENERATE_AI, Permissions.QUESTIONS_APPROVE_AI,
-        Permissions.REPORTS_READ, Permissions.REPORTS_READ_SCOPE, Permissions.REPORTS_EXPORT, Permissions.REPORTS_SCHEDULE, Permissions.REPORTS_KPI_READ,
+        Permissions.REPORTS_READ, Permissions.REPORTS_EXPORT, Permissions.REPORTS_SCHEDULE,
+        Permissions.REPORTS_KPI_READ, Permissions.BRANDING_MANAGE,
+        Permissions.CONFIGURATION_MANAGE, Permissions.INTEGRATIONS_MANAGE,
         Permissions.FILES_READ, Permissions.FILES_UPLOAD, Permissions.FILES_DOWNLOAD,
-        Permissions.FILES_EDIT, Permissions.FILES_PUBLISH, Permissions.FILES_VERSION_READ,
         Permissions.NEWS_READ, Permissions.NEWS_MANAGE, Permissions.NEWS_PUBLISH,
         Permissions.NOTIFICATION_TEMPLATES_MANAGE, Permissions.NOTIFICATION_REMINDERS_MANAGE,
-        Permissions.BRANDING_MANAGE, Permissions.CONFIGURATION_MANAGE,
-        Permissions.INTEGRATIONS_MANAGE, Permissions.AI_USE,
-        Permissions.CERTIFICATES_MANAGE, Permissions.CERTIFICATE_TEMPLATES_MANAGE,
-        Permissions.COMPETENCIES_READ_SELF, Permissions.COMPETENCIES_READ_SCOPE, Permissions.COMPETENCIES_MANAGE, Permissions.COMPETENCIES_ASSESS,
         Permissions.AUDIT_READ, Permissions.AUDIT_EXPORT,
         Permissions.OPERATIONS_MANAGE, Permissions.LICENSE_MANAGE,
     )
 
+    /** Course authoring, course quizzes, standalone exams, grading and scoped reports. */
     val INSTRUCTOR = setOf(
         Permissions.COURSES_READ, Permissions.COURSES_CREATE, Permissions.COURSES_UPDATE,
         Permissions.COURSES_WRITE, Permissions.COURSES_PUBLISH, Permissions.COURSES_ASSIGN,
-        Permissions.COURSE_CATEGORIES_MANAGE, Permissions.DISCUSSIONS_READ, Permissions.DISCUSSIONS_WRITE, Permissions.DISCUSSIONS_MODERATE,
-        Permissions.CLASSES_READ, Permissions.CLASSES_WRITE, Permissions.CLASSES_MANAGE,
-        Permissions.ENROLLMENTS_WRITE, Permissions.LIVE_SESSIONS_MANAGE, Permissions.LIVE_SESSIONS_JOIN,
-        Permissions.LEARNING_PATHS_READ, Permissions.LEARNING_PATHS_MANAGE, Permissions.LEARNING_PATHS_ASSIGN,
-        Permissions.LEARNING_READ_SCOPE, Permissions.XAPI_WRITE, Permissions.XAPI_READ_SCOPE,
+        Permissions.COURSE_CATEGORIES_MANAGE, Permissions.DISCUSSIONS_READ,
+        Permissions.DISCUSSIONS_WRITE, Permissions.DISCUSSIONS_MODERATE,
+        Permissions.ENROLLMENTS_WRITE, Permissions.LIVE_SESSIONS_MANAGE,
+        Permissions.LEARNING_READ_SCOPE,
+        Permissions.XAPI_WRITE, Permissions.XAPI_READ_SCOPE,
         Permissions.ASSESSMENTS_READ, Permissions.ASSESSMENTS_CREATE,
         Permissions.ASSESSMENTS_UPDATE, Permissions.ASSESSMENTS_GRADE,
         Permissions.ASSESSMENT_MANAGE, Permissions.GRADING_MANAGE,
-        Permissions.GRADE_APPEALS_CREATE, Permissions.GRADE_APPEALS_MANAGE,
-        Permissions.EXAMS_MANAGE, Permissions.EXAMS_ASSIGN,
-        Permissions.QUESTIONS_READ, Permissions.QUESTIONS_MANAGE,
-        Permissions.QUESTIONS_GENERATE_AI, Permissions.QUESTIONS_APPROVE_AI,
-        Permissions.REPORTS_READ, Permissions.REPORTS_READ_SCOPE, Permissions.REPORTS_EXPORT, Permissions.REPORTS_KPI_READ,
-        Permissions.COMPETENCIES_READ_SELF, Permissions.COMPETENCIES_READ_SCOPE, Permissions.COMPETENCIES_ASSESS,
-        Permissions.FILES_READ, Permissions.FILES_UPLOAD, Permissions.FILES_DOWNLOAD,
+        Permissions.GRADE_APPEALS_MANAGE, Permissions.EXAMS_MANAGE,
+        Permissions.EXAMS_ASSIGN, Permissions.QUESTIONS_READ,
+        Permissions.QUESTIONS_MANAGE, Permissions.QUESTIONS_GENERATE_AI,
+        Permissions.QUESTIONS_APPROVE_AI, Permissions.REPORTS_READ,
+        Permissions.REPORTS_READ_SCOPE, Permissions.REPORTS_EXPORT,
+        Permissions.REPORTS_KPI_READ, Permissions.FILES_READ,
+        Permissions.FILES_UPLOAD, Permissions.FILES_DOWNLOAD,
         Permissions.FILES_EDIT, Permissions.FILES_VERSION_READ,
         Permissions.NEWS_READ, Permissions.AI_USE,
     )
 
+    /** Learning, course quizzes, assigned standalone exams, personal results and certificates. */
     val STUDENT = setOf(
-        Permissions.COURSES_READ, Permissions.COURSES_LEARN, Permissions.DISCUSSIONS_READ, Permissions.DISCUSSIONS_WRITE,
-        Permissions.LEARNING_PATHS_READ,
+        Permissions.COURSES_READ, Permissions.COURSES_LEARN,
+        Permissions.DISCUSSIONS_READ, Permissions.DISCUSSIONS_WRITE,
         Permissions.LIVE_SESSIONS_JOIN,
-        Permissions.LEARNING_READ_SELF, Permissions.LEARNING_WRITE_SELF, Permissions.XAPI_WRITE,
-        Permissions.ASSESSMENT_TAKE, Permissions.ASSESSMENTS_TAKE,
-        Permissions.COMPETITIONS_PARTICIPATE,
-        Permissions.GRADES_READ_SELF, Permissions.GRADE_APPEALS_CREATE, Permissions.REPORTS_READ_SELF, Permissions.COMPETENCIES_READ_SELF,
-        Permissions.FILES_READ, Permissions.FILES_DOWNLOAD,
-        Permissions.NEWS_READ, Permissions.CERTIFICATES_READ_SELF,
+        Permissions.LEARNING_READ_SELF, Permissions.LEARNING_WRITE_SELF,
+        Permissions.XAPI_WRITE, Permissions.ASSESSMENT_TAKE,
+        Permissions.ASSESSMENTS_TAKE, Permissions.GRADES_READ_SELF,
+        Permissions.GRADE_APPEALS_CREATE, Permissions.REPORTS_READ_SELF,
+        Permissions.COMPETENCIES_READ_SELF, Permissions.FILES_READ,
+        Permissions.FILES_UPLOAD, Permissions.FILES_DOWNLOAD, Permissions.NEWS_READ,
+        Permissions.CERTIFICATES_READ_SELF,
     )
 
     val LEARNER = STUDENT

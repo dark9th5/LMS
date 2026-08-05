@@ -103,9 +103,10 @@ class Release082FlowIntegrityTests(unittest.TestCase):
         domain = self.read("backend/services/file-storage-service/src/main/kotlin/com/lmspilot/filestorage/domain/FileDomain.kt")
         self.assertIn("FileAccessGrantRepository", storage)
         self.assertIn("expiresAt?.isAfter", storage)
-        readable = storage[storage.index("private fun readable"):storage.index("private fun hasAdministrativeFileAccess")]
+        readable = storage[storage.index("private fun readable"):storage.index("private fun checkedPath")]
         self.assertNotIn('"COURSE_CONTENT" -> Permissions.FILES_DOWNLOAD', readable)
         self.assertNotIn('"ASSIGNMENT_SUBMISSION" ->', readable)
+        self.assertIn("grants.findByFileIdAndUserId", readable)
         self.assertIn("service.internalDownload", internal)
         self.assertIn("HttpRange.parseRanges", storage)
         self.assertIn("HttpStatus.PARTIAL_CONTENT", storage)
@@ -122,9 +123,10 @@ class Release082FlowIntegrityTests(unittest.TestCase):
     def test_assignment_grading_has_a_real_scoped_ui_queue(self) -> None:
         assignment = self.read("backend/services/learning-service/src/main/kotlin/com/lmspilot/learning/api/AssignmentSubmissionApi.kt")
         ui = self.read("apps/web/components/GradingPage.tsx")
-        self.assertIn("ASSIGNMENT_QUEUE_CLASS_LIMIT", assignment)
-        self.assertIn("classIds.forEach(::requireClassScope)", assignment)
-        self.assertIn("/api/v1/learning/assignments/queue?", ui)
+        self.assertIn("ASSIGNMENT_QUEUE_COURSE_LIMIT", assignment)
+        self.assertIn("queueByCourses", assignment)
+        self.assertIn("requireCourseScope(courseId, version)", assignment)
+        self.assertIn("/api/v1/learning/assignments/queue-by-course?", ui)
         self.assertIn("submitAssignmentGrade", ui)
         self.assertIn("returnForRevision", ui)
 
@@ -141,8 +143,8 @@ class Release082FlowIntegrityTests(unittest.TestCase):
         self.assertIn('file.purpose != "NEWS_ATTACHMENT"', news)
         self.assertIn('source" to "NEWS_FEED"', news)
         self.assertNotIn('/news', shell)
-        self.assertIn('"news"', route)
-        self.assertIn("RETIRED_SECTIONS", route)
+        self.assertNotIn('"news"', route)
+        self.assertIn("if (!target) notFound()", route)
 
     def test_cross_service_urls_for_exact_file_and_course_checks_are_wired(self) -> None:
         compose = self.read("docker-compose.yml")

@@ -6,6 +6,7 @@ import { apiRequest, unwrapItems } from "@/lib/api";
 import type { Course, CourseProgress, PageResponse } from "@/lib/models";
 import { formatDate, formatDuration } from "@/lib/models";
 import type { PortalUser } from "@/lib/types";
+import { studentCoursePath } from "@/lib/portal-paths";
 import { Icon } from "./Icon";
 import { PageHeader } from "./PageHeader";
 import { EmptyState, ErrorState, LoadingState } from "./Feedback";
@@ -139,7 +140,7 @@ export function LearningPage({ user }: { user: PortalUser }) {
       ) : filtered.length === 0 ? (
         <EmptyState
           title="Chưa có khóa học phù hợp"
-          description="Khóa học sẽ xuất hiện khi quản trị viên ghi danh bạn vào một lớp đào tạo."
+          description="Khóa học sẽ xuất hiện khi giảng viên giao khóa học cho bạn."
         />
       ) : (
         <section className="learning-grid">
@@ -148,7 +149,7 @@ export function LearningPage({ user }: { user: PortalUser }) {
             return (
               <Link
                 className="learning-card"
-                href={`/learning/${row.enrollmentId}`}
+                href={studentCoursePath(row.enrollmentId)}
                 key={row.enrollmentId}
               >
                 <div className={`learning-cover cover-${index % 5}`}>

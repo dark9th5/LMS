@@ -40,22 +40,8 @@ export type PageResponse<T> = {
   totalPages: number;
 };
 
-export type TrainingClass = {
-  id: string;
-  code: string;
-  name: string;
-  courseId: string;
-  courseVersion: number;
-  startsAt?: string | null;
-  endsAt?: string | null;
-  dueAt?: string | null;
-  instructorIds: string[];
-  status: "OPEN" | "CLOSED" | "CANCELLED";
-};
-
 export type Enrollment = {
   id: string;
-  classId: string;
   courseId: string;
   userId: string;
   dueAt?: string | null;
@@ -183,7 +169,6 @@ export type Grade = {
 export type AssignmentSubmission = {
   id: string;
   enrollmentId: string;
-  classId: string;
   courseId: string;
   courseVersion: number;
   lessonId: string;

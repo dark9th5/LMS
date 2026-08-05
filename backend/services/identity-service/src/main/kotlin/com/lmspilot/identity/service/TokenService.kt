@@ -41,6 +41,7 @@ class TokenService(
             .claim("sid", sessionId.toString())
             .claim("mustChangePassword", user.mustChangePassword)
             .claim("roles", roles)
+            .claim("primaryRole", roles.singleOrNull() ?: "STUDENT")
             .claim("permissions", permissions)
             .claim("globalPermissions", globalPermissions)
             .build()

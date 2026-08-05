@@ -129,7 +129,7 @@ services:
       DB_USERNAME: identity_user
       DB_PASSWORD: ${POSTGRES_SERVICE_PASSWORD}
       LMSPILOT_DEFAULT_ADMIN_PASSWORD: ${LMSPILOT_DEFAULT_ADMIN_PASSWORD}
-      LMSPILOT_SEED_DEMO: ${LMSPILOT_SEED_DEMO:-true}
+      LMSPILOT_SEED_DEMO: ${LMSPILOT_SEED_DEMO:-false}
       LICENSE_SERVICE_URL: http://license-service:8090
       ORGANIZATION_SERVICE_URL: http://organization-service:8082
       LDAP_ENABLED: ${LDAP_ENABLED:-false}
@@ -151,7 +151,7 @@ services:
       DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-lmspilot}?currentSchema=organization
       DB_USERNAME: organization_user
       DB_PASSWORD: ${POSTGRES_SERVICE_PASSWORD}
-      LMSPILOT_SEED_DEMO: ${LMSPILOT_SEED_DEMO:-true}
+      LMSPILOT_SEED_DEMO: ${LMSPILOT_SEED_DEMO:-false}
 
   course-service:
     <<: *service-common
@@ -164,7 +164,7 @@ services:
       DB_PASSWORD: ${POSTGRES_SERVICE_PASSWORD}
       ENROLLMENT_SERVICE_URL: http://enrollment-service:8084
       FILE_STORAGE_SERVICE_URL: http://file-storage-service:8089
-      LMSPILOT_SEED_DEMO: ${LMSPILOT_SEED_DEMO:-true}
+      LMSPILOT_SEED_DEMO: ${LMSPILOT_SEED_DEMO:-false}
 
   enrollment-service:
     <<: *service-common
@@ -180,7 +180,7 @@ services:
       LEARNING_SERVICE_URL: http://learning-service:8085
       LEARNING_SERVICE_CONNECT_TIMEOUT_MS: ${LEARNING_SERVICE_CONNECT_TIMEOUT_MS:-3000}
       LEARNING_SERVICE_READ_TIMEOUT_MS: ${LEARNING_SERVICE_READ_TIMEOUT_MS:-5000}
-      LMSPILOT_SEED_DEMO: ${LMSPILOT_SEED_DEMO:-true}
+      LMSPILOT_SEED_DEMO: ${LMSPILOT_SEED_DEMO:-false}
 
   learning-service:
     <<: *service-common
@@ -196,7 +196,7 @@ services:
       FILE_STORAGE_SERVICE_URL: http://file-storage-service:8089
       ORGANIZATION_SERVICE_URL: http://organization-service:8082
       LEARNING_ASSIGNMENT_MAX_ATTEMPTS: ${LEARNING_ASSIGNMENT_MAX_ATTEMPTS:-10}
-      LMSPILOT_SEED_DEMO: ${LMSPILOT_SEED_DEMO:-true}
+      LMSPILOT_SEED_DEMO: ${LMSPILOT_SEED_DEMO:-false}
 
   assessment-service:
     <<: *service-common
@@ -210,7 +210,7 @@ services:
       ENROLLMENT_SERVICE_URL: http://enrollment-service:8084
       COURSE_SERVICE_URL: http://course-service:8083
       ORGANIZATION_SERVICE_URL: http://organization-service:8082
-      LMSPILOT_SEED_DEMO: ${LMSPILOT_SEED_DEMO:-true}
+      LMSPILOT_SEED_DEMO: ${LMSPILOT_SEED_DEMO:-false}
 
   grading-service:
     <<: *service-common
@@ -232,7 +232,7 @@ services:
       DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-lmspilot}?currentSchema=reporting
       DB_USERNAME: reporting_user
       DB_PASSWORD: ${POSTGRES_SERVICE_PASSWORD}
-      LMSPILOT_SEED_DEMO: ${LMSPILOT_SEED_DEMO:-true}
+      LMSPILOT_SEED_DEMO: ${LMSPILOT_SEED_DEMO:-false}
       ENROLLMENT_SERVICE_URL: http://enrollment-service:8084
 
   file-storage-service:
@@ -250,7 +250,7 @@ services:
       FILE_MAX_REQUEST_SIZE: ${FILE_MAX_REQUEST_SIZE:-210MB}
       FILE_MAX_SIZE_BYTES: ${FILE_MAX_SIZE_BYTES:-209715200}
       FILE_ALLOWED_TYPES: ${FILE_ALLOWED_TYPES}
-      LMSPILOT_SEED_DEMO: ${LMSPILOT_SEED_DEMO:-true}
+      LMSPILOT_SEED_DEMO: ${LMSPILOT_SEED_DEMO:-false}
       FILE_EDITOR_PUBLIC_BASE_URL: ${FILE_EDITOR_PUBLIC_BASE_URL:-http://localhost:8080}
       ONLYOFFICE_URL: ${ONLYOFFICE_URL:-http://onlyoffice:80}
       FILE_EDIT_SESSION_MINUTES: ${FILE_EDIT_SESSION_MINUTES:-120}
@@ -289,7 +289,7 @@ services:
       DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-lmspilot}?currentSchema=notification
       DB_USERNAME: notification_user
       DB_PASSWORD: ${POSTGRES_SERVICE_PASSWORD}
-      LMSPILOT_SEED_DEMO: ${LMSPILOT_SEED_DEMO:-true}
+      LMSPILOT_SEED_DEMO: ${LMSPILOT_SEED_DEMO:-false}
       NOTIFICATION_EMAIL_ENABLED: ${NOTIFICATION_EMAIL_ENABLED:-false}
       SMTP_HOST: ${SMTP_HOST:-}
       SMTP_PORT: ${SMTP_PORT:-25}
@@ -329,6 +329,7 @@ services:
       DB_USERNAME: ai_user
       DB_PASSWORD: ${POSTGRES_SERVICE_PASSWORD}
       FILE_STORAGE_SERVICE_URL: http://file-storage-service:8089
+      COURSE_SERVICE_URL: http://course-service:8083
       ASSESSMENT_SERVICE_URL: http://assessment-service:8086
       AI_SECRET_KEY: ${AI_SECRET_KEY}
       AI_ENABLED: ${AI_ENABLED:-false}
@@ -381,7 +382,7 @@ services:
       DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-lmspilot}?currentSchema=competency
       DB_USERNAME: competency_user
       DB_PASSWORD: ${POSTGRES_SERVICE_PASSWORD}
-      LMSPILOT_SEED_DEMO: ${LMSPILOT_SEED_DEMO:-true}
+      LMSPILOT_SEED_DEMO: ${LMSPILOT_SEED_DEMO:-false}
 
   web:
     build:
@@ -397,7 +398,7 @@ services:
       LMSPILOT_COOKIE_SECURE: ${LMSPILOT_COOKIE_SECURE:-false}
       LMSPILOT_SESSION_COOKIE_SECRET: ${LMSPILOT_JWT_SECRET}
       LMSPILOT_UPSTREAM_TIMEOUT_MS: ${LMSPILOT_UPSTREAM_TIMEOUT_MS:-15000}
-      LMSPILOT_SEED_DEMO: ${LMSPILOT_SEED_DEMO:-true}
+      LMSPILOT_SEED_DEMO: ${LMSPILOT_SEED_DEMO:-false}
       LMSPILOT_DEFAULT_ADMIN_PASSWORD: ${LMSPILOT_DEFAULT_ADMIN_PASSWORD}
       NEXT_PUBLIC_APP_NAME: LMSPilot
     depends_on:

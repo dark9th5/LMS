@@ -10,13 +10,7 @@ import type {
 } from "react";
 import { apiRequest, createIdempotencyKey, unwrapItems } from "@/lib/api";
 import { readableText } from "@/lib/color";
-import {
-  getTheme,
-  normalizeThemeKey,
-  THEMES,
-  type ThemeDefinition,
-  type ThemeKey,
-} from "@/lib/themes";
+import { normalizeThemeKey, type ThemeKey } from "@/lib/themes";
 import type { PortalUser } from "@/lib/types";
 import { Icon } from "./Icon";
 import { RepeatableField } from "./RepeatableField";
@@ -42,7 +36,6 @@ export function WorkspaceControlCenter({
 }) {
   const requiredPermissions = centerPermissions[section] ?? [];
   const allowed =
-    user.accountType === "SYSTEM_ADMIN" ||
     requiredPermissions.length === 0 ||
     requiredPermissions.some((permission) =>
       user.permissions.includes(permission),
@@ -357,15 +350,13 @@ type AuthorizationExplanation = {
 };
 
 function UserAccessConsole({ user }: { user: PortalUser }) {
-  const systemAdmin = user.accountType === "SYSTEM_ADMIN";
-  const canReadUsers = systemAdmin || user.permissions.includes("users:read");
-  const canReadRoles =
-    systemAdmin ||
-    user.permissions.some((permission) =>
-      ["roles:read", "users:read", "authorization:grant"].includes(permission),
-    );
-  const canGrant = systemAdmin || user.permissions.includes("authorization:grant");
-  const canRevoke = systemAdmin || user.permissions.includes("authorization:revoke");
+  const canReadUsers = user.permissions.includes("users:read");
+  const canReadRoles = user.permissions.some((permission) =>
+    ["roles:read", "users:read"].includes(permission),
+  );
+  // The product uses three exclusive roles. Ad-hoc cross-role grants are disabled.
+  const canGrant = false;
+  const canRevoke = false;
   const { data, loading, error, refresh } = useLoad(async () => {
     const [users, roles, catalog, units, courses, exams] = await Promise.all([
       canReadUsers
@@ -407,11 +398,11 @@ function UserAccessConsole({ user }: { user: PortalUser }) {
     password: "",
     fullName: "",
     email: "",
-    roleCode: "BASIC_USER",
+    roleCode: "STUDENT",
   });
   const [grant, setGrant] = useState({
     kind: "ROLE",
-    value: "BASIC_USER",
+    value: "STUDENT",
     scopeType: "SYSTEM",
     scopeId: "",
     effect: "ALLOW",
@@ -462,13 +453,10 @@ function UserAccessConsole({ user }: { user: PortalUser }) {
     [catalog],
   );
   const availableRoleCodes = useMemo(
-    () =>
-      Array.from(
-        new Set([
-          ...(catalog?.profiles ?? []).map((item) => item.code),
-          ...roles.map((item) => item.code),
-        ]),
-      ),
+    () => ["ADMIN", "INSTRUCTOR", "STUDENT"].filter((code) =>
+      roles.some((item) => item.code === code) ||
+      (catalog?.profiles ?? []).some((item) => item.code === code),
+    ),
     [catalog, roles],
   );
   const filtered = users.filter((item) =>
@@ -477,22 +465,14 @@ function UserAccessConsole({ user }: { user: PortalUser }) {
       .includes(query.toLowerCase()),
   );
   const inspectedUser = users.find((item) => item.id === inspectedUserId);
-  const canWrite =
-    systemAdmin ||
-    user.permissions.some((value) =>
-      ["users:create", "users:write", "users:bulk-manage"].includes(value),
-    );
+  const canWrite = user.permissions.some((value) =>
+    ["users:create", "users:write", "users:bulk-manage"].includes(value),
+  );
   const tabs: Array<{
     key: "accounts" | "grant" | "inspect" | "bulk";
     label: string;
   }> = [
     ...(canReadUsers ? [{ key: "accounts" as const, label: "Tài khoản" }] : []),
-    ...(canGrant && canReadUsers
-      ? [{ key: "grant" as const, label: "Cấp gói quyền" }]
-      : []),
-    ...(canReadUsers && canReadRoles
-      ? [{ key: "inspect" as const, label: "Thu hồi quyền" }]
-      : []),
     ...(canWrite ? [{ key: "bulk" as const, label: "Nhập từ tệp" }] : []),
   ];
 
@@ -550,7 +530,7 @@ function UserAccessConsole({ user }: { user: PortalUser }) {
         password: "",
         fullName: "",
         email: "",
-        roleCode: "BASIC_USER",
+        roleCode: "STUDENT",
       });
       await refresh();
     } catch (cause) {
@@ -695,13 +675,13 @@ function UserAccessConsole({ user }: { user: PortalUser }) {
     <>
       <WorkspaceHero
         eyebrow="QUẢN LÝ NGƯỜI DÙNG"
-        title="Tài khoản và gói quyền"
-        description="Chọn người, chọn gói công việc và phạm vi áp dụng. Quyền kỹ thuật chi tiết được hệ thống quản lý ở phía sau."
+        title="Tài khoản và vai trò"
+        description="Mỗi tài khoản có đúng một vai trò: Quản trị viên, Giảng viên hoặc Học viên. Muốn dùng chức năng của vai trò khác phải đăng nhập bằng tài khoản tương ứng."
         icon={<Icon name="users" size={31} />}
         stats={[
           { value: users.length, label: "Tài khoản" },
-          { value: catalog?.profiles.length ?? 0, label: "Gói công việc" },
-          { value: selected.size, label: "Đang chọn", tone: "violet" },
+          { value: 3, label: "Vai trò cố định" },
+          { value: users.filter((item) => item.status === "ACTIVE").length, label: "Đang hoạt động", tone: "violet" },
         ]}
         actions={
           <>
@@ -734,7 +714,7 @@ function UserAccessConsole({ user }: { user: PortalUser }) {
             <div className="workspace-two-column wide-left">
               <Panel
                 title="Danh sách tài khoản"
-                subtitle="Chọn nhiều người để cấp cùng một gói quyền. Quản trị gốc được bảo vệ khỏi các thao tác thông thường."
+                subtitle="Vai trò được hiển thị trực tiếp. Tài khoản quản trị gốc được bảo vệ khỏi các thao tác thông thường."
                 action={
                   <div className="workspace-search">
                     <Icon name="search" size={16} />
@@ -746,43 +726,15 @@ function UserAccessConsole({ user }: { user: PortalUser }) {
                   <table className="workspace-table">
                     <thead>
                       <tr>
-                        <th>
-                          <input
-                            type="checkbox"
-                            checked={filtered.some((item) => !item.protectedAccount) && filtered.filter((item) => !item.protectedAccount).every((item) => selected.has(item.id))}
-                            onChange={(event) =>
-                              setSelected(
-                                event.target.checked
-                                  ? new Set(filtered.filter((item) => !item.protectedAccount).map((item) => item.id))
-                                  : new Set(),
-                              )
-                            }
-                          />
-                        </th>
                         <th>Danh tính</th>
-                        <th>Gói quyền cơ sở</th>
-                        <th>Loại</th>
+                        <th>Vai trò</th>
+                        <th>Bảo vệ</th>
                         <th>Trạng thái</th>
-                        <th>Giải thích</th>
                       </tr>
                     </thead>
                     <tbody>
                       {filtered.map((item) => (
                         <tr key={item.id}>
-                          <td>
-                            <input
-                              type="checkbox"
-                              checked={selected.has(item.id)}
-                              disabled={item.protectedAccount}
-                              onChange={(event) =>
-                                setSelected((current) => {
-                                  const next = new Set(current);
-                                  event.target.checked ? next.add(item.id) : next.delete(item.id);
-                                  return next;
-                                })
-                              }
-                            />
-                          </td>
                           <td>
                             <div className="workspace-primary-cell">
                               <span className="mini-avatar">{item.fullName.slice(0, 1).toUpperCase()}</span>
@@ -804,13 +756,8 @@ function UserAccessConsole({ user }: { user: PortalUser }) {
                               ))}
                             </div>
                           </td>
-                          <td>{item.protectedAccount ? <Tag tone="gold">SYSTEM ADMIN</Tag> : <Tag>USER</Tag>}</td>
+                          <td>{item.protectedAccount ? <Tag tone="gold">Tài khoản gốc</Tag> : <Tag>Tiêu chuẩn</Tag>}</td>
                           <td><Tag tone={item.status === "ACTIVE" ? "teal" : "danger"}>{item.status}</Tag></td>
-                          <td>
-                            <Button tone="secondary" onClick={() => void loadInspection(item.id)}>
-                              <Icon name="search" size={14} /> Kiểm tra
-                            </Button>
-                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -818,7 +765,7 @@ function UserAccessConsole({ user }: { user: PortalUser }) {
                 </div>
               </Panel>
               {canWrite && (
-                <Panel title="Tạo tài khoản" subtitle="Không có đăng ký công khai. Quản trị tạo tài khoản và cấp gói quyền ban đầu." className="sticky-panel">
+                <Panel title="Tạo tài khoản" subtitle="Không có đăng ký công khai. Quản trị tạo tài khoản và chọn đúng một vai trò." className="sticky-panel">
                   <form className="workspace-form" onSubmit={createAccount}>
                     <Field label="Mã người dùng">
                       <input required maxLength={80} value={create.code} onChange={(event) => setCreate({ ...create, code: event.target.value.toUpperCase() })} placeholder="NV001" />
@@ -835,13 +782,13 @@ function UserAccessConsole({ user }: { user: PortalUser }) {
                     <Field label="Mật khẩu tạm" wide hint="Tối thiểu 12 ký tự; người dùng đổi ở lần đăng nhập đầu.">
                       <input required minLength={12} type="password" value={create.password} onChange={(event) => setCreate({ ...create, password: event.target.value })} />
                     </Field>
-                    <Field label="Gói quyền ban đầu" wide>
+                    <Field label="Vai trò" wide hint="Một tài khoản chỉ có một vai trò và không được ghép chức năng chéo.">
                       <select value={create.roleCode} onChange={(event) => setCreate({ ...create, roleCode: event.target.value })}>
                         {availableRoleCodes.map((code) => <option key={code} value={code}>{roleLabel(code)}</option>)}
                       </select>
                     </Field>
                     <Button type="submit" disabled={working || !canWrite}>
-                      <Icon name="plus" size={16} /> {working ? "Đang tạo…" : "Tạo và cấp tài khoản"}
+                      <Icon name="plus" size={16} /> {working ? "Đang tạo…" : "Tạo tài khoản"}
                     </Button>
                   </form>
                 </Panel>
@@ -1056,7 +1003,7 @@ function UserAccessConsole({ user }: { user: PortalUser }) {
               subtitle="Dùng trình nhập có hướng dẫn để chọn tệp, ánh xạ từng cột, xem trước lỗi và xác nhận."
             >
               <div className="workspace-import-actions">
-                <Link className="workspace-button primary" href="/users/import">
+                <Link className="workspace-button primary" href="/admin/users/import">
                   <Icon name="upload" size={16} /> Mở trình nhập CSV/XLSX
                 </Link>
                 <span>Không cần dán dữ liệu nhiều người vào một ô văn bản.</span>
@@ -1095,25 +1042,44 @@ type MembershipRow = {
   createdAt: string;
 };
 
+function unitTypeLabel(type: string) {
+  return (
+    {
+      ORGANIZATION: "Tổ chức",
+      BRANCH: "Chi nhánh",
+      DIVISION: "Khối",
+      DEPARTMENT: "Phòng ban",
+      TEAM: "Đội nhóm",
+      GROUP: "Nhóm",
+    }[type] ?? type
+  );
+}
+
 function OrganizationConsole({ user }: { user: PortalUser }) {
   const canManageUnits =
-    user.accountType === "SYSTEM_ADMIN" ||
     user.permissions.some((permission) =>
       ["organization:manage", "organization:write"].includes(permission),
     );
   const canManageMembers =
-    canManageUnits ||
-    user.permissions.includes("organization:membership:manage");
-  const { data, loading, error, refresh } = useLoad(
-    async () => ({
-      units: await apiRequest<UnitRow[]>("/api/v1/organization/units/tree"),
-      flat: await apiRequest<UnitRow[]>("/api/v1/organization/units"),
-    }),
-    [],
-  );
-  const [selectedUnit, setSelectedUnit] = useState<string>("");
+    canManageUnits || user.permissions.includes("organization:membership:manage");
+  const canReadUsers = user.permissions.includes("users:read");
+  const { data, loading, error, refresh } = useLoad(async () => {
+    const [units, flat, users] = await Promise.all([
+      apiRequest<UnitRow[]>("/api/v1/organization/units/tree"),
+      apiRequest<UnitRow[]>("/api/v1/organization/units"),
+      canReadUsers
+        ? apiRequest<UserRow[] | { items: UserRow[] }>("/api/v1/users?size=1000")
+            .then(unwrapItems)
+            .catch(() => [] as UserRow[])
+        : Promise.resolve([] as UserRow[]),
+    ]);
+    return { units, flat, users };
+  }, [canReadUsers]);
+  const [selectedUnit, setSelectedUnitState] = useState<string>("");
   const [members, setMembers] = useState<MembershipRow[]>([]);
   const [notice, setNotice] = useState<Notice>(null);
+  const [memberQuery, setMemberQuery] = useState("");
+  const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set());
   const [unit, setUnit] = useState({
     code: "",
     name: "",
@@ -1121,12 +1087,42 @@ function OrganizationConsole({ user }: { user: PortalUser }) {
     parentId: "",
   });
   const [membership, setMembership] = useState({
-    userIds: [""],
     membershipType: "MEMBER",
     primaryMembership: false,
   });
   const [working, setWorking] = useState(false);
   const flat = data?.flat ?? [];
+  const users = data?.users ?? [];
+  const usersById = useMemo(
+    () => new Map(users.map((item) => [item.id, item])),
+    [users],
+  );
+  const currentUnit = flat.find((item) => item.id === selectedUnit);
+  const filteredUsers = useMemo(() => {
+    const query = memberQuery.trim().toLocaleLowerCase("vi-VN");
+    if (!query) return users;
+    return users.filter((item) =>
+      `${item.fullName} ${item.username} ${item.email ?? ""} ${item.code}`
+        .toLocaleLowerCase("vi-VN")
+        .includes(query),
+    );
+  }, [memberQuery, users]);
+
+  const setSelectedUnit = useCallback((id: string) => {
+    setSelectedUnitState(id);
+    window.localStorage.setItem("lmspilot-organization-unit", id);
+  }, []);
+
+  useEffect(() => {
+    if (!flat.length) return;
+    const remembered = window.localStorage.getItem("lmspilot-organization-unit");
+    const next =
+      (remembered && flat.some((item) => item.id === remembered) && remembered) ||
+      (selectedUnit && flat.some((item) => item.id === selectedUnit) && selectedUnit) ||
+      flat[0].id;
+    if (next !== selectedUnit) setSelectedUnitState(next);
+  }, [flat, selectedUnit]);
+
   useEffect(() => {
     if (!selectedUnit) {
       setMembers([]);
@@ -1162,27 +1158,26 @@ function OrganizationConsole({ user }: { user: PortalUser }) {
     } catch (cause) {
       setNotice({
         tone: "error",
-        message:
-          cause instanceof Error ? cause.message : "Không thể tạo đơn vị",
+        message: cause instanceof Error ? cause.message : "Không thể tạo đơn vị",
       });
     } finally {
       setWorking(false);
     }
   }
+
   async function grantMembers(event: FormEvent) {
     event.preventDefault();
     if (!canManageMembers) return;
-    const ids = membership.userIds
-      .map((value) => value.trim())
-      .filter(Boolean);
+    const ids = Array.from(selectedUsers);
     if (!selectedUnit || !ids.length) {
       setNotice({
         tone: "error",
-        message: "Cần chọn đơn vị và nhập ít nhất một user ID.",
+        message: "Chọn đơn vị và ít nhất một người dùng.",
       });
       return;
     }
     setWorking(true);
+    setNotice(null);
     try {
       await apiRequest("/api/v1/organization/memberships/bulk", {
         method: "POST",
@@ -1197,9 +1192,9 @@ function OrganizationConsole({ user }: { user: PortalUser }) {
       });
       setNotice({
         tone: "success",
-        message: `Đã gán ${ids.length} người vào đơn vị.`,
+        message: `Đã gán ${ids.length} người vào ${currentUnit?.name ?? "đơn vị"}.`,
       });
-      setMembership({ ...membership, userIds: [""] });
+      setSelectedUsers(new Set());
       setMembers(
         await apiRequest<MembershipRow[]>(
           `/api/v1/organization/memberships?unitId=${selectedUnit}`,
@@ -1208,33 +1203,26 @@ function OrganizationConsole({ user }: { user: PortalUser }) {
     } catch (cause) {
       setNotice({
         tone: "error",
-        message:
-          cause instanceof Error ? cause.message : "Không thể gán thành viên",
+        message: cause instanceof Error ? cause.message : "Không thể gán thành viên",
       });
     } finally {
       setWorking(false);
     }
   }
+
   const countTree = (items: UnitRow[]): number =>
     items.reduce((sum, item) => sum + 1 + countTree(item.children ?? []), 0);
+
   return (
     <>
       <WorkspaceHero
-        eyebrow="BẢN ĐỒ TỔ CHỨC"
-        title="Chi nhánh, phòng ban & nhóm người dùng"
-        description="Tạo cây tổ chức nhiều cấp, gán thành viên và dùng chính cấu trúc này làm phạm vi cho quyền, khóa học, tin tức và báo cáo."
-        icon={<Icon name="building" size={31} />}
+        eyebrow="TỔ CHỨC"
+        title="Cơ cấu và thành viên"
+        description="Quản lý cây tổ chức, đơn vị trực thuộc và thành viên trong một không gian làm việc gọn hơn."
+        icon={<Icon name="building" size={29} />}
         stats={[
           { value: countTree(data?.units ?? []), label: "Đơn vị" },
-          {
-            value: flat.filter((v) => v.type === "BRANCH").length,
-            label: "Chi nhánh",
-          },
-          {
-            value: flat.filter((v) => v.type === "DEPARTMENT").length,
-            label: "Phòng ban",
-          },
-          { value: members.length, label: "Thành viên đang xem", tone: "teal" },
+          { value: members.length, label: "Thành viên", tone: "teal" },
         ]}
         actions={
           <Button tone="secondary" onClick={() => void refresh()}>
@@ -1251,11 +1239,26 @@ function OrganizationConsole({ user }: { user: PortalUser }) {
           onClose={() => void refresh()}
         />
       ) : (
-        <div className="workspace-grid-three org-layout">
+        <div className="org-layout">
           <Panel
             title="Cây tổ chức"
-            subtitle="Chọn một đơn vị để xem và gán thành viên."
-            className="span-two"
+            subtitle={`${flat.length} đơn vị`}
+            className="org-tree-panel"
+            action={
+              canManageUnits ? (
+                <button
+                  type="button"
+                  className="workspace-button ghost"
+                  onClick={() =>
+                    document.getElementById("create-organization-unit")?.scrollIntoView({
+                      behavior: "smooth",
+                    })
+                  }
+                >
+                  <Icon name="plus" size={15} /> Thêm
+                </button>
+              ) : undefined
+            }
           >
             <OrganizationTree
               units={data?.units ?? []}
@@ -1263,160 +1266,188 @@ function OrganizationConsole({ user }: { user: PortalUser }) {
               onSelect={setSelectedUnit}
             />
           </Panel>
-          {canManageUnits && (
+
+          <div className="org-main-column">
             <Panel
-              title="Tạo đơn vị"
-              subtitle="Mô hình hỗ trợ công ty, chi nhánh, phòng ban và nhóm."
+              title={currentUnit?.name ?? "Thành viên trong đơn vị"}
+              subtitle={
+                currentUnit
+                  ? `${unitTypeLabel(currentUnit.type)} · ${currentUnit.code}`
+                  : "Chọn một đơn vị trong cây"
+              }
+              action={currentUnit ? <Tag tone="teal">{members.length} người</Tag> : undefined}
             >
-              <form className="workspace-form" onSubmit={createUnit}>
-                <Field label="Mã">
-                  <input
-                    required
-                    value={unit.code}
-                    onChange={(e) =>
-                      setUnit({ ...unit, code: e.target.value.toUpperCase() })
-                    }
-                  />
-                </Field>
-                <Field label="Loại">
-                  <select
-                    value={unit.type}
-                    onChange={(e) => setUnit({ ...unit, type: e.target.value })}
-                  >
-                    {[
-                      "ORGANIZATION",
-                      "BRANCH",
-                      "DIVISION",
-                      "DEPARTMENT",
-                      "TEAM",
-                      "GROUP",
-                    ].map((v) => (
-                      <option key={v}>{v}</option>
-                    ))}
-                  </select>
-                </Field>
-                <Field label="Tên đơn vị" wide>
-                  <input
-                    required
-                    value={unit.name}
-                    onChange={(e) => setUnit({ ...unit, name: e.target.value })}
-                  />
-                </Field>
-                <Field label="Đơn vị cha" wide>
-                  <select
-                    value={unit.parentId}
-                    onChange={(e) =>
-                      setUnit({ ...unit, parentId: e.target.value })
-                    }
-                  >
-                    <option value="">— Cấp gốc —</option>
-                    {flat.map((item) => (
-                      <option value={item.id} key={item.id}>
-                        {item.name}
-                      </option>
-                    ))}
-                  </select>
-                </Field>
-                <Button type="submit" disabled={working}>
-                  <Icon name="plus" size={16} /> Tạo đơn vị
-                </Button>
-              </form>
+              {members.length ? (
+                <div className="member-list">
+                  {members.map((item) => {
+                    const member = usersById.get(item.userId);
+                    return (
+                      <div key={item.id}>
+                        <span className="mini-avatar">
+                          {(member?.fullName || member?.username || "N").slice(0, 1).toUpperCase()}
+                        </span>
+                        <div>
+                          <strong>{member?.fullName || member?.username || item.userId}</strong>
+                          <small>
+                            {member?.email || item.membershipType}
+                            {item.primaryMembership ? " · Đơn vị chính" : ""}
+                          </small>
+                        </div>
+                        <Tag tone={item.active ? "teal" : "danger"}>
+                          {item.active ? "Đang hoạt động" : "Ngừng hoạt động"}
+                        </Tag>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <Empty
+                  text={
+                    selectedUnit
+                      ? "Đơn vị chưa có thành viên trực tiếp."
+                      : "Chọn một đơn vị để bắt đầu."
+                  }
+                />
+              )}
             </Panel>
-          )}
-          <Panel
-            title="Thành viên trong đơn vị"
-            subtitle={
-              selectedUnit
-                ? `${members.length} thành viên trực tiếp`
-                : "Chọn đơn vị trong cây"
-            }
-            className="span-two"
-          >
-            {members.length ? (
-              <div className="member-list">
-                {members.map((item) => (
-                  <div key={item.id}>
-                    <span className="mini-avatar">
-                      {item.membershipType.slice(0, 1)}
-                    </span>
-                    <div>
-                      <strong>{item.userId}</strong>
-                      <small>
-                        {item.membershipType}
-                        {item.primaryMembership ? " · Đơn vị chính" : ""}
-                      </small>
+
+            {canManageMembers && (
+              <Panel
+                title="Thêm thành viên"
+                subtitle="Chọn trực tiếp từ danh sách tài khoản, không cần nhập mã người dùng."
+              >
+                {canReadUsers ? (
+                  <form className="workspace-form" onSubmit={grantMembers}>
+                    <Field label="Tìm người dùng" wide>
+                      <input
+                        value={memberQuery}
+                        onChange={(event) => setMemberQuery(event.target.value)}
+                        placeholder="Tên, tài khoản hoặc email"
+                      />
+                    </Field>
+                    <div className="member-picker wide">
+                      {filteredUsers.slice(0, 120).map((item) => (
+                        <label key={item.id}>
+                          <input
+                            type="checkbox"
+                            checked={selectedUsers.has(item.id)}
+                            onChange={(event) => {
+                              const next = new Set(selectedUsers);
+                              if (event.target.checked) next.add(item.id);
+                              else next.delete(item.id);
+                              setSelectedUsers(next);
+                            }}
+                          />
+                          <span className="mini-avatar">
+                            {(item.fullName || item.username).slice(0, 1).toUpperCase()}
+                          </span>
+                          <span>
+                            <strong>{item.fullName || item.username}</strong>
+                            <small>{item.email || item.username}</small>
+                          </span>
+                        </label>
+                      ))}
+                      {!filteredUsers.length && <Empty text="Không tìm thấy người dùng phù hợp." />}
                     </div>
-                    <Tag tone={item.active ? "teal" : "danger"}>
-                      {item.active ? "ACTIVE" : "EXPIRED"}
-                    </Tag>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <Empty
-                text={
-                  selectedUnit
-                    ? "Đơn vị chưa có thành viên trực tiếp."
-                    : "Chọn một đơn vị để bắt đầu."
-                }
-              />
+                    <Field label="Vai trò trong đơn vị">
+                      <select
+                        value={membership.membershipType}
+                        onChange={(event) =>
+                          setMembership({ ...membership, membershipType: event.target.value })
+                        }
+                      >
+                        <option value="MEMBER">Thành viên</option>
+                        <option value="MANAGER">Quản lý đơn vị</option>
+                        <option value="INSTRUCTOR">Phụ trách đào tạo</option>
+                        <option value="LEARNER">Người học</option>
+                      </select>
+                    </Field>
+                    <label className="workspace-check">
+                      <input
+                        type="checkbox"
+                        checked={membership.primaryMembership}
+                        onChange={(event) =>
+                          setMembership({
+                            ...membership,
+                            primaryMembership: event.target.checked,
+                          })
+                        }
+                      />
+                      <span>Đặt làm đơn vị chính</span>
+                    </label>
+                    <Button
+                      type="submit"
+                      disabled={working || !selectedUnit || selectedUsers.size === 0}
+                    >
+                      <Icon name="users" size={16} />
+                      Gán {selectedUsers.size ? `${selectedUsers.size} người` : "thành viên"}
+                    </Button>
+                  </form>
+                ) : (
+                  <Empty text="Cần quyền đọc người dùng để chọn thành viên từ danh sách." />
+                )}
+              </Panel>
             )}
-          </Panel>
-          {canManageMembers && (
-            <Panel
-              title="Gán thành viên hàng loạt"
-              subtitle="Một người có thể thuộc nhiều đơn vị với loại membership khác nhau."
-            >
-              <form className="workspace-form" onSubmit={grantMembers}>
-                <Field
-                  label="Người dùng"
-                  wide
-                  hint="Mỗi ô chứa một mã người dùng. Dùng + hoặc − để thay đổi danh sách."
-                >
-                  <RepeatableField
-                    name="organizationUserIds"
-                    initialValues={membership.userIds}
-                    onValuesChange={(userIds) =>
-                      setMembership((current) => ({ ...current, userIds }))
-                    }
-                    addLabel="Thêm người dùng"
-                    placeholder="Mã người dùng"
-                  />
-                </Field>
-                <Field label="Quan hệ trong đơn vị" hint="Chỉ mô tả quan hệ tổ chức, không cấp quyền hệ thống.">
-                  <select
-                    value={membership.membershipType}
-                    onChange={(e) =>
-                      setMembership({
-                        ...membership,
-                        membershipType: e.target.value,
-                      })
-                    }
-                  >
-                    {["MEMBER", "MANAGER", "INSTRUCTOR", "LEARNER"].map((v) => (
-                      <option key={v}>{v}</option>
-                    ))}
-                  </select>
-                </Field>
-                <label className="workspace-check">
-                  <input
-                    type="checkbox"
-                    checked={membership.primaryMembership}
-                    onChange={(e) =>
-                      setMembership({
-                        ...membership,
-                        primaryMembership: e.target.checked,
-                      })
-                    }
-                  />
-                  <span>Đặt làm đơn vị chính</span>
-                </label>
-                <Button type="submit" disabled={working || !selectedUnit}>
-                  <Icon name="users" size={16} /> Gán vào đơn vị
-                </Button>
-              </form>
-            </Panel>
-          )}
+
+            {canManageUnits && (
+              <Panel
+                title="Tạo đơn vị"
+                subtitle="Chỉ giữ các trường cần thiết; thông tin ít dùng được đặt cuối biểu mẫu."
+                className="compact-form-panel"
+              >
+                <form className="workspace-form" onSubmit={createUnit} id="create-organization-unit">
+                  <Field label="Tên đơn vị" wide>
+                    <input
+                      required
+                      value={unit.name}
+                      onChange={(event) => setUnit({ ...unit, name: event.target.value })}
+                      placeholder="Ví dụ: Phòng Phát triển"
+                    />
+                  </Field>
+                  <Field label="Mã">
+                    <input
+                      required
+                      value={unit.code}
+                      onChange={(event) =>
+                        setUnit({ ...unit, code: event.target.value.toUpperCase() })
+                      }
+                      placeholder="DEV"
+                    />
+                  </Field>
+                  <Field label="Loại">
+                    <select
+                      value={unit.type}
+                      onChange={(event) => setUnit({ ...unit, type: event.target.value })}
+                    >
+                      {["ORGANIZATION", "BRANCH", "DIVISION", "DEPARTMENT", "TEAM", "GROUP"].map(
+                        (value) => (
+                          <option value={value} key={value}>
+                            {unitTypeLabel(value)}
+                          </option>
+                        ),
+                      )}
+                    </select>
+                  </Field>
+                  <Field label="Đơn vị cha" wide>
+                    <select
+                      value={unit.parentId}
+                      onChange={(event) => setUnit({ ...unit, parentId: event.target.value })}
+                    >
+                      <option value="">Cấp gốc</option>
+                      {flat.map((item) => (
+                        <option value={item.id} key={item.id}>
+                          {item.name}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                  <Button type="submit" disabled={working}>
+                    <Icon name="plus" size={16} /> Tạo đơn vị
+                  </Button>
+                </form>
+              </Panel>
+            )}
+          </div>
         </div>
       )}
     </>
@@ -1439,6 +1470,7 @@ function OrganizationTree({
       {units.map((item) => (
         <div key={item.id} className="org-node-wrap">
           <button
+            type="button"
             className={`org-node ${selected === item.id ? "active" : ""}`}
             onClick={() => onSelect(item.id)}
           >
@@ -1451,15 +1483,14 @@ function OrganizationTree({
                     ? "✦"
                     : "⬡"}
             </span>
-            <div>
-              <strong>{item.name}</strong>
-              <small>
-                {item.code} · {item.type}
-              </small>
-            </div>
-            <Tag tone={item.status === "ACTIVE" ? "teal" : "danger"}>
-              {item.status}
-            </Tag>
+            <strong className="org-node-name">{item.name}</strong>
+            <span className="org-node-side">
+              <span className="org-node-kind">{unitTypeLabel(item.type)}</span>
+              <span
+                className={`org-status-dot ${item.status === "ACTIVE" ? "" : "inactive"}`}
+                title={item.status === "ACTIVE" ? "Đang hoạt động" : "Ngừng hoạt động"}
+              />
+            </span>
           </button>
           {item.children?.length ? (
             <OrganizationTree
@@ -1487,6 +1518,7 @@ type BrandingRow = {
   faviconFileId?: string;
   backgroundFileId?: string;
   logoUrl?: string;
+  faviconUrl?: string;
   backgroundUrl?: string;
   primaryColor: string;
   secondaryColor: string;
@@ -1496,138 +1528,17 @@ type BrandingRow = {
   updatedAt: string;
 };
 
-function applyBrandingPreview(branding: BrandingRow) {
-  document.documentElement.dataset.theme = normalizeThemeKey(
-    branding.themeKey,
-  );
-  document.body.style.setProperty("--brand-primary", branding.primaryColor);
-  document.body.style.setProperty(
-    "--brand-secondary",
-    branding.secondaryColor,
-  );
-  document.body.style.setProperty(
-    "--brand-background",
-    branding.backgroundColor,
-  );
-  document.body.style.setProperty(
-    "--brand-on-primary",
-    readableText(branding.primaryColor),
-  );
-  document.body.style.setProperty(
-    "--brand-on-background",
-    readableText(branding.backgroundColor),
-  );
-}
-
-function AppearanceStudio({
-  brand,
-  activeThemeKey,
-  hasThemeDraft,
-  working,
-  onPreview,
-  onReset,
-  onApply,
-}: {
-  brand: BrandingRow;
-  activeThemeKey: ThemeKey;
-  hasThemeDraft: boolean;
-  working: boolean;
-  onPreview: (theme: ThemeDefinition) => void;
-  onReset: () => void;
-  onApply: () => void;
-}) {
-  const selectedTheme = getTheme(brand.themeKey);
-  return (
-    <section className="appearance-studio" aria-labelledby="appearance-studio-title">
-      <header className="appearance-studio-intro">
-        <div>
-          <span className="appearance-studio-kicker">Giao diện</span>
-          <h2 id="appearance-studio-title">Chọn chế độ sáng hoặc tối</h2>
-          <p>
-            Hai chế độ dùng cùng kiểu chữ, khoảng cách, component và bố cục. Màu
-            thương hiệu chỉ tạo điểm nhấn; màu chữ được hệ thống tự tính để bảo
-            đảm dễ đọc.
-          </p>
-        </div>
-        <div className="appearance-studio-count" aria-label="Hai chế độ hiển thị">
-          <strong>2</strong>
-          <small>chế độ an toàn</small>
-        </div>
-      </header>
-
-      <div className="appearance-gallery">
-        {THEMES.map((theme) => {
-          const selected = theme.key === selectedTheme.key;
-          const active = theme.key === activeThemeKey;
-          return (
-            <article className={`appearance-card ${selected ? "selected" : ""}`} key={theme.key}>
-              <div className="appearance-card-visual" data-preview-theme={theme.key} aria-hidden>
-                <div className="appearance-preview-rail"><b /><i className="active" /><i /><i /></div>
-                <div className="appearance-preview-canvas">
-                  <div className="appearance-preview-topbar"><span /><i /></div>
-                  <div className="appearance-preview-hero">
-                    <small>Không gian học tập</small>
-                    <strong>Học tập rõ ràng, tập trung</strong>
-                  </div>
-                  <div className="appearance-preview-modules"><i /><i /><i /></div>
-                </div>
-              </div>
-              <div className="appearance-card-body">
-                <div className="appearance-card-heading">
-                  <div>
-                    <small>{theme.mode === "light" ? "Nền sáng" : "Nền tối"}</small>
-                    <h3>{theme.name}</h3>
-                  </div>
-                  <span className="appearance-card-state">
-                    {active && !hasThemeDraft ? "Đang dùng" : selected ? "Đang xem" : "Có thể chọn"}
-                  </span>
-                </div>
-                <p>{theme.description}</p>
-                <div className="appearance-tags">
-                  {theme.tags.map((tag) => <span key={tag}>{tag}</span>)}
-                </div>
-                <div className="appearance-card-actions">
-                  <button
-                    type="button"
-                    className={`button ${selected ? "primary" : "secondary"}`}
-                    onClick={() => onPreview(theme)}
-                    aria-pressed={selected}
-                  >
-                    <Icon name={selected ? "check" : "eye"} size={15} />
-                    {selected ? "Đang xem trực tiếp" : "Xem thử"}
-                  </button>
-                </div>
-              </div>
-            </article>
-          );
-        })}
-      </div>
-
-      <div className="appearance-selection-bar">
-        <div className="appearance-selection-copy">
-          <span className="appearance-selection-swatch" />
-          <div>
-            <strong>{selectedTheme.name}</strong>
-            <small>{hasThemeDraft ? "Bản xem thử chưa được lưu" : "Đang áp dụng cho toàn hệ thống"}</small>
-          </div>
-        </div>
-        <div className="appearance-selection-actions">
-          <button type="button" className="button secondary" onClick={onReset} disabled={!hasThemeDraft || working}>
-            Hoàn tác
-          </button>
-          <button type="button" className="button primary" onClick={onApply} disabled={!hasThemeDraft || working}>
-            <Icon name="save" size={15} />
-            {working ? "Đang áp dụng…" : "Áp dụng toàn hệ thống"}
-          </button>
-        </div>
-      </div>
-    </section>
-  );
-}
+type ServiceType =
+  | "REDIS"
+  | "SMTP"
+  | "AI_PROVIDER"
+  | "OBJECT_STORAGE"
+  | "DOCUMENT_EDITOR"
+  | "VIDEO_CONFERENCE";
 
 type ServiceRow = {
   id: string;
-  serviceType: string;
+  serviceType: ServiceType;
   configKey: string;
   enabled: boolean;
   config: Record<string, any>;
@@ -1638,49 +1549,177 @@ type ServiceRow = {
   updatedAt: string;
 };
 
+type ServiceDraft = {
+  id?: string;
+  serviceType: ServiceType;
+  configKey: string;
+  enabled: boolean;
+  host: string;
+  port: string;
+  username: string;
+  database: string;
+  endpoint: string;
+  callbackUrl: string;
+  model: string;
+  bucket: string;
+  region: string;
+  accessKey: string;
+  fromEmail: string;
+  fromName: string;
+  security: string;
+  provider: string;
+  pathStyle: boolean;
+  secure: boolean;
+  secret: string;
+  secretConfigured: boolean;
+};
+
+const BRAND_COLORS = [
+  { name: "Tím", primary: "#5B4BDB", secondary: "#7C6DF2" },
+  { name: "Xanh dương", primary: "#2563EB", secondary: "#60A5FA" },
+  { name: "Xanh ngọc", primary: "#0F9F8F", secondary: "#34D399" },
+  { name: "Xanh lá", primary: "#16A34A", secondary: "#4ADE80" },
+  { name: "Cam", primary: "#F97316", secondary: "#FDBA74" },
+  { name: "Hồng", primary: "#E84A6F", secondary: "#FB7185" },
+];
+
+const SERVICE_META: Record<
+  ServiceType,
+  { label: string; short: string; icon: string; docs: string; secretLabel: string }
+> = {
+  REDIS: {
+    label: "Redis",
+    short: "Bộ nhớ đệm và phiên",
+    icon: "R",
+    docs: "https://redis.io/docs/latest/develop/clients/",
+    secretLabel: "Mật khẩu Redis",
+  },
+  SMTP: {
+    label: "Email SMTP",
+    short: "Gửi thông báo hệ thống",
+    icon: "@",
+    docs: "https://www.rfc-editor.org/rfc/rfc8314",
+    secretLabel: "Mật khẩu ứng dụng",
+  },
+  AI_PROVIDER: {
+    label: "Dịch vụ AI",
+    short: "API tương thích OpenAI",
+    icon: "AI",
+    docs: "https://platform.openai.com/docs/api-reference/introduction",
+    secretLabel: "API key",
+  },
+  OBJECT_STORAGE: {
+    label: "Lưu trữ S3",
+    short: "Tệp và nội dung học tập",
+    icon: "S3",
+    docs: "https://docs.aws.amazon.com/AmazonS3/latest/userguide/Welcome.html",
+    secretLabel: "Secret access key",
+  },
+  DOCUMENT_EDITOR: {
+    label: "ONLYOFFICE Docs",
+    short: "Chỉnh sửa tài liệu trực tuyến",
+    icon: "D",
+    docs: "https://api.onlyoffice.com/docs/docs-api/get-started/basic-concepts/",
+    secretLabel: "JWT secret",
+  },
+  VIDEO_CONFERENCE: {
+    label: "Họp trực tuyến",
+    short: "Họp và đào tạo trực tuyến",
+    icon: "V",
+    docs: "https://jitsi.github.io/handbook/docs/dev-guide/dev-guide-iframe/",
+    secretLabel: "API secret hoặc token",
+  },
+};
+
+function defaultServiceDraft(serviceType: ServiceType = "REDIS"): ServiceDraft {
+  return {
+    serviceType,
+    configKey: "default",
+    enabled: true,
+    host: serviceType === "REDIS" ? "redis" : "",
+    port: serviceType === "REDIS" ? "6379" : serviceType === "SMTP" ? "587" : "",
+    username: "",
+    database: "0",
+    endpoint: "",
+    callbackUrl: "",
+    model: "",
+    bucket: "",
+    region: "",
+    accessKey: "",
+    fromEmail: "",
+    fromName: "",
+    security: "STARTTLS",
+    provider: "JITSI",
+    pathStyle: false,
+    secure: true,
+    secret: "",
+    secretConfigured: false,
+  };
+}
+
+function browserBrandAsset(path?: string) {
+  if (!path) return "";
+  if (/^https?:\/\//i.test(path)) return path;
+  return `/api/gateway/${path.replace(/^\/+/, "")}`;
+}
+
+function applyBrandingPreview(branding: BrandingRow) {
+  document.body.style.setProperty("--brand-primary", branding.primaryColor);
+  document.body.style.setProperty("--brand-secondary", branding.secondaryColor);
+  document.body.style.setProperty("--brand-on-primary", readableText(branding.primaryColor));
+}
+
+function serviceStatusLabel(status: string) {
+  const labels: Record<string, string> = {
+    HEALTHY: "Hoạt động tốt",
+    DEGRADED: "Cần kiểm tra",
+    UNREACHABLE: "Không thể kết nối",
+    MISCONFIGURED: "Sai cấu hình",
+    UNKNOWN: "Chưa kiểm tra",
+  };
+  return labels[status] ?? status;
+}
+
 function WorldSettingsConsole({ user }: { user: PortalUser }) {
   const router = useRouter();
-  const systemAdmin = user.accountType === "SYSTEM_ADMIN";
-  const canBrand = systemAdmin || user.permissions.includes("branding:manage");
+  const canBrand = user.permissions.includes("branding:manage");
   const canServices =
-    systemAdmin ||
     user.permissions.some((permission) =>
       ["configuration:manage", "integrations:manage"].includes(permission),
     );
   const { data, loading, error, refresh } = useLoad(
     async () => ({
-      branding: canBrand
-        ? await apiRequest<BrandingRow>("/api/v1/branding")
-        : null,
+      branding: canBrand ? await apiRequest<BrandingRow>("/api/v1/branding") : null,
       services: canServices
         ? await apiRequest<ServiceRow[]>("/api/v1/external-services")
         : [],
     }),
     [canBrand, canServices],
   );
-  const [tab, setTab] = useState<"themes" | "brand" | "services">(
-    canBrand ? "themes" : "services",
+  const [tab, setTabState] = useState<"brand" | "services">(
+    canBrand ? "brand" : "services",
   );
   const [brand, setBrand] = useState<BrandingRow | null>(null);
-  const [activeThemeKey, setActiveThemeKey] =
-    useState<ThemeKey>("unified-light");
   const committedBrandRef = useRef<BrandingRow | null>(null);
-  const [service, setService] = useState({
-    serviceType: "REDIS",
-    configKey: "default",
-    enabled: true,
-    host: "redis",
-    port: "6379",
-    username: "",
-    database: "0",
-    endpoint: "",
-    model: "",
-    bucket: "",
-    secure: false,
-    secret: "",
-  });
+  const logoInputRef = useRef<HTMLInputElement | null>(null);
+  const backgroundInputRef = useRef<HTMLInputElement | null>(null);
+  const [logoPreview, setLogoPreview] = useState("");
+  const [backgroundPreview, setBackgroundPreview] = useState("");
+  const [service, setService] = useState<ServiceDraft>(defaultServiceDraft());
   const [notice, setNotice] = useState<Notice>(null);
   const [working, setWorking] = useState(false);
+
+  function setTab(next: "brand" | "services") {
+    setTabState(next);
+    window.localStorage.setItem("lmspilot-settings-tab", next);
+  }
+
+  useEffect(() => {
+    const remembered = window.localStorage.getItem("lmspilot-settings-tab");
+    if (remembered === "services" && canServices) setTabState("services");
+    else if (remembered === "brand" && canBrand) setTabState("brand");
+  }, [canBrand, canServices]);
+
   useEffect(() => {
     if (!data?.branding) return;
     const normalized = {
@@ -1688,69 +1727,98 @@ function WorldSettingsConsole({ user }: { user: PortalUser }) {
       themeKey: normalizeThemeKey(data.branding.themeKey),
     };
     setBrand(normalized);
-    setActiveThemeKey(normalized.themeKey);
     committedBrandRef.current = normalized;
     applyBrandingPreview(normalized);
   }, [data?.branding]);
+
   useEffect(
     () => () => {
-      if (committedBrandRef.current) {
-        applyBrandingPreview(committedBrandRef.current);
-      }
+      if (logoPreview.startsWith("blob:")) URL.revokeObjectURL(logoPreview);
+      if (backgroundPreview.startsWith("blob:")) URL.revokeObjectURL(backgroundPreview);
+    },
+    [logoPreview, backgroundPreview],
+  );
+  useEffect(
+    () => () => {
+      if (committedBrandRef.current) applyBrandingPreview(committedBrandRef.current);
     },
     [],
   );
-  useEffect(() => {
-    if (!canBrand && canServices) setTab("services");
-  }, [canBrand, canServices]);
-  const services = data?.services ?? [];
-  const committedBrand = committedBrandRef.current;
-  const hasThemeDraft = Boolean(
-    brand &&
-      committedBrand &&
-      (brand.themeKey !== committedBrand.themeKey ||
-        brand.primaryColor !== committedBrand.primaryColor ||
-        brand.secondaryColor !== committedBrand.secondaryColor ||
-        brand.backgroundColor !== committedBrand.backgroundColor ||
-        brand.textColor !== committedBrand.textColor),
-  );
 
-  async function persistBranding(nextBrand: BrandingRow, message: string) {
-    if (!canBrand) return;
+  useEffect(() => {
+    if (!canBrand && canServices) setTabState("services");
+  }, [canBrand, canServices]);
+
+  const services = data?.services ?? [];
+  const selectedMeta = SERVICE_META[service.serviceType];
+
+  function updateBrand(patch: Partial<BrandingRow>) {
+    setBrand((current) => {
+      if (!current) return current;
+      const next = { ...current, ...patch };
+      applyBrandingPreview(next);
+      return next;
+    });
+  }
+
+  async function uploadLogo(file?: File) {
+    if (!file) return;
+    if (!new Set(["image/png", "image/jpeg"]).has(file.type)) {
+      setNotice({ tone: "error", message: "Logo phải là PNG hoặc JPG." });
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setNotice({ tone: "error", message: "Logo không được vượt quá 5 MB." });
+      return;
+    }
     setWorking(true);
+    setNotice(null);
     try {
-      const saved = await apiRequest<BrandingRow>("/api/v1/branding", {
-        method: "PUT",
-        body: JSON.stringify({
-          systemName: nextBrand.systemName,
-          introduction: nextBrand.introduction || null,
-          logoFileId: nextBrand.logoFileId || null,
-          faviconFileId: nextBrand.faviconFileId || null,
-          backgroundFileId: nextBrand.backgroundFileId || null,
-          themeKey: normalizeThemeKey(nextBrand.themeKey),
-          primaryColor: nextBrand.primaryColor,
-          secondaryColor: nextBrand.secondaryColor,
-          backgroundColor: nextBrand.backgroundColor,
-          textColor: nextBrand.textColor,
-          customDomain: nextBrand.customDomain || null,
-        }),
-      });
-      const normalized = {
-        ...saved,
-        themeKey: normalizeThemeKey(saved.themeKey),
-      };
-      setBrand(normalized);
-      setActiveThemeKey(normalized.themeKey);
-      committedBrandRef.current = normalized;
-      applyBrandingPreview(normalized);
-      setNotice({ tone: "success", message });
-      router.refresh();
+      const form = new FormData();
+      form.set("file", file);
+      const uploaded = await apiRequest<{ id: string }>(
+        "/api/v1/files?purpose=BRANDING_LOGO",
+        { method: "POST", body: form },
+      );
+      if (logoPreview.startsWith("blob:")) URL.revokeObjectURL(logoPreview);
+      setLogoPreview(URL.createObjectURL(file));
+      updateBrand({ logoFileId: uploaded.id });
+      setNotice({ tone: "success", message: "Đã tải logo lên. Nhấn Lưu thay đổi để áp dụng." });
     } catch (cause) {
       setNotice({
         tone: "error",
-        message:
-          cause instanceof Error ? cause.message : "Không thể lưu thương hiệu",
+        message: cause instanceof Error ? cause.message : "Không thể tải logo",
       });
+    } finally {
+      setWorking(false);
+    }
+  }
+
+  async function uploadLoginBackground(file?: File) {
+    if (!file) return;
+    if (!new Set(["image/png", "image/jpeg", "image/webp"]).has(file.type)) {
+      setNotice({ tone: "error", message: "Ảnh nền phải là PNG, JPG hoặc WebP." });
+      return;
+    }
+    if (file.size > 12 * 1024 * 1024) {
+      setNotice({ tone: "error", message: "Ảnh nền không được vượt quá 12 MB." });
+      return;
+    }
+    setWorking(true);
+    setNotice(null);
+    try {
+      const form = new FormData();
+      form.set("file", file);
+      const uploaded = await apiRequest<{ id: string }>(
+        "/api/v1/files?purpose=BRANDING_BACKGROUND",
+        { method: "POST", body: form },
+      );
+      if (backgroundPreview.startsWith("blob:")) URL.revokeObjectURL(backgroundPreview);
+      setBackgroundPreview(URL.createObjectURL(file));
+      updateBrand({ backgroundFileId: uploaded.id });
+      setNotice({ tone: "success", message: "Đã tải ảnh nền đăng nhập. Nhấn Lưu thay đổi để áp dụng." });
+    } catch (cause) {
+      setNotice({ tone: "error", message: cause instanceof Error ? cause.message : "Không thể tải ảnh nền" });
     } finally {
       setWorking(false);
     }
@@ -1758,94 +1826,151 @@ function WorldSettingsConsole({ user }: { user: PortalUser }) {
 
   async function saveBrand(event: FormEvent) {
     event.preventDefault();
-    if (!brand) return;
-    await persistBranding(
-      brand,
-      "Đã cập nhật nhận diện và đồng bộ giao diện toàn hệ thống.",
-    );
+    if (!brand || !canBrand) return;
+    setWorking(true);
+    setNotice(null);
+    try {
+      const saved = await apiRequest<BrandingRow>("/api/v1/branding", {
+        method: "PUT",
+        body: JSON.stringify({
+          systemName: brand.systemName.trim(),
+          introduction: brand.introduction?.trim() || null,
+          logoFileId: brand.logoFileId || null,
+          faviconFileId: brand.faviconFileId || brand.logoFileId || null,
+          backgroundFileId: brand.backgroundFileId || null,
+          // Chế độ sáng/tối thuộc lựa chọn cá nhân trên thanh trên cùng.
+          themeKey: normalizeThemeKey(committedBrandRef.current?.themeKey ?? brand.themeKey),
+          primaryColor: brand.primaryColor,
+          secondaryColor: brand.secondaryColor,
+          backgroundColor: brand.backgroundColor,
+          textColor: brand.textColor,
+          customDomain: brand.customDomain?.trim() || null,
+        }),
+      });
+      const normalized = { ...saved, themeKey: normalizeThemeKey(saved.themeKey) };
+      setBrand(normalized);
+      committedBrandRef.current = normalized;
+      applyBrandingPreview(normalized);
+      setNotice({ tone: "success", message: "Đã cập nhật cấu hình thông tin và màu thương hiệu." });
+      await refresh();
+      router.refresh();
+    } catch (cause) {
+      setNotice({
+        tone: "error",
+        message: cause instanceof Error ? cause.message : "Không thể lưu cấu hình",
+      });
+    } finally {
+      setWorking(false);
+    }
   }
 
-  function previewTheme(theme: ThemeDefinition) {
-    if (!brand) return;
-    const nextBrand: BrandingRow = {
-      ...brand,
-      themeKey: normalizeThemeKey(theme.key),
-      primaryColor: theme.palette.primary,
-      secondaryColor: theme.palette.secondary,
-      backgroundColor: theme.palette.background,
-      textColor: theme.palette.text,
-    };
-    setBrand(nextBrand);
-    applyBrandingPreview(nextBrand);
-    setNotice({
-      tone: "info",
-      message: `Đang xem thử “${theme.name}”. Chưa có người dùng nào khác bị ảnh hưởng.`,
+  function editService(item: ServiceRow) {
+    const config = item.config ?? {};
+    setService({
+      ...defaultServiceDraft(item.serviceType),
+      id: item.id,
+      configKey: item.configKey,
+      enabled: item.enabled,
+      host: String(config.host ?? ""),
+      port: String(config.port ?? ""),
+      username: String(config.username ?? ""),
+      database: String(config.database ?? "0"),
+      endpoint: String(config.endpoint ?? config.baseUrl ?? ""),
+      callbackUrl: String(config.callbackUrl ?? ""),
+      model: String(config.model ?? ""),
+      bucket: String(config.bucket ?? ""),
+      region: String(config.region ?? ""),
+      accessKey: String(config.accessKey ?? ""),
+      fromEmail: String(config.fromEmail ?? ""),
+      fromName: String(config.fromName ?? ""),
+      security: String(config.security ?? "STARTTLS"),
+      provider: String(config.provider ?? "JITSI"),
+      pathStyle: Boolean(config.pathStyle),
+      secure: config.secure !== false && config.tls !== false,
+      secret: "",
+      secretConfigured: item.secretConfigured,
     });
+    setNotice({ tone: "info", message: `Đang chỉnh sửa ${SERVICE_META[item.serviceType].label}.` });
+    document.getElementById("service-editor")?.scrollIntoView({ behavior: "smooth" });
   }
 
-  function resetThemePreview() {
-    if (!committedBrandRef.current) return;
-    setBrand(committedBrandRef.current);
-    applyBrandingPreview(committedBrandRef.current);
-    setNotice({ tone: "info", message: "Đã hoàn tác bản xem thử." });
+  function buildServiceConfig(draft: ServiceDraft): Record<string, unknown> {
+    switch (draft.serviceType) {
+      case "REDIS":
+        return {
+          host: draft.host.trim(),
+          port: Number(draft.port || 6379),
+          username: draft.username.trim() || undefined,
+          database: Number(draft.database || 0),
+          tls: draft.secure,
+        };
+      case "SMTP":
+        return {
+          host: draft.host.trim(),
+          port: Number(draft.port || 587),
+          username: draft.username.trim() || undefined,
+          security: draft.security,
+          fromEmail: draft.fromEmail.trim(),
+          fromName: draft.fromName.trim() || undefined,
+        };
+      case "AI_PROVIDER":
+        return {
+          endpoint: draft.endpoint.trim(),
+          model: draft.model.trim(),
+          apiStyle: "OPENAI_COMPATIBLE",
+        };
+      case "OBJECT_STORAGE":
+        return {
+          endpoint: draft.endpoint.trim(),
+          bucket: draft.bucket.trim(),
+          region: draft.region.trim(),
+          accessKey: draft.accessKey.trim(),
+          pathStyle: draft.pathStyle,
+          secure: draft.secure,
+        };
+      case "DOCUMENT_EDITOR":
+        return {
+          endpoint: draft.endpoint.trim(),
+          callbackUrl: draft.callbackUrl.trim(),
+          jwtEnabled: draft.secretConfigured || Boolean(draft.secret.trim()),
+        };
+      case "VIDEO_CONFERENCE":
+        return {
+          endpoint: draft.endpoint.trim(),
+          provider: draft.provider,
+        };
+    }
   }
 
-  async function applySelectedTheme() {
-    if (!brand) return;
-    const theme = getTheme(brand.themeKey);
-    await persistBranding(
-      brand,
-      `Đã áp dụng “${theme.name}” cho toàn hệ thống.`,
-    );
-  }
-
-  async function addService(event: FormEvent) {
+  async function saveService(event: FormEvent) {
     event.preventDefault();
     if (!canServices) return;
     setWorking(true);
+    setNotice(null);
     try {
-      const config =
-        service.serviceType === "REDIS"
-          ? {
-              host: service.host,
-              port: Number(service.port || 6379),
-              username: service.username || undefined,
-              database: Number(service.database || 0),
-              tls: service.secure,
-            }
-          : service.serviceType === "SMTP"
-            ? {
-                host: service.host,
-                port: Number(service.port || 587),
-                username: service.username || undefined,
-                secure: service.secure,
-              }
-            : service.serviceType === "AI_PROVIDER"
-              ? { endpoint: service.endpoint, model: service.model }
-              : service.serviceType === "OBJECT_STORAGE"
-                ? { endpoint: service.endpoint, bucket: service.bucket, secure: service.secure }
-                : { endpoint: service.endpoint, secure: service.secure };
-      await apiRequest("/api/v1/external-services", {
-        method: "POST",
+      const path = service.id
+        ? `/api/v1/external-services/${service.id}`
+        : "/api/v1/external-services";
+      await apiRequest(path, {
+        method: service.id ? "PUT" : "POST",
         body: JSON.stringify({
           serviceType: service.serviceType,
-          configKey: service.configKey,
+          configKey: service.configKey.trim() || "default",
           enabled: service.enabled,
-          config,
-          secret: service.secret || null,
+          config: buildServiceConfig(service),
+          ...(service.secret ? { secret: service.secret } : {}),
         }),
       });
       setNotice({
         tone: "success",
-        message: `Đã lưu cấu hình ${service.serviceType}.`,
+        message: service.id ? "Đã cập nhật dịch vụ." : "Đã thêm dịch vụ.",
       });
-      setService((current) => ({ ...current, secret: "" }));
+      setService(defaultServiceDraft(service.serviceType));
       await refresh();
     } catch (cause) {
       setNotice({
         tone: "error",
-        message:
-          cause instanceof Error ? cause.message : "Cấu hình không hợp lệ",
+        message: cause instanceof Error ? cause.message : "Không thể lưu dịch vụ",
       });
     } finally {
       setWorking(false);
@@ -1853,26 +1978,23 @@ function WorldSettingsConsole({ user }: { user: PortalUser }) {
   }
 
   async function testService(id: string) {
-    if (!canServices) return;
     setWorking(true);
+    setNotice(null);
     try {
-      const result = await apiRequest<ServiceRow>(
-        `/api/v1/external-services/${id}/test`,
-        { method: "POST" },
-      );
+      const result = await apiRequest<ServiceRow>(`/api/v1/external-services/${id}/test`, {
+        method: "POST",
+      });
       setNotice({
         tone: result.healthStatus === "HEALTHY" ? "success" : "error",
-        message:
-          result.healthStatus === "HEALTHY"
-            ? "Kết nối dịch vụ thành công."
-            : (result.lastError ?? "Dịch vụ chưa sẵn sàng"),
+        message: `${SERVICE_META[result.serviceType].label}: ${serviceStatusLabel(result.healthStatus)}${
+          result.lastError ? ` — ${result.lastError}` : ""
+        }`,
       });
       await refresh();
     } catch (cause) {
       setNotice({
         tone: "error",
-        message:
-          cause instanceof Error ? cause.message : "Không thể thử kết nối",
+        message: cause instanceof Error ? cause.message : "Không thể kiểm tra kết nối",
       });
     } finally {
       setWorking(false);
@@ -1882,447 +2004,412 @@ function WorldSettingsConsole({ user }: { user: PortalUser }) {
   return (
     <>
       <WorkspaceHero
-        eyebrow="CÀI ĐẶT HỆ THỐNG"
-        title="Giao diện và cài đặt"
-        description="Chọn sáng hoặc tối, thiết lập màu thương hiệu an toàn và chỉ kết nối dịch vụ ngoài khi tổ chức thực sự sử dụng."
-        icon={<Icon name="settings" size={31} />}
+        eyebrow="CÀI ĐẶT"
+        title="Cấu hình hệ thống"
+        description="Cá nhân hóa thương hiệu và kết nối dịch vụ ngoài. Chế độ sáng/tối vẫn do từng người chọn trên thanh trên cùng."
+        icon={<Icon name="settings" size={29} />}
         stats={[
-          {
-            value: brand ? getTheme(brand.themeKey).shortName : "—",
-            label: "Chế độ hiện tại",
-          },
-          {
-            value: THEMES.length,
-            label: "Chế độ khả dụng",
-          },
-          {
-            value: services.filter((item) => item.healthStatus === "HEALTHY")
-              .length,
-            label: "Kết nối khỏe",
-            tone: "teal",
-          },
+          { value: brand?.systemName || "—", label: "Thương hiệu" },
+          { value: services.filter((item) => item.enabled).length, label: "Dịch vụ bật", tone: "teal" },
         ]}
       />
       <NoticeBar notice={notice} onClose={() => setNotice(null)} />
-      <nav className="workspace-tabs">
+      <div className="workspace-tabs settings-tabs" role="tablist">
         {canBrand && (
           <button
-            className={tab === "themes" ? "active" : ""}
-            onClick={() => setTab("themes")}
-          >
-            Giao diện
-          </button>
-        )}
-        {canBrand && (
-          <button
+            type="button"
             className={tab === "brand" ? "active" : ""}
             onClick={() => setTab("brand")}
           >
-            Nhận diện
+            <Icon name="edit" size={16} /> Cấu hình thông tin
           </button>
         )}
         {canServices && (
           <button
+            type="button"
             className={tab === "services" ? "active" : ""}
             onClick={() => setTab("services")}
           >
-            Dịch vụ ngoài
+            <Icon name="operations" size={16} /> Dịch vụ ngoài
           </button>
         )}
-      </nav>
+      </div>
+
       {loading ? (
         <Busy />
       ) : error ? (
-        <NoticeBar
-          notice={{ tone: "error", message: error }}
-          onClose={() => void refresh()}
-        />
-      ) : tab === "themes" && canBrand && brand ? (
-        <AppearanceStudio
-          brand={brand}
-          activeThemeKey={activeThemeKey}
-          hasThemeDraft={hasThemeDraft}
-          working={working}
-          onPreview={previewTheme}
-          onReset={resetThemePreview}
-          onApply={() => void applySelectedTheme()}
-        />
-      ) : tab === "brand" && canBrand && brand ? (
-        <div className="workspace-two-column wide-left">
+        <NoticeBar notice={{ tone: "error", message: error }} onClose={() => void refresh()} />
+      ) : null}
+
+      {!loading && tab === "brand" && canBrand && brand && (
+        <form className="brand-settings-layout" onSubmit={saveBrand}>
           <Panel
-            title="Bộ nhận diện"
-            subtitle="Chỉ chọn màu chính và màu nền. Màu chữ được tính tự động để luôn dễ đọc."
+            title="Thông tin thương hiệu"
+            subtitle="Logo, tên hiển thị, giới thiệu ngắn và màu chủ đạo."
           >
-            <form className="workspace-form branding-form" onSubmit={saveBrand}>
-              <Field label="Tên hệ thống" wide>
+            <div className="workspace-form brand-form">
+              <div className="brand-logo-picker wide">
+                <div className="brand-logo-preview">
+                  {logoPreview || brand.logoUrl ? (
+                    <img
+                      src={logoPreview || browserBrandAsset(brand.logoUrl)}
+                      alt="Logo xem trước"
+                    />
+                  ) : (
+                    brand.systemName.slice(0, 1).toUpperCase()
+                  )}
+                </div>
+                <div className="brand-logo-actions">
+                  <strong>Logo hệ thống</strong>
+                  <p>PNG hoặc JPG · tối đa 5 MB · nên dùng ảnh vuông.</p>
+                  <input
+                    ref={logoInputRef}
+                    type="file"
+                    accept="image/png,image/jpeg"
+                    onChange={(event) => void uploadLogo(event.target.files?.[0])}
+                  />
+                  <button
+                    type="button"
+                    className="workspace-button secondary brand-file-button"
+                    onClick={() => logoInputRef.current?.click()}
+                    disabled={working}
+                  >
+                    <Icon name="upload" size={16} /> Chọn ảnh logo
+                  </button>
+                </div>
+              </div>
+
+              <div className="brand-login-background wide">
+                <div
+                  className="brand-background-preview"
+                  style={{
+                    backgroundImage: `linear-gradient(135deg, rgba(20,27,64,.58), rgba(77,58,168,.38)), url(${
+                      backgroundPreview || browserBrandAsset(brand.backgroundUrl) || ""
+                    })`,
+                  }}
+                >
+                  <span>Ảnh nền trang đăng nhập</span>
+                </div>
+                <div className="brand-logo-actions">
+                  <strong>Nền đăng nhập</strong>
+                  <p>PNG, JPG hoặc WebP · tối đa 12 MB · khuyến nghị 1920×1080.</p>
+                  <input
+                    ref={backgroundInputRef}
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp"
+                    onChange={(event) => void uploadLoginBackground(event.target.files?.[0])}
+                  />
+                  <div className="page-actions">
+                    <button type="button" className="workspace-button secondary brand-file-button" onClick={() => backgroundInputRef.current?.click()} disabled={working}>
+                      <Icon name="upload" size={16} /> Chọn ảnh nền
+                    </button>
+                    {brand.backgroundFileId && (
+                      <button type="button" className="workspace-button ghost" onClick={() => { setBackgroundPreview(""); updateBrand({ backgroundFileId: undefined, backgroundUrl: undefined }); }}>
+                        Bỏ ảnh nền
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <Field label="Tên thương hiệu" wide>
                 <input
                   required
+                  maxLength={240}
                   value={brand.systemName}
-                  onChange={(event) =>
-                    setBrand({ ...brand, systemName: event.target.value })
-                  }
+                  onChange={(event) => updateBrand({ systemName: event.target.value })}
+                  placeholder="Tên hiển thị trong hệ thống"
                 />
               </Field>
-              <Field label="Nội dung giới thiệu" wide>
+
+              <Field label="Giới thiệu ngắn" wide>
                 <textarea
+                  rows={4}
+                  maxLength={500}
                   value={brand.introduction ?? ""}
-                  onChange={(event) =>
-                    setBrand({ ...brand, introduction: event.target.value })
-                  }
+                  onChange={(event) => updateBrand({ introduction: event.target.value })}
+                  placeholder="Một câu giới thiệu ngắn dành cho người dùng"
                 />
+                <span className="brand-description-counter">
+                  {(brand.introduction ?? "").length}/500
+                </span>
               </Field>
-              <Field label="Logo file ID">
-                <input
-                  value={brand.logoFileId ?? ""}
-                  onChange={(event) =>
-                    setBrand({ ...brand, logoFileId: event.target.value })
-                  }
-                />
-              </Field>
-              <Field label="Favicon file ID">
-                <input
-                  value={brand.faviconFileId ?? ""}
-                  onChange={(event) =>
-                    setBrand({ ...brand, faviconFileId: event.target.value })
-                  }
-                />
-              </Field>
-              <Field label="Ảnh nền file ID">
-                <input
-                  value={brand.backgroundFileId ?? ""}
-                  onChange={(event) =>
-                    setBrand({ ...brand, backgroundFileId: event.target.value })
-                  }
-                />
-              </Field>
-              <Field label="Tên miền">
-                <input
-                  value={brand.customDomain ?? ""}
-                  onChange={(event) =>
-                    setBrand({ ...brand, customDomain: event.target.value })
-                  }
-                  placeholder="learn.example.vn"
-                />
-              </Field>
-              <div className="color-fields">
-                {(
-                  [
-                    ["primaryColor", "Màu chính"],
-                    ["backgroundColor", "Màu nền"],
-                  ] as const
-                ).map(([key, label]) => (
-                  <Field label={label} key={key}>
-                    <div className="color-input">
-                      <input
-                        type="color"
-                        value={brand[key].slice(0, 7)}
-                        onChange={(event) =>
-                          setBrand({
-                            ...brand,
-                            [key]: event.target.value.toUpperCase(),
-                            ...(key === "backgroundColor"
-                              ? { textColor: readableText(event.target.value) }
-                              : {}),
-                          })
-                        }
-                      />
-                      <input
-                        value={brand[key]}
-                        onChange={(event) =>
-                          setBrand({
-                            ...brand,
-                            [key]: event.target.value.toUpperCase(),
-                            ...(key === "backgroundColor"
-                              ? { textColor: readableText(event.target.value) }
-                              : {}),
-                          })
-                        }
-                      />
-                    </div>
-                  </Field>
-                ))}
+
+              <div className="workspace-field wide">
+                <span className="workspace-field-label">Màu chủ đạo</span>
+                <div className="brand-color-presets" role="group" aria-label="Màu thương hiệu">
+                  {BRAND_COLORS.map((preset) => (
+                    <button
+                      key={preset.primary}
+                      type="button"
+                      className={`brand-color-swatch ${
+                        brand.primaryColor.toUpperCase() === preset.primary ? "selected" : ""
+                      }`}
+                      style={{ background: preset.primary }}
+                      title={preset.name}
+                      aria-label={preset.name}
+                      onClick={() =>
+                        updateBrand({
+                          primaryColor: preset.primary,
+                          secondaryColor: preset.secondary,
+                        })
+                      }
+                    />
+                  ))}
+                </div>
               </div>
-              <Button type="submit" disabled={working}>
-                <Icon name="save" size={16} />{" "}
-                {working ? "Đang lưu…" : "Lưu nhận diện"}
+
+              <div className="workspace-field wide">
+                <span className="workspace-field-label">Màu tùy chỉnh</span>
+                <div className="brand-custom-color">
+                  <input
+                    type="color"
+                    value={brand.primaryColor.slice(0, 7)}
+                    onChange={(event) => updateBrand({ primaryColor: event.target.value.toUpperCase() })}
+                    aria-label="Chọn màu chủ đạo"
+                  />
+                  <input
+                    value={brand.primaryColor}
+                    pattern="^#[0-9A-Fa-f]{6}$"
+                    onChange={(event) => updateBrand({ primaryColor: event.target.value.toUpperCase() })}
+                    aria-label="Mã màu chủ đạo"
+                  />
+                </div>
+              </div>
+
+              <details className="workspace-details wide">
+                <summary>Cấu hình tên miền riêng</summary>
+                <Field label="Tên miền" wide hint="Ví dụ: academy.example.com">
+                  <input
+                    value={brand.customDomain ?? ""}
+                    onChange={(event) => updateBrand({ customDomain: event.target.value })}
+                    placeholder="academy.example.com"
+                  />
+                </Field>
+              </details>
+            </div>
+            <div className="brand-save-row">
+              <Button type="submit" disabled={working || !brand.systemName.trim()}>
+                <Icon name="save" size={16} /> {working ? "Đang lưu…" : "Lưu thay đổi"}
               </Button>
-            </form>
+            </div>
           </Panel>
+
           <Panel
-            title="Xem trước không gian"
-            subtitle="Bản xem trước phản ánh màu thương hiệu nhưng vẫn giữ độ tương phản cần thiết."
+            title="Xem trước"
+            subtitle="Màu thương hiệu được xem trực tiếp; sáng/tối không bị thay đổi."
             className="sticky-panel"
           >
             <div
               className="branding-preview"
               style={{
-                background: brand.backgroundColor,
-                color: brand.textColor,
-                borderColor: `${brand.primaryColor}66`,
+                color: readableText(brand.primaryColor),
+                background: brand.primaryColor,
               }}
             >
               <header>
-                <span
+                <span>
+                  {logoPreview || brand.logoUrl ? (
+                    <img src={logoPreview || browserBrandAsset(brand.logoUrl)} alt="" />
+                  ) : (
+                    brand.systemName.slice(0, 1).toUpperCase()
+                  )}
+                </span>
+                <strong>{brand.systemName || "Tên thương hiệu"}</strong>
+              </header>
+              <div className="branding-preview-content">
+                <small>KHÔNG GIAN HỌC TẬP</small>
+                <h3>Chào mừng trở lại</h3>
+                <p>{brand.introduction || "Nội dung giới thiệu sẽ hiển thị tại đây."}</p>
+                <button
+                  type="button"
                   style={{
-                    background: brand.primaryColor,
-                    color: readableText(brand.primaryColor),
+                    background: readableText(brand.primaryColor),
+                    color: brand.primaryColor,
                   }}
                 >
-                  L
-                </span>
-                <strong>{brand.systemName}</strong>
-              </header>
-              <h3>Không gian học tập rõ ràng và nhất quán.</h3>
-              <p>
-                {brand.introduction || "Không gian học tập riêng của tổ chức."}
-              </p>
-              <button
-                type="button"
-                style={{
-                  background: brand.primaryColor,
-                  color: readableText(brand.primaryColor),
-                }}
-              >
-                Bắt đầu học
-              </button>
-              <div className="preview-cards">
-                <i />
-                <i />
-                <i />
+                  Tiếp tục học
+                </button>
+                <div className="preview-cards"><i /><i /><i /></div>
               </div>
             </div>
           </Panel>
-        </div>
-      ) : canServices ? (
-        <div className="workspace-two-column wide-left">
+        </form>
+      )}
+
+      {!loading && tab === "services" && canServices && (
+        <div className="workspace-two-column wide-left settings-services-layout">
           <Panel
-            title="Dịch vụ đã cấu hình"
-            subtitle="Chỉ các kết nối đang dùng mới cần được cấu hình."
+            title={service.id ? "Chỉnh sửa dịch vụ" : "Kết nối dịch vụ"}
+            subtitle="Biểu mẫu thay đổi theo từng loại dịch vụ; bí mật được mã hóa ở backend."
+            className="sticky-panel"
+            action={
+              service.id ? (
+                <Button tone="ghost" onClick={() => setService(defaultServiceDraft(service.serviceType))}>
+                  Tạo mới
+                </Button>
+              ) : undefined
+            }
           >
-            {services.length ? (
-              <div className="service-grid">
-                {services.map((item) => (
-                  <div className="service-card" key={item.id}>
-                    <div>
-                      <span
-                        className={`service-orb ${item.healthStatus.toLowerCase()}`}
-                      >
-                        <Icon
-                          name={
-                            item.serviceType === "REDIS"
-                              ? "operations"
-                              : item.serviceType === "AI_PROVIDER"
-                                ? "question"
-                                : item.serviceType === "DOCUMENT_EDITOR"
-                                  ? "edit"
-                                  : "settings"
-                          }
-                          size={20}
-                        />
-                      </span>
-                      <div>
-                        <strong>{item.serviceType}</strong>
-                        <small>{item.configKey}</small>
-                      </div>
-                      <Tag tone={item.enabled ? "teal" : ""}>
-                        {item.enabled ? "ENABLED" : "OFF"}
-                      </Tag>
-                    </div>
-                    <dl>
-                      {Object.entries(item.config)
-                        .slice(0, 4)
-                        .map(([key, value]) => (
-                          <div key={key}>
-                            <dt>{key}</dt>
-                            <dd>{String(value)}</dd>
-                          </div>
-                        ))}
-                    </dl>
-                    {item.lastError && (
-                      <p className="service-error">{item.lastError}</p>
-                    )}
-                    <footer>
-                      <Tag
-                        tone={
-                          item.healthStatus === "HEALTHY"
-                            ? "teal"
-                            : item.healthStatus === "UNREACHABLE"
-                              ? "danger"
-                              : "gold"
-                        }
-                      >
-                        {item.healthStatus}
-                      </Tag>
-                      <Button
-                        tone="ghost"
-                        disabled={working}
-                        onClick={() => void testService(item.id)}
-                      >
-                        <Icon name="refresh" size={14} /> Thử kết nối
-                      </Button>
-                    </footer>
-                  </div>
-                ))}
+            <form className="workspace-form" onSubmit={saveService} id="service-editor">
+              <div className="service-type-grid wide">
+                {(Object.keys(SERVICE_META) as ServiceType[]).map((type) => {
+                  const meta = SERVICE_META[type];
+                  return (
+                    <button
+                      type="button"
+                      key={type}
+                      className={`service-type-option ${service.serviceType === type ? "active" : ""}`}
+                      onClick={() => setService(defaultServiceDraft(type))}
+                    >
+                      <span>{meta.icon}</span>
+                      <span><strong>{meta.label}</strong><small>{meta.short}</small></span>
+                    </button>
+                  );
+                })}
               </div>
-            ) : (
-              <Empty text="Chưa cấu hình dịch vụ ngoài. Hệ thống lõi vẫn hoạt động độc lập." />
-            )}
-          </Panel>
-          <Panel
-            title="Kết nối dịch vụ"
-            subtitle="Điền từng trường riêng; không cần viết JSON hoặc nhớ cấu trúc kỹ thuật."
-          >
-            <form className="workspace-form" onSubmit={addService}>
-              <Field label="Loại dịch vụ">
-                <select
-                  value={service.serviceType}
-                  onChange={(event) =>
-                    setService({ ...service, serviceType: event.target.value })
-                  }
-                >
-                  {[
-                    "REDIS",
-                    "SMTP",
-                    "VIDEO_CONFERENCE",
-                    "AI_PROVIDER",
-                    "OBJECT_STORAGE",
-                    "DOCUMENT_EDITOR",
-                  ].map((value) => (
-                    <option key={value}>{value}</option>
-                  ))}
-                </select>
-              </Field>
+
+              <div className="service-help wide">
+                <Icon name="question" size={18} />
+                <div>
+                  <strong>{selectedMeta.label}</strong>
+                  <p>{selectedMeta.short}. <a href={selectedMeta.docs} target="_blank" rel="noreferrer">Mở tài liệu chính thức</a></p>
+                </div>
+              </div>
+
               <Field label="Tên cấu hình">
                 <input
                   required
                   value={service.configKey}
-                  onChange={(event) =>
-                    setService({ ...service, configKey: event.target.value })
-                  }
+                  onChange={(event) => setService({ ...service, configKey: event.target.value })}
+                  placeholder="default"
                 />
               </Field>
-              {(["REDIS", "SMTP"].includes(service.serviceType)) && (
+
+              {service.serviceType === "REDIS" && (
                 <>
-                  <Field label="Máy chủ">
-                    <input
-                      required
-                      value={service.host}
-                      onChange={(event) => setService({ ...service, host: event.target.value })}
-                      placeholder={service.serviceType === "REDIS" ? "redis" : "smtp.example.vn"}
-                    />
-                  </Field>
-                  <Field label="Cổng">
-                    <input
-                      type="number"
-                      min="1"
-                      max="65535"
-                      value={service.port}
-                      onChange={(event) => setService({ ...service, port: event.target.value })}
-                    />
-                  </Field>
-                  <Field label="Tên đăng nhập">
-                    <input
-                      value={service.username}
-                      onChange={(event) => setService({ ...service, username: event.target.value })}
-                    />
-                  </Field>
-                  {service.serviceType === "REDIS" && (
-                    <Field label="Database">
-                      <input
-                        type="number"
-                        min="0"
-                        value={service.database}
-                        onChange={(event) => setService({ ...service, database: event.target.value })}
-                      />
-                    </Field>
-                  )}
+                  <Field label="Máy chủ"><input required value={service.host} onChange={(event) => setService({ ...service, host: event.target.value })} placeholder="redis.example.com" /></Field>
+                  <Field label="Cổng"><input required inputMode="numeric" value={service.port} onChange={(event) => setService({ ...service, port: event.target.value })} /></Field>
+                  <Field label="Tên người dùng"><input value={service.username} onChange={(event) => setService({ ...service, username: event.target.value })} placeholder="default" /></Field>
+                  <Field label="Database"><input inputMode="numeric" value={service.database} onChange={(event) => setService({ ...service, database: event.target.value })} /></Field>
                 </>
               )}
+
+              {service.serviceType === "SMTP" && (
+                <>
+                  <Field label="Máy chủ SMTP"><input required value={service.host} onChange={(event) => setService({ ...service, host: event.target.value })} placeholder="smtp.example.com" /></Field>
+                  <Field label="Cổng"><input required inputMode="numeric" value={service.port} onChange={(event) => setService({ ...service, port: event.target.value })} /></Field>
+                  <Field label="Tên đăng nhập"><input value={service.username} onChange={(event) => setService({ ...service, username: event.target.value })} /></Field>
+                  <Field label="Bảo mật"><select value={service.security} onChange={(event) => setService({ ...service, security: event.target.value })}><option>STARTTLS</option><option>TLS</option><option>NONE</option></select></Field>
+                  <Field label="Email gửi" wide><input required type="email" value={service.fromEmail} onChange={(event) => setService({ ...service, fromEmail: event.target.value })} placeholder="noreply@example.com" /></Field>
+                  <Field label="Tên người gửi" wide><input value={service.fromName} onChange={(event) => setService({ ...service, fromName: event.target.value })} /></Field>
+                </>
+              )}
+
               {service.serviceType === "AI_PROVIDER" && (
                 <>
-                  <Field label="Endpoint" wide>
-                    <input
-                      required
-                      type="url"
-                      value={service.endpoint}
-                      onChange={(event) => setService({ ...service, endpoint: event.target.value })}
-                      placeholder="https://api.example.vn/v1"
-                    />
-                  </Field>
-                  <Field label="Tên model" wide>
-                    <input
-                      required
-                      value={service.model}
-                      onChange={(event) => setService({ ...service, model: event.target.value })}
-                    />
-                  </Field>
+                  <Field label="API endpoint" wide><input required type="url" value={service.endpoint} onChange={(event) => setService({ ...service, endpoint: event.target.value })} placeholder="https://api.openai.com/v1" /></Field>
+                  <Field label="Model" wide><input required value={service.model} onChange={(event) => setService({ ...service, model: event.target.value })} placeholder="Tên model theo nhà cung cấp" /></Field>
                 </>
               )}
+
               {service.serviceType === "OBJECT_STORAGE" && (
                 <>
-                  <Field label="Endpoint" wide>
-                    <input
-                      required
-                      value={service.endpoint}
-                      onChange={(event) => setService({ ...service, endpoint: event.target.value })}
-                    />
-                  </Field>
-                  <Field label="Bucket" wide>
-                    <input
-                      required
-                      value={service.bucket}
-                      onChange={(event) => setService({ ...service, bucket: event.target.value })}
-                    />
-                  </Field>
+                  <Field label="Endpoint" wide><input required type="url" value={service.endpoint} onChange={(event) => setService({ ...service, endpoint: event.target.value })} placeholder="https://s3.example.com" /></Field>
+                  <Field label="Bucket"><input required value={service.bucket} onChange={(event) => setService({ ...service, bucket: event.target.value })} /></Field>
+                  <Field label="Region"><input required value={service.region} onChange={(event) => setService({ ...service, region: event.target.value })} placeholder="ap-southeast-1" /></Field>
+                  <Field label="Access key"><input required value={service.accessKey} onChange={(event) => setService({ ...service, accessKey: event.target.value })} /></Field>
+                  <label className="workspace-check"><input type="checkbox" checked={service.pathStyle} onChange={(event) => setService({ ...service, pathStyle: event.target.checked })} /><span>Dùng path-style URL (MinIO/S3 tương thích)</span></label>
                 </>
               )}
-              {["VIDEO_CONFERENCE", "DOCUMENT_EDITOR"].includes(service.serviceType) && (
-                <Field label="Địa chỉ dịch vụ" wide>
-                  <input
-                    required
-                    type="url"
-                    value={service.endpoint}
-                    onChange={(event) => setService({ ...service, endpoint: event.target.value })}
-                    placeholder="https://service.example.vn"
-                  />
-                </Field>
+
+              {service.serviceType === "DOCUMENT_EDITOR" && (
+                <>
+                  <Field label="ONLYOFFICE Docs URL" wide><input required type="url" value={service.endpoint} onChange={(event) => setService({ ...service, endpoint: event.target.value })} placeholder="https://docs.example.com" /></Field>
+                  <Field label="Callback URL công khai" wide hint="ONLYOFFICE phải truy cập được URL này để trả trạng thái lưu tài liệu."><input required type="url" value={service.callbackUrl} onChange={(event) => setService({ ...service, callbackUrl: event.target.value })} placeholder="https://lms.example.com/api/..." /></Field>
+                </>
               )}
-              <label className="workspace-check">
-                <input
-                  type="checkbox"
-                  checked={service.secure}
-                  onChange={(event) => setService({ ...service, secure: event.target.checked })}
-                />
-                <span>Dùng kết nối bảo mật TLS/HTTPS</span>
-              </label>
-              <Field label="Secret/API key" wide>
+
+              {service.serviceType === "VIDEO_CONFERENCE" && (
+                <>
+                  <Field label="Nhà cung cấp"><select value={service.provider} onChange={(event) => setService({ ...service, provider: event.target.value })}><option value="JITSI">Jitsi</option><option value="ZOOM">Zoom</option><option value="TEAMS">Microsoft Teams</option><option value="CUSTOM">Tùy chỉnh</option></select></Field>
+                  <Field label="Endpoint" wide><input required type="url" value={service.endpoint} onChange={(event) => setService({ ...service, endpoint: event.target.value })} placeholder="https://meet.example.com" /></Field>
+                </>
+              )}
+
+              <Field
+                label={selectedMeta.secretLabel}
+                wide
+                hint={service.id ? "Để trống để giữ bí mật hiện tại." : "Bí mật được mã hóa AES-GCM trước khi lưu."}
+              >
                 <input
                   type="password"
+                  autoComplete="new-password"
                   value={service.secret}
-                  onChange={(event) =>
-                    setService({ ...service, secret: event.target.value })
-                  }
-                  placeholder="Được mã hóa trước khi lưu"
+                  onChange={(event) => setService({ ...service, secret: event.target.value })}
                 />
               </Field>
+
+              {(["REDIS", "OBJECT_STORAGE"] as ServiceType[]).includes(service.serviceType) && (
+                <label className="workspace-check">
+                  <input type="checkbox" checked={service.secure} onChange={(event) => setService({ ...service, secure: event.target.checked })} />
+                  <span>Dùng kết nối mã hóa TLS/HTTPS</span>
+                </label>
+              )}
               <label className="workspace-check">
-                <input
-                  type="checkbox"
-                  checked={service.enabled}
-                  onChange={(event) =>
-                    setService({ ...service, enabled: event.target.checked })
-                  }
-                />
-                <span>Bật cấu hình này</span>
+                <input type="checkbox" checked={service.enabled} onChange={(event) => setService({ ...service, enabled: event.target.checked })} />
+                <span>Bật dịch vụ sau khi lưu</span>
               </label>
               <Button type="submit" disabled={working}>
-                <Icon name="plus" size={16} /> Lưu kết nối
+                <Icon name="save" size={16} /> {working ? "Đang lưu…" : service.id ? "Cập nhật dịch vụ" : "Lưu dịch vụ"}
               </Button>
             </form>
           </Panel>
+
+          <Panel
+            title="Dịch vụ đã cấu hình"
+            subtitle={`${services.length} cấu hình · ${services.filter((item) => item.enabled).length} đang bật`}
+          >
+            {services.length ? (
+              <div className="workspace-card-list">
+                {services.map((item) => {
+                  const meta = SERVICE_META[item.serviceType];
+                  const visibleEntries = Object.entries(item.config ?? {})
+                    .filter(([, value]) => value !== undefined && value !== null && value !== "")
+                    .slice(0, 4);
+                  return (
+                    <article className="workspace-mini-card service-card" key={item.id}>
+                      <div>
+                        <span className="service-card-icon">{meta.icon}</span>
+                        <div><strong>{meta.label}</strong><small>{item.configKey}</small></div>
+                        <Tag tone={item.healthStatus === "HEALTHY" ? "teal" : item.healthStatus === "UNREACHABLE" || item.healthStatus === "MISCONFIGURED" ? "danger" : ""}>
+                          {serviceStatusLabel(item.healthStatus)}
+                        </Tag>
+                      </div>
+                      <dl>
+                        {visibleEntries.map(([key, value]) => (
+                          <div key={key}><dt>{key}</dt><dd>{String(value)}</dd></div>
+                        ))}
+                      </dl>
+                      <footer>
+                        <span className="service-secret-note">
+                          {item.secretConfigured ? "Đã lưu bí mật" : "Chưa có bí mật"} · {item.enabled ? "Đang bật" : "Đang tắt"}
+                        </span>
+                        <span className="service-card-actions">
+                          <Button tone="ghost" onClick={() => editService(item)} title="Chỉnh sửa"><Icon name="edit" size={15} /></Button>
+                          <Button tone="secondary" onClick={() => void testService(item.id)} disabled={working}><Icon name="refresh" size={15} /> Kiểm tra</Button>
+                        </span>
+                      </footer>
+                      {item.lastError && <p className="service-error">{item.lastError}</p>}
+                    </article>
+                  );
+                })}
+              </div>
+            ) : (
+              <Empty text="Chưa có dịch vụ ngoài. Chọn loại dịch vụ và nhập thông tin kết nối." />
+            )}
+          </Panel>
         </div>
-      ) : (
-        <WorkspaceDenied />
       )}
     </>
   );
@@ -2354,9 +2441,7 @@ type GradeAppealRow = {
 };
 
 function GradeResultsConsole({ user }: { user: PortalUser }) {
-  const manage =
-    user.accountType === "SYSTEM_ADMIN" ||
-    user.permissions.includes("grade-appeals:manage");
+  const manage = user.permissions.includes("grade-appeals:manage");
   const { data, loading, error, refresh } = useLoad(async () => {
     if (manage) {
       const [grades, appeals] = await Promise.all([

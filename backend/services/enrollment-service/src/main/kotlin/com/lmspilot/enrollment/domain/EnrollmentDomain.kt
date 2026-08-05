@@ -49,6 +49,7 @@ class EnrollmentEntity(
 
 interface TrainingClassRepository : org.springframework.data.jpa.repository.JpaRepository<TrainingClassEntity, UUID> {
     fun existsByCodeIgnoreCase(code: String): Boolean
+    fun findFirstByCourseIdOrderByCreatedAtAsc(courseId: UUID): TrainingClassEntity?
 
     @org.springframework.data.jpa.repository.Query("select distinct c from TrainingClassEntity c join c.instructorIds i where i = :instructorId order by c.createdAt desc")
     fun findAllAssignedTo(instructorId: UUID): List<TrainingClassEntity>
@@ -58,6 +59,7 @@ interface EnrollmentRepository : org.springframework.data.jpa.repository.JpaRepo
     fun findByIdempotencyKey(idempotencyKey: String): EnrollmentEntity?
     fun findAllByUserIdOrderByEnrolledAtDesc(userId: UUID): List<EnrollmentEntity>
     fun findAllByClassIdOrderByEnrolledAtDesc(classId: UUID): List<EnrollmentEntity>
+    fun findAllByCourseIdOrderByEnrolledAtDesc(courseId: UUID): List<EnrollmentEntity>
 }
 
 enum class AssignmentTargetType { USER, GROUP, DEPARTMENT, BRANCH }
@@ -101,6 +103,7 @@ class LiveSessionEntity(
 )
 
 interface CourseAssignmentRepository : org.springframework.data.jpa.repository.JpaRepository<CourseAssignmentEntity, UUID> {
+    fun findFirstByCourseIdAndAssigneeTypeAndAssigneeIdAndStatus(courseId: UUID, assigneeType: AssignmentTargetType, assigneeId: UUID, status: CourseAssignmentStatus): CourseAssignmentEntity?
     fun findAllByAssigneeTypeAndAssigneeIdAndStatusOrderByAssignedAtDesc(type: AssignmentTargetType, assigneeId: UUID, status: CourseAssignmentStatus): List<CourseAssignmentEntity>
     fun findAllByCourseIdOrderByAssignedAtDesc(courseId: UUID): List<CourseAssignmentEntity>
 }

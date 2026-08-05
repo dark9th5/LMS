@@ -1,6 +1,6 @@
 package com.lmspilot.assessment.api
 
-import com.lmspilot.assessment.cls.AssessmentContextType
+import com.lmspilot.assessment.platform.AssessmentContextType
 import com.lmspilot.assessment.domain.*
 import com.lmspilot.contracts.Permissions
 import com.lmspilot.support.api.ApiException
@@ -181,7 +181,7 @@ class AssessmentAudienceService(
     }
 
     private fun requireManage(exam: ExamEntity, permission: String) {
-        val allowed = CurrentUser.isSystemAdmin() || permission in CurrentUser.authorities() ||
+        val allowed = permission in CurrentUser.authorities() ||
             Permissions.EXAMS_ASSIGN in CurrentUser.authorities() || exam.ownerId == CurrentUser.id() ||
             scopedAuthorization.allowed(permission, "EXAM", exam.id) ||
             scopedAuthorization.allowed(Permissions.EXAMS_MANAGE, "EXAM", exam.id) ||

@@ -26,7 +26,11 @@ export default async function Login({
 
   return (
     <main className="auth-page">
-      <section className="auth-showcase" aria-labelledby="login-system-name">
+      <section
+        className={`auth-showcase ${branding.backgroundUrl ? "has-custom-background" : ""}`}
+        aria-labelledby="login-system-name"
+        style={branding.backgroundUrl ? { backgroundImage: `linear-gradient(145deg, rgba(18, 25, 60, .84), rgba(62, 49, 151, .72)), url(${branding.backgroundUrl})` } : undefined}
+      >
         <div className="auth-brand">
           {branding.logoUrl ? (
             <img className="auth-logo" src={branding.logoUrl} alt="" />

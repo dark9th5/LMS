@@ -1,5 +1,6 @@
 import type { LessonType } from "@/lib/models";
 import { Icon } from "./Icon";
+import { DocxPreview } from "./DocxPreview";
 
 export function LessonResource({ fileId, type, compact = false }: { fileId: string; type: LessonType; compact?: boolean }) {
   const inlineUrl = `/api/gateway/api/v1/files/${fileId}/content?inline=true`;
@@ -20,6 +21,8 @@ export function LessonResource({ fileId, type, compact = false }: { fileId: stri
     <iframe src={inlineUrl} title="Tài liệu PDF của bài học" />
     <ResourceActions downloadUrl={downloadUrl} label="Tải PDF" />
   </div>;
+
+  if (type === "DOCX") return <DocxPreview fileId={fileId} downloadUrl={downloadUrl} compact={compact} />;
 
   return <div className="file-preview"><span><Icon name="file" size={34}/></span><div><strong>Tài nguyên bài học</strong><p>Tệp được lưu trong File Storage Service và chỉ tải qua quyền của người dùng.</p></div><a className="button primary" href={downloadUrl}><Icon name="download"/>Tải tệp</a></div>;
 }

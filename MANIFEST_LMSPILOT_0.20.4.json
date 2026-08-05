@@ -1,0 +1,27 @@
+{
+  "release": "LMSPilot 0.20.4",
+  "version": "0.20.4",
+  "type": "full-source release candidate",
+  "focus": [
+    "README hệ thống",
+    "service ownership",
+    "API/database mapping",
+    "LMSPilot naming cleanup"
+  ],
+  "primary_docs": [
+    "README.md",
+    "docs/ARCHITECTURE.md",
+    "docs/SERVICE_CATALOG.md",
+    "docs/API_DATABASE_MAP.md",
+    "docs/TEAM_SERVICE_ASSIGNMENT.md",
+    "BAT_DAU_TAI_DAY.md",
+    "DELIVERY_STATUS.md",
+    "TEST_RESULTS_LMSPILOT_0.20.4.md"
+  ],
+  "source_file_count": 726,
+  "backend_service_count": 19,
+  "backend_ports": "8080-8098",
+  "frontend_port": 3000,
+  "database": "PostgreSQL database lmspilot with schema per service",
+  "source_tree_hash_file": "SOURCE_TREE_SHA256.txt"
+}

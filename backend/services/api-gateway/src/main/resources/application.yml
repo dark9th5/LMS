@@ -12,7 +12,7 @@ spring:
             - id: identity
               uri: ${IDENTITY_URL:http://localhost:8081}
               predicates:
-                - Path=/api/v1/auth/**,/api/v1/users/**,/api/v1/roles/**,/api/v1/authorization/**
+                - Path=/api/v1/auth/**,/api/v1/users/**,/api/v1/roles/**,/api/v1/authorization/**,/api/v1/directory/**
             - id: organization
               uri: ${ORGANIZATION_URL:http://localhost:8082}
               predicates:
@@ -24,7 +24,7 @@ spring:
             - id: enrollment
               uri: ${ENROLLMENT_URL:http://localhost:8084}
               predicates:
-                - Path=/api/v1/classes/**,/api/v1/enrollments/**,/api/v1/course-assignments/**,/api/v1/live-sessions/**,/api/v1/learning-paths/**
+                - Path=/api/v1/enrollments/**,/api/v1/course-assignments/**,/api/v1/live-sessions/**,/api/v1/learning-paths/**
             - id: learning
               uri: ${LEARNING_URL:http://localhost:8085}
               predicates:

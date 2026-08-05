@@ -4,12 +4,11 @@ import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.ObjectNode
-import com.lmspilot.ai.cls.*
+import com.lmspilot.ai.platform.*
 import com.lmspilot.contracts.Permissions
 import com.lmspilot.support.api.ApiException
 import com.lmspilot.support.security.CurrentUser
 import com.lmspilot.support.security.LicenseGuard
-import com.lmspilot.support.security.ScopedAuthorizationClient
 import jakarta.validation.Valid
 import jakarta.validation.constraints.AssertTrue
 import jakarta.validation.constraints.Max
@@ -32,6 +31,8 @@ import java.util.UUID
 import javax.crypto.Cipher
 import javax.crypto.spec.GCMParameterSpec
 import javax.crypto.spec.SecretKeySpec
+
+private val STANDALONE_QUESTION_WORKSPACE_ID: UUID = UUID.fromString("00000000-0000-0000-0000-00000000a11e")
 
 data class AiProviderRequest(
     @field:NotBlank @field:Size(max = 80) val code: String,
@@ -72,9 +73,20 @@ data class GenerateQuestionSetRequest(
 ) {
     @AssertTrue(message = "Cần ít nhất một tài liệu hoặc sourceText")
     fun hasSource() = documentFileIds.isNotEmpty() || !sourceText.isNullOrBlank()
+
+    @AssertTrue(message = "Tổng tỷ lệ độ khó phải bằng 100% và chỉ gồm EASY, MEDIUM, HARD")
+    fun hasValidDifficultyDistribution() = runCatching { DifficultyDistributionPolicy.normalize(difficultyDistribution) }.isSuccess
+
+    @AssertTrue(message = "Loại câu hỏi chỉ nhận SINGLE_CHOICE, MULTIPLE_CHOICE hoặc TRUE_FALSE")
+    fun hasValidQuestionTypes() = questionTypes.isNotEmpty() && questionTypes.all { it.uppercase() in setOf("SINGLE_CHOICE", "MULTIPLE_CHOICE", "TRUE_FALSE") }
 }
 
-data class ReviewQuestionSetRequest(val decision: ReviewDecision, @field:Size(max = 5000) val comments: String? = null)
+data class ReviewQuestionSetRequest(
+    val decision: ReviewDecision,
+    @field:Size(max = 5000) val comments: String? = null,
+    @field:Size(max = 500) val selectedExternalIds: Set<String> = emptySet(),
+    val questionSet: JsonNode? = null,
+)
 
 data class QuestionGenerationJobResponse(
     val id: UUID,
@@ -153,6 +165,15 @@ private fun AiProviderConfigEntity.response(mapper: ObjectMapper) = AiProviderRe
     maxOutputTokens, mapper.readValue(configJson, object : TypeReference<Map<String, Any?>>() {}), updatedAt,
 )
 
+data class AiSourceFileMetadata(
+    val id: UUID,
+    val ownerId: UUID,
+    val originalName: String,
+    val contentType: String,
+    val purpose: String,
+    val status: String,
+)
+
 @Service
 class AiFileDocumentClient(
     builder: RestClient.Builder,
@@ -163,6 +184,10 @@ class AiFileDocumentClient(
     fun content(fileId: UUID): ByteArray = client.get().uri("/internal/v1/files/{id}/content", fileId)
         .header("X-Service-Token", token).retrieve().body(ByteArray::class.java)
         ?: throw ApiException(HttpStatus.BAD_GATEWAY, "DOCUMENT_EMPTY", "Tài liệu không có nội dung")
+
+    fun metadata(fileId: UUID): AiSourceFileMetadata = client.get().uri("/internal/v1/files/{id}", fileId)
+        .header("X-Service-Token", token).retrieve().body(AiSourceFileMetadata::class.java)
+        ?: throw ApiException(HttpStatus.BAD_GATEWAY, "DOCUMENT_METADATA_MISSING", "Không đọc được thông tin tài liệu")
 }
 
 @Service
@@ -181,6 +206,27 @@ class AssessmentQuestionImportClient(
     }
 }
 
+data class CourseDocumentScope(
+    val ownerId: UUID,
+    val lessonFileIds: Set<UUID> = emptySet(),
+)
+
+@Service
+class CourseDocumentScopeClient(
+    builder: RestClient.Builder,
+    @Value("\${course-service.url:http://localhost:8083}") baseUrl: String,
+    @Value("\${lmspilot.internal-token}") private val token: String,
+) {
+    private val client = builder.baseUrl(baseUrl).build()
+
+    fun scope(courseId: UUID): CourseDocumentScope = client.get()
+        .uri("/internal/v1/courses/{id}/document-scope", courseId)
+        .header("X-Service-Token", token)
+        .retrieve()
+        .body(CourseDocumentScope::class.java)
+        ?: throw ApiException(HttpStatus.SERVICE_UNAVAILABLE, "COURSE_SCOPE_UNAVAILABLE", "Không đọc được phạm vi tài liệu khóa học")
+}
+
 @Service
 class QuestionGenerationService(
     private val jobs: QuestionGenerationJobRepository,
@@ -188,9 +234,9 @@ class QuestionGenerationService(
     private val providers: AiProviderConfigRepository,
     private val providerService: AiProviderConfigurationService,
     private val files: AiFileDocumentClient,
+    private val courseDocuments: CourseDocumentScopeClient,
     private val importer: AssessmentQuestionImportClient,
     private val mapper: ObjectMapper,
-    private val scopedAuthorization: ScopedAuthorizationClient,
     private val license: LicenseGuard,
 ) {
     private val tika = Tika()
@@ -198,7 +244,7 @@ class QuestionGenerationService(
     @Transactional(readOnly = true)
     fun list(): List<QuestionGenerationJobResponse> {
         val canReview = Permissions.QUESTIONS_APPROVE_AI in CurrentUser.authorities()
-        val source = if (CurrentUser.isSystemAdmin() || canReview) {
+        val source = if (canReview) {
             jobs.findAllByOrderByCreatedAtDesc().filter { job ->
                 job.requestedBy == CurrentUser.id() || canAccessCourse(job.courseId, if (canReview) Permissions.QUESTIONS_APPROVE_AI else Permissions.QUESTIONS_GENERATE_AI)
             }
@@ -211,27 +257,62 @@ class QuestionGenerationService(
 
     fun generate(input: GenerateQuestionSetRequest): QuestionGenerationJobResponse {
         license.requireFeature("AI")
-        requireCoursePermission(input.courseId, Permissions.QUESTIONS_GENERATE_AI, "Khóa học ngoài phạm vi sinh câu hỏi")
-        val provider = providers.findById(input.providerConfigId).orElseThrow {
+        val normalizedInput = input.copy(
+            questionTypes = input.questionTypes.map(String::uppercase).toSet(),
+            difficultyDistribution = DifficultyDistributionPolicy.normalize(input.difficultyDistribution),
+        )
+        if (normalizedInput.documentFileIds.isEmpty()) {
+            throw ApiException(HttpStatus.BAD_REQUEST, "DOCUMENT_REQUIRED", "Cần chọn ít nhất một tài liệu PDF hoặc DOCX")
+        }
+        if (normalizedInput.courseId == STANDALONE_QUESTION_WORKSPACE_ID) {
+            val invalidDocuments = normalizedInput.documentFileIds.filter { fileId ->
+                val metadata = files.metadata(fileId)
+                metadata.ownerId != CurrentUser.id() ||
+                    metadata.status != "AVAILABLE" ||
+                    metadata.contentType !in setOf(
+                        "application/pdf",
+                        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                    )
+            }
+            if (invalidDocuments.isNotEmpty()) {
+                throw ApiException(HttpStatus.FORBIDDEN, "DOCUMENT_OUTSIDE_OWNER", "Kỳ thi chỉ được tạo từ PDF/DOCX do chính giảng viên tải lên")
+            }
+        } else {
+            requireCoursePermission(normalizedInput.courseId, Permissions.QUESTIONS_GENERATE_AI, "Khóa học ngoài phạm vi sinh câu hỏi")
+            val documentScope = courseDocuments.scope(normalizedInput.courseId)
+            if (documentScope.lessonFileIds.isEmpty()) {
+                throw ApiException(HttpStatus.BAD_REQUEST, "COURSE_DOCUMENT_REQUIRED", "Khóa học chưa có tài liệu PDF hoặc DOCX để tạo câu hỏi")
+            }
+            val allowedDocuments = documentScope.lessonFileIds
+            val invalidDocuments = normalizedInput.documentFileIds - allowedDocuments
+            if (invalidDocuments.isNotEmpty()) {
+                throw ApiException(
+                    HttpStatus.FORBIDDEN,
+                    "DOCUMENT_OUTSIDE_COURSE",
+                    "Chỉ được tạo câu hỏi từ tài liệu PDF/DOCX đang thuộc khóa học",
+                )
+            }
+        }
+        val provider = providers.findById(normalizedInput.providerConfigId).orElseThrow {
             ApiException(HttpStatus.BAD_REQUEST, "AI_PROVIDER_NOT_FOUND", "Không tìm thấy cấu hình AI")
         }
         if (!provider.enabled) throw ApiException(HttpStatus.CONFLICT, "AI_PROVIDER_DISABLED", "Cấu hình AI chưa được bật")
         val options = mapOf(
-            "language" to input.language,
-            "numberOfQuestions" to input.numberOfQuestions,
-            "questionTypes" to input.questionTypes,
-            "difficultyDistribution" to input.difficultyDistribution,
+            "language" to normalizedInput.language,
+            "numberOfQuestions" to normalizedInput.numberOfQuestions,
+            "questionTypes" to normalizedInput.questionTypes,
+            "difficultyDistribution" to normalizedInput.difficultyDistribution,
         )
         val job = jobs.save(
             QuestionGenerationJobEntity(
-                courseId = input.courseId,
+                courseId = normalizedInput.courseId,
                 requestedBy = CurrentUser.id(),
                 providerConfigId = provider.id,
-                documentVersionIdsJson = mapper.writeValueAsString(input.documentFileIds),
+                documentVersionIdsJson = mapper.writeValueAsString(normalizedInput.documentFileIds),
                 generationOptionsJson = mapper.writeValueAsString(options),
             )
         )
-        return runJob(job, provider, input)
+        return runJob(job, provider, normalizedInput)
     }
 
     @Transactional
@@ -241,6 +322,58 @@ class QuestionGenerationService(
         if (job.status !in setOf(QuestionGenerationStatus.REVIEW_REQUIRED, QuestionGenerationStatus.APPROVED)) {
             throw ApiException(HttpStatus.CONFLICT, "JOB_NOT_REVIEWABLE", "Bộ câu hỏi chưa ở trạng thái chờ duyệt")
         }
+        if (input.decision == ReviewDecision.APPROVE) {
+            val storedRoot = job.questionSetJson?.let { mapper.readTree(it) }
+                ?: throw ApiException(HttpStatus.CONFLICT, "QUESTION_SET_EMPTY", "Bộ câu hỏi không có dữ liệu")
+            val root = (input.questionSet ?: storedRoot).takeIf(JsonNode::isObject)?.deepCopy<ObjectNode>()
+                ?: throw ApiException(HttpStatus.BAD_REQUEST, "QUESTION_SET_INVALID", "Bộ câu hỏi chỉnh sửa không hợp lệ")
+            root.put("schemaVersion", "1.0")
+            root.put("language", storedRoot.path("language").asText("vi"))
+            root.set<JsonNode>("source", storedRoot.path("source"))
+
+            if (input.questionSet != null) {
+                val optionMap = mapper.readValue(job.generationOptionsJson, object : TypeReference<Map<String, Any?>>() {})
+                val numberOfQuestions = (optionMap["numberOfQuestions"] as? Number)?.toInt()
+                    ?: throw ApiException(HttpStatus.CONFLICT, "GENERATION_OPTIONS_INVALID", "Thiếu số câu hỏi đã yêu cầu")
+                val difficultyDistribution: Map<String, Int> = mapper.convertValue(
+                    optionMap["difficultyDistribution"],
+                    object : TypeReference<Map<String, Int>>() {},
+                )
+                val questionTypes: Set<String> = mapper.convertValue(
+                    optionMap["questionTypes"],
+                    object : TypeReference<Set<String>>() {},
+                )
+                val documentIds: Set<UUID> = mapper.readValue(job.documentVersionIdsJson, object : TypeReference<Set<UUID>>() {})
+                val chunks = extractSourceChunks(documentIds)
+                val validation = GeneratedQuestionQualityValidator.validate(
+                    root,
+                    GenerateQuestionsCommand(job.courseId, documentIds, storedRoot.path("language").asText("vi"), numberOfQuestions, difficultyDistribution, questionTypes),
+                    chunks,
+                )
+                if (!validation.valid) {
+                    throw ApiException(
+                        HttpStatus.UNPROCESSABLE_ENTITY,
+                        "QUESTION_EDIT_VALIDATION_FAILED",
+                        validation.problems.take(5).joinToString("; ") { it.message },
+                    )
+                }
+            }
+
+            val questions = root.path("questions")
+            if (input.selectedExternalIds.isNotEmpty()) {
+                val availableIds = questions.map { it.path("externalId").asText() }.toSet()
+                if (!availableIds.containsAll(input.selectedExternalIds)) {
+                    throw ApiException(HttpStatus.BAD_REQUEST, "QUESTION_SELECTION_INVALID", "Danh sách câu hỏi duyệt không hợp lệ")
+                }
+                val selected = mapper.createArrayNode()
+                questions.filter { it.path("externalId").asText() in input.selectedExternalIds }.forEach { selected.add(it) }
+                if (selected.size() == 0) throw ApiException(HttpStatus.BAD_REQUEST, "QUESTION_SELECTION_EMPTY", "Cần chọn ít nhất một câu hỏi")
+                root.set<JsonNode>("questions", selected)
+            }
+            val validation = QuestionSetBusinessValidator.validate(root)
+            if (!validation.valid) throw ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "QUESTION_SELECTION_INVALID", "Bộ câu hỏi sau khi chỉnh sửa hoặc chọn không hợp lệ")
+            job.questionSetJson = mapper.writeValueAsString(root)
+        }
         reviews.save(QuestionGenerationReviewEntity(jobId = id, reviewerId = CurrentUser.id(), decision = input.decision, comments = input.comments))
         job.status = when (input.decision) {
             ReviewDecision.APPROVE -> QuestionGenerationStatus.APPROVED
@@ -249,6 +382,7 @@ class QuestionGenerationService(
         job.updatedAt = Instant.now()
         return job.response(mapper)
     }
+
 
     @Transactional
     fun import(id: UUID): Map<String, Any> {
@@ -263,35 +397,63 @@ class QuestionGenerationService(
         return mapOf("jobId" to id, "importedQuestionIds" to importedIds)
     }
 
+    private fun extractSourceChunks(documentFileIds: Set<UUID>, sourceText: String? = null): List<SourceChunk> {
+        val chunks = mutableListOf<SourceChunk>()
+        sourceText?.takeIf(String::isNotBlank)?.let {
+            chunks += SourceChunk(UUID(0, 0), null, "Nội dung nhập trực tiếp", it.trim())
+        }
+        documentFileIds.forEach { fileId ->
+            val metadata = files.metadata(fileId)
+            val text = runCatching { tika.parseToString(files.content(fileId).inputStream()) }
+                .getOrElse { throw ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "DOCUMENT_EXTRACTION_FAILED", "Không đọc được tài liệu ${metadata.originalName}") }
+                .take(250_000)
+            val pages = if (metadata.contentType == "application/pdf") text.split(Regex("\f+")).filter(String::isNotBlank) else emptyList()
+            if (pages.size > 1) {
+                pages.forEachIndexed { index, pageText ->
+                    chunks += SourceChunk(fileId, index + 1, "${metadata.originalName} · trang ${index + 1}", pageText.trim())
+                }
+            } else {
+                text.chunked(12_000).filter(String::isNotBlank).forEachIndexed { index, part ->
+                    chunks += SourceChunk(fileId, null, "${metadata.originalName} · phần ${index + 1}", part.trim())
+                }
+            }
+        }
+        if (chunks.none { it.text.isNotBlank() }) {
+            throw ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "DOCUMENT_TEXT_EMPTY", "Không trích xuất được nội dung từ tài liệu")
+        }
+        return chunks
+    }
+
     private fun runJob(job: QuestionGenerationJobEntity, provider: AiProviderConfigEntity, input: GenerateQuestionSetRequest): QuestionGenerationJobResponse {
         return try {
             job.status = QuestionGenerationStatus.EXTRACTING
             job.updatedAt = Instant.now()
             jobs.save(job)
-            val chunks = mutableListOf<SourceChunk>()
-            input.sourceText?.takeIf { it.isNotBlank() }?.let {
-                chunks += SourceChunk(UUID(0, 0), null, "Nội dung nhập trực tiếp", it.trim())
-            }
-            input.documentFileIds.forEach { fileId ->
-                val text = runCatching { tika.parseToString(files.content(fileId).inputStream()) }
-                    .getOrElse { throw ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "DOCUMENT_EXTRACTION_FAILED", "Không đọc được tài liệu $fileId") }
-                    .take(250_000)
-                chunks += SourceChunk(fileId, null, "Tài liệu $fileId", text)
-            }
-            if (chunks.none { it.text.isNotBlank() }) throw ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "DOCUMENT_TEXT_EMPTY", "Không trích xuất được nội dung từ tài liệu")
+            val chunks = extractSourceChunks(input.documentFileIds, input.sourceText)
 
             job.status = QuestionGenerationStatus.GENERATING
             job.updatedAt = Instant.now()
             jobs.save(job)
-            val generated = callProvider(provider, input, chunks)
-            val result = canonicalize(generated, provider, input, chunks)
+            var result = canonicalize(callProvider(provider, input, chunks), provider, input, chunks)
 
             job.status = QuestionGenerationStatus.VALIDATING
-            val validation = QuestionSetBusinessValidator.validate(result)
+            var validation = GeneratedQuestionQualityValidator.validate(
+                result,
+                GenerateQuestionsCommand(input.courseId, chunks.map(SourceChunk::documentVersionId).toSet(), input.language, input.numberOfQuestions, input.difficultyDistribution, input.questionTypes),
+                chunks,
+            )
+            if (!validation.valid) {
+                result = canonicalize(callProvider(provider, input, chunks, validation.problems), provider, input, chunks)
+                validation = GeneratedQuestionQualityValidator.validate(
+                    result,
+                    GenerateQuestionsCommand(input.courseId, chunks.map(SourceChunk::documentVersionId).toSet(), input.language, input.numberOfQuestions, input.difficultyDistribution, input.questionTypes),
+                    chunks,
+                )
+            }
             job.questionSetJson = mapper.writeValueAsString(result)
             job.validationErrorsJson = mapper.writeValueAsString(validation.problems)
             job.status = if (validation.valid) QuestionGenerationStatus.REVIEW_REQUIRED else QuestionGenerationStatus.FAILED
-            job.errorMessage = if (validation.valid) null else "Kết quả AI không đạt cấu trúc nghiệp vụ chung"
+            job.errorMessage = if (validation.valid) null else "Kết quả AI không đạt số lượng, phân bố độ khó hoặc bằng chứng nguồn"
             job.updatedAt = Instant.now()
             job.completedAt = Instant.now()
             jobs.save(job).response(mapper)
@@ -304,18 +466,23 @@ class QuestionGenerationService(
         }
     }
 
-    private fun callProvider(provider: AiProviderConfigEntity, input: GenerateQuestionSetRequest, chunks: List<SourceChunk>): JsonNode {
+    private fun callProvider(provider: AiProviderConfigEntity, input: GenerateQuestionSetRequest, chunks: List<SourceChunk>, correctionProblems: List<ValidationProblem> = emptyList()): JsonNode {
         val sourceIds = chunks.map(SourceChunk::documentVersionId).distinct().map(UUID::toString)
         val generatedAt = Instant.now()
+        val expectedDifficultyCounts = DifficultyDistributionPolicy.expectedCounts(input.numberOfQuestions, input.difficultyDistribution)
+        val correction = correctionProblems.takeIf { it.isNotEmpty() }?.joinToString("; ") { "${it.path}: ${it.message}" }.orEmpty()
         val system = """
             Bạn tạo câu hỏi cho LMS doanh nghiệp. Chỉ trả một JSON object, không markdown, không giải thích ngoài JSON.
             Không dùng kiến thức ngoài tài liệu. Mỗi câu phải có trích dẫn nguyên văn từ đúng DOCUMENT_VERSION_ID được cung cấp.
             Cấu trúc JSON bắt buộc theo schemaVersion 1.0:
             {"schemaVersion":"1.0","source":{"courseId":"${input.courseId}","documentVersionIds":${mapper.writeValueAsString(sourceIds)},"provider":"${provider.providerType}","model":"${provider.model}","generatedAt":"$generatedAt"},"language":"${input.language}","questions":[{"externalId":"q-1","type":"SINGLE_CHOICE","stem":"...","difficulty":"EASY","points":1,"options":[{"id":"A","text":"..."},{"id":"B","text":"..."}],"correctOptionIds":["A"],"explanation":"...","tags":[],"citations":[{"documentVersionId":"${sourceIds.firstOrNull() ?: UUID(0, 0)}","section":"...","quote":"..."}]}]}
             difficulty chỉ nhận EASY, MEDIUM hoặc HARD. type chỉ nhận SINGLE_CHOICE, MULTIPLE_CHOICE hoặc TRUE_FALSE.
+            Phải tạo đúng ${input.numberOfQuestions} câu với số lượng độ khó chính xác: EASY=${expectedDifficultyCounts["EASY"]}, MEDIUM=${expectedDifficultyCounts["MEDIUM"]}, HARD=${expectedDifficultyCounts["HARD"]}.
+            Mọi trích dẫn quote phải là một đoạn nguyên văn thực sự xuất hiện trong tài liệu. Không lặp câu hỏi hoặc phương án. Giải thích phải nêu vì sao đáp án đúng.
+            ${if (correction.isBlank()) "" else "Lần trước chưa đạt, phải sửa các lỗi sau: $correction"}
         """.trimIndent()
         val source = chunks.joinToString("\n\n---\n\n") { chunk ->
-            "DOCUMENT_VERSION_ID=${chunk.documentVersionId}\nSECTION=${chunk.section ?: ""}\n${chunk.text}"
+            "DOCUMENT_VERSION_ID=${chunk.documentVersionId}\nPAGE=${chunk.page ?: ""}\nSECTION=${chunk.section ?: ""}\n${chunk.text}"
         }
         val user = "Số câu: ${input.numberOfQuestions}; loại: ${input.questionTypes.joinToString()}; phân bố độ khó: ${input.difficultyDistribution}; ngôn ngữ: ${input.language}.\nTÀI LIỆU:\n${source.take(700_000)}"
         val request = mutableMapOf<String, Any?>(
@@ -378,8 +545,11 @@ class QuestionGenerationService(
         return root
     }
 
-    private fun canAccessCourse(courseId: UUID, permission: String): Boolean =
-        CurrentUser.isSystemAdmin() || scopedAuthorization.allowed(permission, "COURSE", courseId)
+    private fun canAccessCourse(courseId: UUID, permission: String): Boolean {
+        if (courseId == STANDALONE_QUESTION_WORKSPACE_ID) return false
+        if (permission !in CurrentUser.authorities()) return false
+        return runCatching { courseDocuments.scope(courseId).ownerId == CurrentUser.id() }.getOrDefault(false)
+    }
 
     private fun requireCoursePermission(courseId: UUID, permission: String, message: String) {
         if (!canAccessCourse(courseId, permission)) {
@@ -389,7 +559,7 @@ class QuestionGenerationService(
 
     private fun requireAccessible(id: UUID, reviewer: Boolean = false): QuestionGenerationJobEntity {
         val job = jobs.findById(id).orElseThrow { ApiException(HttpStatus.NOT_FOUND, "GENERATION_JOB_NOT_FOUND", "Không tìm thấy tác vụ sinh câu hỏi") }
-        if (CurrentUser.isSystemAdmin() || job.requestedBy == CurrentUser.id()) return job
+        if (job.requestedBy == CurrentUser.id()) return job
         val permission = if (reviewer) Permissions.QUESTIONS_APPROVE_AI else Permissions.QUESTIONS_GENERATE_AI
         if (permission !in CurrentUser.authorities() || !canAccessCourse(job.courseId, permission)) {
             throw ApiException(HttpStatus.FORBIDDEN, "GENERATION_JOB_OUT_OF_SCOPE", "Tác vụ ngoài phạm vi")

@@ -76,7 +76,7 @@ class ScheduledReportingService(
     @Transactional(readOnly = true)
     fun download(id: UUID): ResponseEntity<ByteArray> {
         val job = jobs.findById(id).orElseThrow { ApiException(HttpStatus.NOT_FOUND, "REPORT_EXPORT_NOT_FOUND", "Không tìm thấy file báo cáo") }
-        if (job.ownerId != CurrentUser.id() && !CurrentUser.isSystemAdmin()) throw ApiException(HttpStatus.FORBIDDEN, "REPORT_EXPORT_SCOPE", "Không có quyền tải báo cáo này")
+        if (job.ownerId != CurrentUser.id()) throw ApiException(HttpStatus.FORBIDDEN, "REPORT_EXPORT_SCOPE", "Không có quyền tải báo cáo này")
         if (job.status != ReportExportStatus.COMPLETED || job.outputCsv == null) throw ApiException(HttpStatus.CONFLICT, "REPORT_EXPORT_NOT_READY", "Báo cáo chưa sẵn sàng")
         if (job.expiresAt.isBefore(Instant.now())) throw ApiException(HttpStatus.GONE, "REPORT_EXPORT_EXPIRED", "File báo cáo đã hết hạn")
         return ResponseEntity.ok()
@@ -163,14 +163,14 @@ class ScheduledReportingService(
     private fun rowsFor(ownerId: UUID, scope: ReportScope): List<LearnerCourseReadModel> = when (scope) {
         ReportScope.SELF -> readModels.findAllByUserId(ownerId)
         ReportScope.ASSIGNED -> {
-            val classIds = enrollmentScope.assignedClassIds(ownerId)
+            val classIds = enrollmentScope.assignedDeliveryIds(ownerId)
             readModels.findAll().filter { it.classId in classIds }
         }
         ReportScope.SYSTEM -> readModels.findAll()
     }
 
     private fun validateScope(scope: ReportScope) {
-        if (scope == ReportScope.SYSTEM && !CurrentUser.isSystemAdmin()) throw ApiException(HttpStatus.FORBIDDEN, "REPORT_SCOPE_DENIED", "Chỉ quản trị hệ thống được xuất báo cáo toàn hệ thống")
+        if (scope == ReportScope.SYSTEM && !CurrentUser.hasRole("ADMIN")) throw ApiException(HttpStatus.FORBIDDEN, "REPORT_SCOPE_DENIED", "Chỉ quản trị hệ thống được xuất báo cáo toàn hệ thống")
         if (scope == ReportScope.ASSIGNED && Permissions.REPORTS_READ !in CurrentUser.authorities()) throw ApiException(HttpStatus.FORBIDDEN, "REPORT_SCOPE_DENIED", "Không có quyền báo cáo theo phạm vi được giao")
     }
 
@@ -180,7 +180,7 @@ class ScheduledReportingService(
 
     private fun ownedSchedule(id: UUID): ReportScheduleEntity {
         val entity = schedules.findById(id).orElseThrow { ApiException(HttpStatus.NOT_FOUND, "REPORT_SCHEDULE_NOT_FOUND", "Không tìm thấy lịch báo cáo") }
-        if (entity.ownerId != CurrentUser.id() && !CurrentUser.isSystemAdmin()) throw ApiException(HttpStatus.FORBIDDEN, "REPORT_SCHEDULE_SCOPE", "Không có quyền sửa lịch này")
+        if (entity.ownerId != CurrentUser.id()) throw ApiException(HttpStatus.FORBIDDEN, "REPORT_SCHEDULE_SCOPE", "Không có quyền sửa lịch này")
         return entity
     }
 

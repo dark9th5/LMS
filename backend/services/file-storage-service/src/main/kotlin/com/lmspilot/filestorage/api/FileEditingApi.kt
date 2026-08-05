@@ -328,7 +328,7 @@ class FileEditingService(
     private fun requireReadable(fileId: UUID): StoredFileEntity {
         val file = storedFiles.findById(fileId).orElseThrow { fileNotFound() }
         if (file.status != StoredFileStatus.AVAILABLE) throw ApiException(HttpStatus.GONE, "FILE_UNAVAILABLE", "Tệp không còn khả dụng")
-        if (file.ownerId != CurrentUser.id() && !hasAdministrativeFileAccess()) {
+        if (file.ownerId != CurrentUser.id()) {
             throw ApiException(HttpStatus.FORBIDDEN, "FILE_READ_FORBIDDEN", "Bạn không có quyền đọc lịch sử tệp")
         }
         return file
@@ -336,21 +336,16 @@ class FileEditingService(
 
     private fun requireEditable(fileId: UUID): StoredFileEntity {
         val file = requireReadable(fileId)
-        if (file.ownerId != CurrentUser.id() && !hasAdministrativeFileAccess()) {
+        if (file.ownerId != CurrentUser.id()) {
             throw ApiException(HttpStatus.FORBIDDEN, "FILE_EDIT_FORBIDDEN", "Bạn không có quyền sửa tài liệu")
         }
         return file
     }
 
-    private fun hasAdministrativeFileAccess(): Boolean =
-        CurrentUser.isSystemAdmin() ||
-            Permissions.FILES_EDIT in CurrentUser.authorities() ||
-            Permissions.FILES_PUBLISH in CurrentUser.authorities() ||
-            Permissions.OPERATIONS_MANAGE in CurrentUser.authorities()
 
     private fun requireOwnedSession(id: UUID): FileEditSessionEntity {
         val session = sessions.findById(id).orElseThrow { sessionNotFound() }
-        if (session.userId != CurrentUser.id() && Permissions.OPERATIONS_MANAGE !in CurrentUser.authorities()) throw ApiException(HttpStatus.FORBIDDEN, "EDIT_SESSION_OWNER_MISMATCH", "Phiên chỉnh sửa không thuộc người dùng hiện tại")
+        if (session.userId != CurrentUser.id()) throw ApiException(HttpStatus.FORBIDDEN, "EDIT_SESSION_OWNER_MISMATCH", "Phiên chỉnh sửa không thuộc người dùng hiện tại")
         if (session.status == FileEditSessionStatus.OPEN && !session.expiresAt.isAfter(Instant.now())) {
             session.status = FileEditSessionStatus.EXPIRED
             session.closedAt = Instant.now()

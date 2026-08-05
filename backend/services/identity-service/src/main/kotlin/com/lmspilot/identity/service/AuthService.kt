@@ -171,6 +171,7 @@ fun UserAccountEntity.toSummary(effectivePermissions: Set<String>? = null): User
     accountType = accountType,
     protectedAccount = protectedAccount,
     roles = roles.map { it.code }.toSet(),
+    primaryRole = roles.singleOrNull()?.code ?: "STUDENT",
     permissions = effectivePermissions ?: roles.flatMap { it.permissions }.toSet(),
     lastLoginAt = lastLoginAt,
     mustChangePassword = mustChangePassword,

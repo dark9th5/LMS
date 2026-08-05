@@ -12,6 +12,7 @@ import type {
   StoredFile,
 } from "@/lib/models";
 import type { PortalUser } from "@/lib/types";
+import { studentCoursePath, studentCourseQuizPath } from "@/lib/portal-paths";
 import { Icon } from "./Icon";
 import { EmptyState, ErrorState, LoadingState, Toast } from "./Feedback";
 import { ProgressBar } from "./ProgressBar";
@@ -307,7 +308,7 @@ export function LearningPlayer({
     <div className="learning-player">
       <header className="player-header">
         <div className="player-title">
-          <Link className="icon-button" href="/learning" aria-label="Quay lại">
+          <Link className="icon-button" href={studentCoursePath()} aria-label="Quay lại">
             <Icon name="back" />
           </Link>
           <div>
@@ -414,12 +415,12 @@ export function LearningPlayer({
                       {selectedExam ? (
                         <>
                           <p>
-                            Phiên thi sẽ được gắn với đúng lớp học này; kết quả
+                            Phiên làm bài được gắn với đúng khóa học này; kết quả
                             đạt mới tự động hoàn thành bài học.
                           </p>
                           <Link
                             className="button primary"
-                            href={`/exams/${selectedExam.id}?enrollmentId=${progress.enrollmentId}`}
+                            href={studentCourseQuizPath(progress.enrollmentId, selectedExam.id)}
                           >
                             Mở bài kiểm tra
                           </Link>
@@ -430,9 +431,7 @@ export function LearningPlayer({
                             Chưa có bài kiểm tra đang hoạt động gắn với bài học
                             này.
                           </p>
-                          <Link className="button secondary" href="/exams">
-                            Xem danh sách bài kiểm tra
-                          </Link>
+                          <p className="form-alert info">Giảng viên cần xuất bản đề trong tab Bài kiểm tra của khóa học.</p>
                         </>
                       )}
                     </div>

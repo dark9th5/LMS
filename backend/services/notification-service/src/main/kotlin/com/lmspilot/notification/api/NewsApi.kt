@@ -227,7 +227,7 @@ class NewsService(
     }
 
     private fun validateAttachments(fileIds: List<UUID>) {
-        val administrator = CurrentUser.isSystemAdmin() ||
+        val administrator =
             Permissions.NEWS_MANAGE in CurrentUser.authorities() ||
             Permissions.NEWS_PUBLISH in CurrentUser.authorities()
         fileIds.distinct().forEach { files.requireAttachable(it, CurrentUser.id(), administrator) }

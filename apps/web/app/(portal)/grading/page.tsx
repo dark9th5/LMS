@@ -1,12 +1,9 @@
 import { redirect } from "next/navigation";
-import { GradingPage } from "@/components/GradingPage";
-import { getUser } from "@/lib/session";
-import { hasAnyPermission } from "@/lib/authorization";
-
+import { PORTAL_PATHS } from "@/lib/portal-paths";
+import { requireAuthenticatedUser, requireRole } from "@/lib/route-access";
 export const dynamic = "force-dynamic";
 export default async function Page() {
-  const user = await getUser();
-  if (!user) redirect("/login");
-  if (!hasAnyPermission(user, ["grading:manage", "assessments:grade"])) redirect("/learning");
-  return <GradingPage/>;
+  const user = await requireAuthenticatedUser();
+  requireRole(user, "INSTRUCTOR");
+  redirect(PORTAL_PATHS.INSTRUCTOR.grading);
 }

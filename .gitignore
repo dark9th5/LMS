@@ -44,3 +44,8 @@ uploads/
 # Archives
 *.zip
 *.tar.gz
+
+# Static UI preview working directories
+.preview-render/
+.preview-render-v020/
+.preview-v020/

@@ -41,3 +41,6 @@ file-storage-service:
   url: ${FILE_STORAGE_SERVICE_URL:http://localhost:8089}
 assessment-service:
   url: ${ASSESSMENT_SERVICE_URL:http://localhost:8086}
+
+course-service:
+  url: ${COURSE_SERVICE_URL:http://localhost:8083}

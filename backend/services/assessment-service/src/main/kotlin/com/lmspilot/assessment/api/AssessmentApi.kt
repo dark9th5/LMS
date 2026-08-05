@@ -4,8 +4,8 @@ import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.lmspilot.assessment.domain.*
-import com.lmspilot.assessment.cls.AssessmentContextSpec
-import com.lmspilot.assessment.cls.AssessmentContextType
+import com.lmspilot.assessment.platform.AssessmentContextSpec
+import com.lmspilot.assessment.platform.AssessmentContextType
 import com.lmspilot.contracts.ExamSubmittedPayload
 import com.lmspilot.contracts.EventTypes
 import com.lmspilot.contracts.Permissions
@@ -81,7 +81,16 @@ data class SessionEventResponse(val id: UUID, val type: ExamSessionEventType, va
 data class GradingQuestionPayload(val questionId: UUID, val type: QuestionType, val prompt: String, val correctAnswers: List<String>, val points: Double)
 data class GradingPayload(val sessionId: UUID, val examId: UUID, val userId: UUID, val passingScore: Double, val answers: Map<String, JsonNode>, val questions: List<GradingQuestionPayload>, val enrollmentId: UUID? = null, val courseId: UUID? = null, val lessonId: UUID? = null, val autoGrade: Boolean = true, val contextType: AssessmentContextType = AssessmentContextType.STANDALONE_EXAM, val scoreStrategy: ScoreStrategy = ScoreStrategy.HIGHEST, val durationMs: Long = 0, val submittedAt: Instant? = null)
 data class EnrollmentValidation(val enrollmentId: UUID, val classId: UUID, val courseId: UUID, val courseVersion: Int, val userId: UUID, val status: String, val dueAt: Instant?)
-data class CourseLearningMetadata(val courseId: UUID, val version: Int, val status: String, val lessonIds: Set<UUID>, val requiredLessonIds: Set<UUID>, val lessonTypes: Map<UUID, String> = emptyMap())
+data class CourseLearningMetadata(
+    val courseId: UUID,
+    val version: Int,
+    val status: String,
+    val ownerId: UUID? = null,
+    val lessonIds: Set<UUID>,
+    val requiredLessonIds: Set<UUID>,
+    val lessonTypes: Map<UUID, String> = emptyMap(),
+    val lessonFileIds: Set<UUID> = emptySet(),
+)
 
 
 @Service
@@ -92,9 +101,9 @@ class EnrollmentCourseClient(
 ) {
     private val client = builder.baseUrl(baseUrl).build()
 
-    fun activeCourseIds(userId: UUID): Set<UUID> = courseIds("/internal/v1/classes/user/{userId}/courses", userId)
+    fun activeCourseIds(userId: UUID): Set<UUID> = courseIds("/internal/v1/course-access/users/{userId}/courses", userId)
 
-    fun assignedCourseIds(userId: UUID): Set<UUID> = courseIds("/internal/v1/classes/assigned/{userId}/courses", userId)
+    fun assignedCourseIds(userId: UUID): Set<UUID> = courseIds("/internal/v1/course-access/instructors/{userId}/courses", userId)
 
     fun enrollment(enrollmentId: UUID): EnrollmentValidation = client.get()
         .uri("/internal/v1/enrollments/{id}", enrollmentId)
@@ -155,7 +164,7 @@ class AssessmentManagementService(
     private val audience: AssessmentAudienceService,
 ) {
     @Transactional(readOnly = true)
-    fun listQuestions() = (if (isAdmin()) questions.findAll() else questions.findAllByOwnerIdOrderByUpdatedAtDesc(CurrentUser.id()))
+    fun listQuestions() = questions.findAllByOwnerIdOrderByUpdatedAtDesc(CurrentUser.id())
         .filter { it.status != QuestionStatus.ARCHIVED }
         .sortedByDescending { it.updatedAt }
         .map { it.response(mapper) }
@@ -241,8 +250,6 @@ class AssessmentManagementService(
     @Transactional(readOnly = true)
     fun listExams(): List<ExamResponse> {
         val source = when {
-            canManageAssessments() && isGlobalAdministrator() ->
-                exams.findAll().filter { it.status != ExamStatus.ARCHIVED }.sortedByDescending { it.updatedAt }
             canManageAssessments() -> {
                 val assignedCourses = enrollmentCourses.assignedCourseIds(CurrentUser.id())
                 val scopedExams = scopedExamIds()
@@ -559,6 +566,9 @@ class AssessmentManagementService(
         if (input.questions.map { it.questionId }.toSet().size != input.questions.size) {
             throw ApiException(HttpStatus.BAD_REQUEST, "DUPLICATE_EXAM_QUESTION", "Một câu hỏi không thể xuất hiện hai lần trong cùng bài kiểm tra")
         }
+        if (context.type == AssessmentContextType.COURSE_QUIZ && input.lessonId == null) {
+            throw ApiException(HttpStatus.BAD_REQUEST, "COURSE_QUIZ_LESSON_REQUIRED", "Bài kiểm tra khóa học phải gắn với một bài học loại EXAM")
+        }
         if (context.courseId == null && input.lessonId != null) {
             throw ApiException(HttpStatus.BAD_REQUEST, "STANDALONE_EXAM_LESSON", "Kỳ thi độc lập không thể gắn với bài học khóa học")
         }
@@ -668,7 +678,7 @@ class AssessmentManagementService(
             throw ApiException(HttpStatus.FORBIDDEN, "EXAM_NOT_ASSIGNED", "Bài kiểm tra không thuộc khóa học được giao")
         }
         if (active.size > 1) {
-            throw ApiException(HttpStatus.CONFLICT, "ENROLLMENT_REQUIRED", "Khóa học có trong nhiều lớp; cần mở bài thi từ đúng lớp học")
+            throw ApiException(HttpStatus.CONFLICT, "ENROLLMENT_REQUIRED", "Người học có nhiều ghi danh cho khóa học; cần mở bài kiểm tra từ đúng lần ghi danh")
         }
         return active.single()
     }
@@ -684,9 +694,6 @@ class AssessmentManagementService(
     private fun assessmentContextType(exam: ExamEntity): AssessmentContextType =
         contexts.findById(exam.id).orElse(null)?.contextType
             ?: if (exam.courseId == null) AssessmentContextType.STANDALONE_EXAM else AssessmentContextType.COURSE_QUIZ
-    private fun isGlobalAdministrator() = CurrentUser.isSystemAdmin()
-    private fun isAdmin() = isGlobalAdministrator()
-
     private fun scopedExamIds(): Set<UUID> =
         scopedAuthorization.scopeIds(Permissions.EXAMS_MANAGE, "EXAM") +
             scopedAuthorization.scopeIds(Permissions.ASSESSMENTS_UPDATE, "EXAM") +
@@ -707,13 +714,13 @@ class AssessmentManagementService(
             scopedAuthorization.allowed(Permissions.ASSESSMENT_MANAGE, "SYSTEM", null) ||
             (context.type == AssessmentContextType.COMPETITION &&
                 scopedAuthorization.allowed(Permissions.COMPETITIONS_MANAGE, "SYSTEM", null))
-        if (!isGlobalAdministrator() && !systemPermission) {
+        if (!systemPermission) {
             throw ApiException(HttpStatus.FORBIDDEN, "ASSESSMENT_CREATE_OUT_OF_SCOPE", "Cần quyền toàn hệ thống để tạo bài thi độc lập")
         }
     }
 
     private fun requireCourseExamScope(courseId: UUID?, permission: String) {
-        if (courseId == null || isGlobalAdministrator()) return
+        if (courseId == null) return
         val assigned = courseId in enrollmentCourses.assignedCourseIds(CurrentUser.id())
         val scoped = scopedAuthorization.allowed(permission, "COURSE", courseId) ||
             scopedAuthorization.allowed(Permissions.EXAMS_MANAGE, "COURSE", courseId) ||
@@ -730,13 +737,13 @@ class AssessmentManagementService(
             scopedAuthorization.allowed(Permissions.ASSESSMENT_MANAGE, "EXAM", exam.id) ||
             scopedAuthorization.allowed(Permissions.COMPETITIONS_MANAGE, "EXAM", exam.id) ||
             (exam.courseId?.let { scopedAuthorization.allowed(permission, "COURSE", it) } == true)
-        if (!isGlobalAdministrator() && exam.ownerId != CurrentUser.id() && !assigned && !scoped) {
+        if (exam.ownerId != CurrentUser.id() && !assigned && !scoped) {
             throw ApiException(HttpStatus.FORBIDDEN, "OUT_OF_SCOPE", message)
         }
     }
 
     private fun requireOwner(ownerId: UUID, message: String) {
-        if (!isGlobalAdministrator() && ownerId != CurrentUser.id()) throw ApiException(HttpStatus.FORBIDDEN, "OUT_OF_SCOPE", message)
+        if (ownerId != CurrentUser.id()) throw ApiException(HttpStatus.FORBIDDEN, "OUT_OF_SCOPE", message)
     }
     private fun examNotFound() = ApiException(HttpStatus.NOT_FOUND, "EXAM_NOT_FOUND", "Không tìm thấy bài kiểm tra")
 }

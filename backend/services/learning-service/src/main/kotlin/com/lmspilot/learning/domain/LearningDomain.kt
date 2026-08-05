@@ -112,6 +112,7 @@ interface AssignmentSubmissionRepository : org.springframework.data.jpa.reposito
     fun findAllByUserIdOrderBySubmittedAtDesc(userId: UUID): List<AssignmentSubmissionEntity>
     fun findAllByClassIdOrderBySubmittedAtDesc(classId: UUID): List<AssignmentSubmissionEntity>
     fun findAllByClassIdInOrderBySubmittedAtDesc(classIds: Collection<UUID>): List<AssignmentSubmissionEntity>
+    fun findAllByCourseIdInOrderBySubmittedAtDesc(courseIds: Collection<UUID>): List<AssignmentSubmissionEntity>
     fun countByEnrollmentIdAndLessonId(enrollmentId: UUID, lessonId: UUID): Long
 
     @org.springframework.data.jpa.repository.Query(

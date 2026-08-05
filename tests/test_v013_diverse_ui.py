@@ -7,7 +7,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 
 
-@unittest.skip("Superseded by the CLS 0.16 unified design system")
+@unittest.skip("Superseded by the LMSPilot 0.16 unified design system")
 class Release013DiverseUiTests(unittest.TestCase):
     def read(self, relative: str) -> str:
         return (ROOT / relative).read_text(encoding="utf-8")

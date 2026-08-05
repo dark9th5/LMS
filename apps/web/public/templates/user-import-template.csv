@@ -1,3 +1,4 @@
 code,username,fullName,email,organizationUnitId,roles,password,status
-NV001,nguyen.van.a,Nguyễn Văn A,nguyen.van.a@example.local,,BASIC_USER,ChangeMe-2026!,ACTIVE
-NV002,tran.thi.b,Trần Thị B,tran.thi.b@example.local,,BASIC_USER|COURSE_AUTHOR,ChangeMe-2026!,ACTIVE
+HV001,nguyen.van.a,Nguyễn Văn A,nguyen.van.a@example.local,,STUDENT,ChangeMe-2026!,ACTIVE
+GV001,tran.thi.b,Trần Thị B,tran.thi.b@example.local,,INSTRUCTOR,ChangeMe-2026!,ACTIVE
+QT001,le.quan.tri,Lê Quản Trị,le.quan.tri@example.local,,ADMIN,ChangeMe-2026!,ACTIVE

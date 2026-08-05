@@ -84,7 +84,7 @@ const emptyMapping: Mapping = {
   roleCodesColumn: null,
   passwordColumn: null,
   statusColumn: null,
-  defaultRoleCodes: ["BASIC_USER"],
+  defaultRoleCodes: ["STUDENT"],
   defaultPassword: null,
   mode: "CREATE_ONLY",
   failurePolicy: "PARTIAL",
@@ -331,22 +331,17 @@ export function UserImportWizard() {
             />
             <label>
               <span>Vai trò mặc định</span>
-              <input
-                value={mapping.defaultRoleCodes.join(", ")}
+              <select
+                value={mapping.defaultRoleCodes[0] ?? "STUDENT"}
                 onChange={(event) =>
-                  setMapping({
-                    ...mapping,
-                    defaultRoleCodes: event.target.value
-                      .split(/[,;|]/)
-                      .map((value) => value.trim().toUpperCase())
-                      .filter(Boolean),
-                  })
+                  setMapping({ ...mapping, defaultRoleCodes: [event.target.value] })
                 }
-                placeholder="BASIC_USER hoặc COURSE_AUTHOR, TRAINING_MANAGER"
-              />
-              <small>
-                Dùng mã role, phân tách bằng dấu phẩy. Hỗ trợ cả role tùy chỉnh.
-              </small>
+              >
+                <option value="ADMIN">Quản trị viên</option>
+                <option value="INSTRUCTOR">Giảng viên</option>
+                <option value="STUDENT">Học viên</option>
+              </select>
+              <small>Mỗi tài khoản chỉ có đúng một vai trò.</small>
             </label>
             <label>
               <span>Mật khẩu mặc định</span>
@@ -517,7 +512,7 @@ export function UserImportWizard() {
             </div>
           )}
           <div className="import-actions">
-            <Link className="button primary" href="/users">
+            <Link className="button primary" href="/admin/users">
               Quay lại danh sách người dùng
             </Link>
           </div>

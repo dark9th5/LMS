@@ -1,0 +1,45 @@
+{
+  "release": "LMSPilot 0.18.0",
+  "version": "0.18.0",
+  "date": "2026-08-05",
+  "type": "full-source release candidate with readability patch",
+  "base": "LMSPilot 0.17.0 / dark9th5/LMS main",
+  "highlights": [
+    "Single-line compact sidebar with persistent collapse state",
+    "Courses and class deployments combined in one course workspace",
+    "Organization tree and member management redesigned",
+    "Brand information, logo upload and theme color personalization",
+    "Structured Redis, SMTP, AI, S3, ONLYOFFICE and meeting integrations",
+    "Persistent settings tab and selected organization unit",
+    "Backend integration validation and improved health checks",
+    "Primary sidebar chevrons removed and navigation groups visually flattened",
+    "Small UI text increased by approximately 1-2 px across cards, tables, forms and settings"
+  ],
+  "keyFiles": [
+    "apps/web/components/AppShell.tsx",
+    "apps/web/components/CourseWorkspace.tsx",
+    "apps/web/components/WorkspaceControlCenter.tsx",
+    "apps/web/app/unified.css",
+    "backend/services/configuration-service/src/main/kotlin/com/lmspilot/configuration/api/CustomizationApi.kt",
+    "backend/platform-contracts/src/main/kotlin/com/lmspilot/contracts/AccessProfiles.kt"
+  ],
+  "verification": {
+    "pythonTestsPassed": 122,
+    "pythonTestsSkipped": 34,
+    "pythonTestsTotal": 156,
+    "repositoryValidator": "PASS",
+    "typescriptSyntax": "PASS (64 TS/TSX files)",
+    "targetedTypescriptSemanticCheck": "PASS with local framework stubs",
+    "platformContractsKotlinc": "PASS",
+    "fullNpmBuild": "NOT RUN - dependency registry incomplete in packaging environment",
+    "fullGradle": "NOT RUN - Gradle distribution unavailable in packaging environment",
+    "dockerE2E": "NOT RUN"
+  },
+  "documentation": [
+    "BAT_DAU_TAI_DAY.md",
+    "RELEASE_LMSPILOT_0.18.0.md",
+    "TEST_RESULTS_LMSPILOT_0.18.0.md",
+    "docs/UI_REDESIGN_0.18.0.md",
+    "READABILITY_PATCH_0.18.0.md"
+  ]
+}

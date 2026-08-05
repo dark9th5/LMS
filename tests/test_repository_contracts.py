@@ -76,28 +76,31 @@ class RepositoryContractTests(unittest.TestCase):
         login_api = (ROOT / "apps/web/app/api/auth/login/route.ts").read_text(encoding="utf-8")
         login_form = (ROOT / "apps/web/app/login/LoginForm.tsx").read_text(encoding="utf-8")
         dashboard = (ROOT / "apps/web/app/(portal)/dashboard/page.tsx").read_text(encoding="utf-8")
+        role_paths = (ROOT / "apps/web/lib/portal-paths.ts").read_text(encoding="utf-8")
         self.assertIn("user: data.user", login_api)
         self.assertIn("encodeUserCookie(data.user)", login_api)
         self.assertNotIn("MOCK_USERS", login_api)
         self.assertIn('path: "/"', login_api)
         self.assertIn("landingForUser(data.user)", login_form)
         self.assertIn("window.location.replace", login_form)
-        self.assertIn('redirect("/learning")', dashboard)
+        self.assertIn("landingForUser(user)", dashboard)
+        for route in ('/admin', '/instructor', '/student'):
+            self.assertIn(route, role_paths)
 
     def test_real_lms_pages_are_wired_to_backend(self) -> None:
         expected = {
-            "apps/web/components/CoursesPage.tsx": ["/api/v1/courses", 'method: \"POST\"'],
-            "apps/web/components/ClassDetail.tsx": ["/enrollments", 'method: \"POST\"'],
+            "apps/web/components/CoursesPage.tsx": ["/api/v1/courses", 'method: "POST"'],
+            "apps/web/components/CourseLearnersPanel.tsx": ["/api/v1/course-assignments", 'method: "POST"'],
             "apps/web/components/LearningPlayer.tsx": ["/api/v1/learning/progress", "Idempotency-Key"],
             "apps/web/components/ExamDetail.tsx": ["/api/v1/exams/start", "/answers", "/submit"],
-            "apps/web/components/GradingPage.tsx": ["/api/v1/grades/queue", 'method: \"PUT\"'],
+            "apps/web/components/GradingPage.tsx": ["/api/v1/grades/queue", 'method: "PUT"'],
         }
         for relative, markers in expected.items():
             path = ROOT / relative
             self.assertTrue(path.exists(), relative)
-            text = path.read_text(encoding="utf-8")
+            source = path.read_text(encoding="utf-8")
             for marker in markers:
-                self.assertIn(marker, text, f"{marker} missing from {relative}")
+                self.assertIn(marker, source, f"{marker} missing from {relative}")
 
     def test_navigation_and_course_outline_remain_scrollable(self) -> None:
         css = (ROOT / "apps/web/app/unified.css").read_text(encoding="utf-8")
@@ -124,7 +127,9 @@ class RepositoryContractTests(unittest.TestCase):
         self.assertIn("assignedCourseIds", api)
         self.assertIn("searchVisible", api)
         self.assertIn("c.id in :assignedCourseIds", domain)
-        self.assertIn('course.ownerId === user.id', detail)
+        self.assertIn("course.ownerId == CurrentUser.id()", api)
+        self.assertIn("requireCoursePermission(course, Permissions.COURSES_UPDATE)", api)
+        self.assertIn('user.permissions.includes("courses:update")', detail)
         self.assertIn("disabled={!canEdit}", detail)
 
     def test_course_and_assessment_crud_contracts_are_complete(self) -> None:

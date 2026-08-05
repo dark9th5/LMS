@@ -96,6 +96,7 @@ data class CourseLearningMetadata(
     val courseId: UUID,
     val version: Int,
     val status: String,
+    val ownerId: UUID,
     val lessonIds: Set<UUID>,
     val requiredLessonIds: Set<UUID>,
     val lessonTypes: Map<UUID, String> = emptyMap(),
@@ -134,15 +135,6 @@ class EnrollmentValidationClient(
         .body(EnrollmentValidation::class.java)
         ?: throw ApiException(HttpStatus.SERVICE_UNAVAILABLE, "ENROLLMENT_SERVICE_UNAVAILABLE", "Không nhận được dữ liệu ghi danh")
 
-    fun assignedClassIds(userId: UUID): Set<UUID> {
-        val values = client.get()
-            .uri("/internal/v1/classes/assigned/{userId}", userId)
-            .header("X-Service-Token", serviceToken)
-            .retrieve()
-            .body(Array<String>::class.java)
-            ?: emptyArray()
-        return values.map(UUID::fromString).toSet()
-    }
 }
 
 @Service
@@ -447,15 +439,16 @@ class LearningProgressService(
 
     private fun requireOwnerOrScope(owner: UUID, enrollmentId: UUID) {
         val currentUserId = CurrentUser.id()
-        if (owner == currentUserId || CurrentUser.isSystemAdmin()) return
+        if (owner == currentUserId) return
 
         val auth = org.springframework.security.core.context.SecurityContextHolder.getContext().authentication
         if (auth.authorities.none { it.authority == Permissions.LEARNING_READ_SCOPE }) {
             throw ApiException(HttpStatus.FORBIDDEN, "ACCESS_DENIED", "Không có quyền xem tiến độ này")
         }
         val enrollment = enrollmentClient.get(enrollmentId)
-        if (enrollment.classId !in enrollmentClient.assignedClassIds(currentUserId)) {
-            throw ApiException(HttpStatus.FORBIDDEN, "LEARNING_OUT_OF_SCOPE", "Tiến độ ngoài lớp được phân công")
+        val metadata = courseClient.get(enrollment.courseId, enrollment.courseVersion)
+        if (metadata.ownerId != currentUserId) {
+            throw ApiException(HttpStatus.FORBIDDEN, "LEARNING_OUT_OF_SCOPE", "Tiến độ ngoài khóa học được phân công")
         }
     }
 }

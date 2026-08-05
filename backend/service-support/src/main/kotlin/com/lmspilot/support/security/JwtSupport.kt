@@ -51,7 +51,9 @@ object CurrentUser {
     fun username(): String = jwt().getClaimAsString("username") ?: jwt().subject
     fun roles(): Set<String> = jwt().getClaimAsStringList("roles")?.toSet() ?: emptySet()
     fun accountType(): String = jwt().getClaimAsString("accountType") ?: "USER"
-    fun isSystemAdmin(): Boolean = accountType() == "SYSTEM_ADMIN"
+    fun hasRole(role: String): Boolean = roles().size == 1 && roles().single().equals(role, ignoreCase = true)
+    @Deprecated("Use explicit role and permission checks; account type is not an authorization bypass")
+    fun isSystemAdmin(): Boolean = hasRole("ADMIN") && accountType() == "SYSTEM_ADMIN"
     fun authorities(): Set<String> = (jwt().getClaimAsStringList("permissions") ?: emptyList()).toSet()
     fun globalAuthorities(): Set<String> = (jwt().getClaimAsStringList("globalPermissions") ?: emptyList()).toSet()
 }

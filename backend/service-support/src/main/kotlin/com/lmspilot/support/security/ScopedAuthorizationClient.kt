@@ -29,7 +29,6 @@ class ScopedAuthorizationClient(
         allowedForUser(CurrentUser.id(), permission, scopeType, scopeId)
 
     fun allowedForUser(userId: UUID, permission: String, scopeType: String, scopeId: UUID?): Boolean {
-        if (userId == CurrentUser.id() && CurrentUser.isSystemAdmin()) return true
         return runCatching {
             client.get()
                 .uri { uri ->

@@ -1,11 +1,14 @@
 import { redirect } from "next/navigation";
-import { ExamDetail } from "@/components/ExamDetail";
-import { getUser } from "@/lib/session";
+import { resolvePortalRole } from "@/lib/role";
+import { standaloneExamPath } from "@/lib/portal-paths";
+import { requireAuthenticatedUser } from "@/lib/route-access";
 
 export const dynamic = "force-dynamic";
+
 export default async function Page({ params }: { params: Promise<{ id: string }> }) {
-  const user = await getUser();
-  if (!user) redirect("/login");
+  const user = await requireAuthenticatedUser();
+  const role = resolvePortalRole(user);
+  if (role === "ADMIN") redirect("/admin");
   const { id } = await params;
-  return <ExamDetail examId={id} user={user}/>;
+  redirect(standaloneExamPath(role, id));
 }

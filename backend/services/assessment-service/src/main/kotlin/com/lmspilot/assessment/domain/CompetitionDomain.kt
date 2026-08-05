@@ -1,6 +1,6 @@
 package com.lmspilot.assessment.domain
 
-import com.lmspilot.assessment.cls.AssessmentContextType
+import com.lmspilot.assessment.platform.AssessmentContextType
 import jakarta.persistence.*
 import java.io.Serializable
 import java.time.Instant

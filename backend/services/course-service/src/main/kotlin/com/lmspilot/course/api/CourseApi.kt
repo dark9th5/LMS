@@ -57,16 +57,18 @@ data class CourseResponse(
     val publishedAt: Instant?, val ownerId: UUID, val lessons: List<LessonResponse> = emptyList(),
 )
 data class PageResponse<T>(val items: List<T>, val page: Int, val size: Int, val totalElements: Long, val totalPages: Int)
-data class PublicationStatus(val courseId: UUID, val published: Boolean, val version: Int, val status: CourseStatus)
+data class PublicationStatus(val courseId: UUID, val published: Boolean, val version: Int, val status: CourseStatus, val ownerId: UUID)
 data class CourseLearningMetadata(
     val courseId: UUID,
     val version: Int,
     val status: CourseStatus,
+    val ownerId: UUID,
     val lessonIds: Set<UUID>,
     val requiredLessonIds: Set<UUID>,
     val lessonTypes: Map<UUID, LessonType> = emptyMap(),
     val lessonFileIds: Set<UUID> = emptySet(),
 )
+data class CourseDocumentScope(val ownerId: UUID, val lessonFileIds: Set<UUID>)
 data class CourseVersionSummary(val version: Int, val createdAt: Instant, val createdBy: UUID)
 data class CourseSnapshot(
     val id: UUID,
@@ -93,13 +95,13 @@ class EnrollmentCourseScopeClient(
 ) {
     private val client: RestClient = builder.baseUrl(baseUrl).build()
 
-    fun activeCourseIds(userId: UUID): Set<UUID> = courseIds("/internal/v1/classes/user/{userId}/courses", userId)
+    fun activeCourseIds(userId: UUID): Set<UUID> = courseIds("/internal/v1/course-access/users/{userId}/courses", userId)
 
-    fun assignedCourseIds(userId: UUID): Set<UUID> = courseIds("/internal/v1/classes/assigned/{userId}/courses", userId)
+    fun assignedCourseIds(userId: UUID): Set<UUID> = courseIds("/internal/v1/course-access/instructors/{userId}/courses", userId)
 
     fun accessibleVersions(userId: UUID, courseId: UUID): Set<Int> {
         val values = client.get()
-            .uri("/internal/v1/classes/user/{userId}/courses/{courseId}/versions", userId, courseId)
+            .uri("/internal/v1/course-access/users/{userId}/courses/{courseId}/versions", userId, courseId)
             .header("X-Service-Token", serviceToken)
             .retrieve()
             .body(Array<Int>::class.java)
@@ -210,12 +212,9 @@ class CourseManagementService(
         if (!canManage) return learnerCourses(query, categoryId, page, size)
 
         val currentUserId = CurrentUser.id()
-        val ownerId = if (!isGlobalAdministrator()) currentUserId else null
-        val assignedCourseIds = if (ownerId == null) {
-            setOf(UUID(0L, 0L))
-        } else {
+        val ownerId = currentUserId
+        val assignedCourseIds =
             (enrollmentScope.assignedCourseIds(currentUserId) + scopedCourseIds()).ifEmpty { setOf(UUID(0L, 0L)) }
-        }
         val result = courses.searchVisible(
             query?.takeIf { it.isNotBlank() },
             status,
@@ -360,7 +359,7 @@ class CourseManagementService(
     @Transactional(readOnly = true)
     fun publication(id: UUID): PublicationStatus {
         val c = courses.findById(id).orElseThrow { notFound() }
-        return PublicationStatus(c.id, c.status == CourseStatus.PUBLISHED && c.publishedVersion > 0, c.publishedVersion, c.status)
+        return PublicationStatus(c.id, c.status == CourseStatus.PUBLISHED && c.publishedVersion > 0, c.publishedVersion, c.status, c.ownerId)
     }
 
     @Transactional(readOnly = true)
@@ -374,11 +373,22 @@ class CourseManagementService(
             courseId = course.id,
             version = requestedVersion,
             status = course.status,
+            ownerId = snapshot.ownerId,
             lessonIds = snapshot.lessons.map { it.id }.toSet(),
             requiredLessonIds = snapshot.lessons.filter { it.required }.map { it.id }.toSet(),
             lessonTypes = snapshot.lessons.associate { it.id to it.type },
             lessonFileIds = snapshot.lessons.mapNotNull { it.fileId }.toSet(),
         )
+    }
+
+    @Transactional(readOnly = true)
+    fun documentScope(id: UUID): CourseDocumentScope {
+        val course = courses.findById(id).orElseThrow { notFound() }
+        val documentIds = lessons.findAllByCourseIdOrderBySortOrderAsc(id)
+            .filter { it.type in setOf(LessonType.PDF, LessonType.DOCX) }
+            .mapNotNull { it.fileId }
+            .toSet()
+        return CourseDocumentScope(course.ownerId, documentIds)
     }
 
     private fun ensureEditable(course: CourseEntity) {
@@ -396,13 +406,13 @@ class CourseManagementService(
         if (input.type !in setOf(LessonType.TEXT, LessonType.ASSIGNMENT, LessonType.EXAM) && input.fileId == null) {
             throw ApiException(HttpStatus.BAD_REQUEST, "FILE_REQUIRED", "Loại bài học này cần file tài nguyên")
         }
-        if (input.fileId != null && input.type !in setOf(LessonType.TEXT, LessonType.ASSIGNMENT, LessonType.EXAM)) {
-            fileAccess.requireAttachable(input.fileId, CurrentUser.id(), isGlobalAdministrator())
+        if (input.fileId != null && input.type !in setOf(LessonType.TEXT, LessonType.EXAM)) {
+            fileAccess.requireAttachable(input.fileId, CurrentUser.id(), false)
         }
     }
 
     private fun normalizedText(input: LessonRequest) = input.textContent?.trim()?.takeIf { input.type in setOf(LessonType.TEXT, LessonType.ASSIGNMENT, LessonType.EXAM) && it.isNotBlank() }
-    private fun normalizedFileId(input: LessonRequest) = input.fileId?.takeIf { input.type !in setOf(LessonType.TEXT, LessonType.ASSIGNMENT, LessonType.EXAM) }
+    private fun normalizedFileId(input: LessonRequest) = input.fileId?.takeIf { input.type !in setOf(LessonType.TEXT, LessonType.EXAM) }
 
     private fun touchContent(course: CourseEntity) {
         prepareDraftVersion(course)
@@ -457,7 +467,7 @@ class CourseManagementService(
 
     private fun requireVisible(course: CourseEntity) {
         if (canManageCourses()) {
-            val visible = isGlobalAdministrator() || course.ownerId == CurrentUser.id() ||
+            val visible = course.ownerId == CurrentUser.id() ||
                 course.id in enrollmentScope.assignedCourseIds(CurrentUser.id()) || course.id in scopedCourseIds()
             if (!visible) throw notFound()
         } else if (course.status != CourseStatus.PUBLISHED || course.id !in enrollmentScope.activeCourseIds(CurrentUser.id())) {
@@ -489,16 +499,13 @@ class CourseManagementService(
 
     private fun canManageCourses() = CurrentUser.authorities().any { it in courseManagementPermissions }
 
-    private fun isGlobalAdministrator() = CurrentUser.isSystemAdmin()
-
     private fun requireCategoryPermission() {
-        val allowed = isGlobalAdministrator() || Permissions.COURSE_CATEGORIES_MANAGE in CurrentUser.authorities() || scopedAuthorization.allowed(Permissions.COURSE_CATEGORIES_MANAGE, "SYSTEM", null)
+        val allowed = Permissions.COURSE_CATEGORIES_MANAGE in CurrentUser.authorities() || scopedAuthorization.allowed(Permissions.COURSE_CATEGORIES_MANAGE, "SYSTEM", null)
         if (!allowed) throw ApiException(HttpStatus.FORBIDDEN, "CATEGORY_MANAGE_DENIED", "Không có quyền quản lý danh mục khóa học")
     }
 
     private fun requireCourseCreationPermission() {
-        val allowed = isGlobalAdministrator() ||
-            Permissions.COURSES_CREATE in CurrentUser.authorities() ||
+        val allowed = Permissions.COURSES_CREATE in CurrentUser.authorities() ||
             Permissions.COURSES_WRITE in CurrentUser.authorities() ||
             scopedAuthorization.allowed(Permissions.COURSES_CREATE, "SYSTEM", null) ||
             scopedAuthorization.allowed(Permissions.COURSES_WRITE, "SYSTEM", null)
@@ -515,7 +522,7 @@ class CourseManagementService(
 
     private fun requireCoursePermission(course: CourseEntity, permission: String) {
         val legacyPermission = if (permission == Permissions.COURSES_UPDATE) Permissions.COURSES_WRITE else permission
-        val allowed = isGlobalAdministrator() || course.ownerId == CurrentUser.id() ||
+        val allowed = course.ownerId == CurrentUser.id() ||
             scopedAuthorization.allowed(permission, "COURSE", course.id) ||
             scopedAuthorization.allowed(legacyPermission, "COURSE", course.id)
         if (!allowed) {
@@ -564,6 +571,14 @@ class InternalCourseController(private val service: CourseManagementService, pri
     @GetMapping("/{id}/publication")
     fun publication(@PathVariable id: UUID, @RequestHeader("X-Service-Token", required=false) token: String?): PublicationStatus {
         internal.require(token); return service.publication(id)
+    }
+
+    @GetMapping("/{id}/document-scope")
+    fun documentScope(
+        @PathVariable id: UUID,
+        @RequestHeader("X-Service-Token", required=false) token: String?,
+    ): CourseDocumentScope {
+        internal.require(token); return service.documentScope(id)
     }
 
     @GetMapping("/{id}/learning-metadata")
