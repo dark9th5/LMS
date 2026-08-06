@@ -1228,6 +1228,10 @@ function OrganizationConsole({ user }: { user: PortalUser }) {
 
   const countTree = (items: UnitRow[]): number =>
     items.reduce((sum, item) => sum + 1 + countTree(item.children ?? []), 0);
+  const allUnits = flat;
+  const activeUnits = allUnits.filter((item) => item.status === "ACTIVE").length;
+  const departmentUnits = allUnits.filter((item) => item.type === "DEPARTMENT").length;
+  const groupUnits = allUnits.filter((item) => item.type === "GROUP").length;
 
   return (
     <>
@@ -1247,6 +1251,45 @@ function OrganizationConsole({ user }: { user: PortalUser }) {
         }
       />
       <NoticeBar notice={notice} onClose={() => setNotice(null)} />
+      {!loading && !error && (
+        <>
+          <section className="org-summary-grid" aria-label="Tổng quan cơ cấu tổ chức">
+            <article className="org-summary-card violet">
+              <span><Icon name="building" size={21} /></span>
+              <div><small>Tổng đơn vị</small><strong>{allUnits.length}</strong><p>Toàn bộ cơ cấu đang quản lý</p></div>
+            </article>
+            <article className="org-summary-card green">
+              <span><Icon name="check" size={21} /></span>
+              <div><small>Đang hoạt động</small><strong>{activeUnits}</strong><p>Đơn vị sẵn sàng sử dụng</p></div>
+            </article>
+            <article className="org-summary-card amber">
+              <span><Icon name="users" size={21} /></span>
+              <div><small>Phòng ban</small><strong>{departmentUnits}</strong><p>Các đơn vị nghiệp vụ trực thuộc</p></div>
+            </article>
+            <article className="org-summary-card blue">
+              <span><Icon name="list" size={21} /></span>
+              <div><small>Nhóm / bộ môn</small><strong>{groupUnits}</strong><p>Cấp tổ chức chuyên môn</p></div>
+            </article>
+          </section>
+          <Panel
+            title="Sơ đồ cơ cấu tổ chức"
+            subtitle="Quan sát quan hệ giữa các cấp; chọn một đơn vị để xem thành viên và cấu hình chi tiết."
+            className="org-chart-panel"
+            action={
+              <span className="org-chart-legend">
+                <i className="active" /> Đang hoạt động
+                <i className="inactive" /> Ngừng hoạt động
+              </span>
+            }
+          >
+            <OrganizationChart
+              units={data?.units ?? []}
+              selected={selectedUnit}
+              onSelect={setSelectedUnit}
+            />
+          </Panel>
+        </>
+      )}
       {loading ? (
         <Busy />
       ) : error ? (
@@ -1257,8 +1300,8 @@ function OrganizationConsole({ user }: { user: PortalUser }) {
       ) : (
         <div className="org-layout">
           <Panel
-            title="Cây tổ chức"
-            subtitle={`${flat.length} đơn vị`}
+            title="Danh sách đơn vị"
+            subtitle={`${flat.length} đơn vị · chọn để xem chi tiết`}
             className="org-tree-panel"
             action={
               canManageUnits ? (
@@ -1467,6 +1510,78 @@ function OrganizationConsole({ user }: { user: PortalUser }) {
         </div>
       )}
     </>
+  );
+}
+
+function OrganizationChart({
+  units,
+  selected,
+  onSelect,
+}: {
+  units: UnitRow[];
+  selected: string;
+  onSelect: (id: string) => void;
+}) {
+  if (!units.length) return <Empty text="Chưa có đơn vị trong cơ cấu tổ chức." />;
+  return (
+    <div className="org-chart-scroll" role="tree" aria-label="Sơ đồ cơ cấu tổ chức">
+      <div className="org-chart-roots">
+        {units.map((unit) => (
+          <OrganizationChartBranch
+            key={unit.id}
+            unit={unit}
+            selected={selected}
+            onSelect={onSelect}
+            level={0}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function OrganizationChartBranch({
+  unit,
+  selected,
+  onSelect,
+  level,
+}: {
+  unit: UnitRow;
+  selected: string;
+  onSelect: (id: string) => void;
+  level: number;
+}) {
+  const children = unit.children ?? [];
+  return (
+    <div className={`org-chart-branch level-${level}`} role="treeitem" aria-expanded={children.length ? true : undefined}>
+      <button
+        type="button"
+        className={`org-chart-node ${selected === unit.id ? "active" : ""}`}
+        onClick={() => onSelect(unit.id)}
+      >
+        <span className={`org-chart-icon ${unit.type.toLowerCase()}`}>
+          <Icon name={unit.type === "GROUP" ? "users" : "building"} size={18} />
+        </span>
+        <span className="org-chart-copy">
+          <strong>{unit.name}</strong>
+          <small>{unitTypeLabel(unit.type)} · {unit.code}</small>
+        </span>
+        <i className={`org-chart-status ${unit.status === "ACTIVE" ? "" : "inactive"}`} />
+      </button>
+      {children.length ? (
+        <div className="org-chart-children" role="group">
+          {children.map((child) => (
+            <OrganizationChartBranch
+              key={child.id}
+              unit={child}
+              selected={selected}
+              onSelect={onSelect}
+              level={level + 1}
+            />
+          ))}
+        </div>
+      ) : null}
+    </div>
   );
 }
 

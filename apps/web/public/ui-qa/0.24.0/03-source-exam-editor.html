@@ -1,3 +1,182 @@
+<!doctype html><html lang="vi" data-theme="unified-light"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><style>/* LMSPilot 0.17 — accessible foundation. No legacy theme selectors live here. */
+*,*::before,*::after{box-sizing:border-box}
+html{min-width:320px;scroll-behavior:smooth;text-size-adjust:100%}
+body{margin:0;min-height:100vh;background:var(--ui-bg);color:var(--ui-text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;font-size:16px;line-height:1.55;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+button:disabled{cursor:not-allowed;opacity:.58}
+a{color:inherit;text-decoration:none}
+img,svg,video,canvas{display:block;max-width:100%}
+h1,h2,h3,h4,p,dl,dd{margin:0}
+ul,ol{margin:0;padding:0}
+::selection{background:color-mix(in srgb,var(--ui-primary) 22%,transparent)}
+:focus-visible{outline:3px solid var(--ui-focus);outline-offset:3px}
+.sr-only{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
+
+/* Buttons */
+.button,.soft-button,.workspace-button,.primary-button{min-height:44px;border:1px solid transparent;border-radius:12px;display:inline-flex;align-items:center;justify-content:center;gap:9px;padding:10px 16px;font-weight:750;font-size:15px;line-height:1.2;transition:transform .16s ease,box-shadow .16s ease,background .16s ease,border-color .16s ease;color:var(--ui-text)}
+.button:hover,.soft-button:hover,.workspace-button:hover,.primary-button:hover{transform:translateY(-1px)}
+.button.primary,.primary-button,.workspace-button.primary{background:var(--ui-primary);color:var(--ui-on-primary);box-shadow:0 8px 20px color-mix(in srgb,var(--ui-primary) 24%,transparent)}
+.button.primary:hover,.primary-button:hover,.workspace-button.primary:hover{background:var(--ui-primary-strong)}
+.button.secondary,.soft-button,.workspace-button{background:var(--ui-surface);border-color:var(--ui-border);color:var(--ui-text);box-shadow:var(--shadow-xs)}
+.button.secondary:hover,.soft-button:hover,.workspace-button:hover{border-color:var(--ui-border-strong);background:var(--ui-surface-hover)}
+.button.ghost{background:transparent;color:var(--ui-text)}
+.button.danger,.workspace-button.danger{background:var(--ui-danger-soft);border-color:color-mix(in srgb,var(--ui-danger) 35%,var(--ui-border));color:var(--ui-danger)}
+.button.compact,.soft-button.compact,.workspace-button.compact{min-height:38px;padding:8px 12px;font-size:15px;border-radius:10px}
+.button.large-action{min-height:52px;padding-inline:22px;font-size:16px}
+.button svg,.soft-button svg,.workspace-button svg{width:19px;height:19px;flex:0 0 auto}
+.icon-button{width:44px;height:44px;padding:0;border-radius:12px;border:1px solid var(--ui-border);background:var(--ui-surface);color:var(--ui-text);display:inline-grid;place-items:center;box-shadow:var(--shadow-xs);transition:background .16s ease,border-color .16s ease,transform .16s ease}
+.icon-button:hover{background:var(--ui-surface-hover);border-color:var(--ui-border-strong);transform:translateY(-1px)}
+.icon-button svg{width:20px;height:20px}
+.inline-actions,.modal-actions,.page-actions,.review-actions,.import-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+
+/* Form controls */
+input,select,textarea{width:100%;min-height:46px;border:1px solid var(--ui-control-border);border-radius:11px;background:var(--ui-control-bg);color:var(--ui-control-text);padding:10px 12px;font-size:16px;line-height:1.4;transition:border-color .15s ease,box-shadow .15s ease,background .15s ease}
+textarea{min-height:116px;resize:vertical}
+input::placeholder,textarea::placeholder{color:var(--ui-placeholder);opacity:1}
+input:hover,select:hover,textarea:hover{border-color:var(--ui-border-strong)}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--ui-primary);box-shadow:0 0 0 4px color-mix(in srgb,var(--ui-primary) 18%,transparent);background:var(--ui-control-focus-bg);color:var(--ui-control-text)}
+input[aria-invalid="true"],select[aria-invalid="true"],textarea[aria-invalid="true"]{border-color:var(--ui-danger);box-shadow:0 0 0 3px color-mix(in srgb,var(--ui-danger) 14%,transparent)}
+input:disabled,select:disabled,textarea:disabled{background:var(--ui-muted-surface);color:var(--ui-muted)}
+input:-webkit-autofill,input:-webkit-autofill:hover,input:-webkit-autofill:focus{-webkit-text-fill-color:var(--ui-control-text);caret-color:var(--ui-control-text);box-shadow:0 0 0 1000px var(--ui-control-bg) inset!important;transition:background-color 9999s ease-out 0s}
+label{font-weight:650;color:var(--ui-text)}
+label>small,.field-group>small{display:block;margin-top:6px;color:var(--ui-muted);font-size:15px;font-weight:500}
+.form-stack,.workspace-form{display:grid;gap:18px}
+.form-grid{display:grid;gap:16px}
+.form-grid.two,.workspace-two-column{grid-template-columns:repeat(2,minmax(0,1fr))}
+.form-grid.three,.workspace-grid-three{grid-template-columns:repeat(3,minmax(0,1fr))}
+.form-grid.four{grid-template-columns:repeat(4,minmax(0,1fr))}
+.form-grid .span-two,.workspace-form .span-two{grid-column:span 2}
+.form-grid .span-three{grid-column:span 3}
+.form-grid .full{grid-column:1/-1}
+.form-footer{display:flex;justify-content:flex-end;gap:10px;padding-top:4px}
+.check-row,.workspace-check{min-height:44px;display:flex;align-items:flex-start;gap:10px;padding:11px 12px;border:1px solid var(--ui-border);border-radius:11px;background:var(--ui-surface)}
+.check-row input,.workspace-check input{width:19px;height:19px;min-height:19px;margin:2px 0 0;accent-color:var(--ui-primary)}
+.check-group{display:grid;gap:10px}
+.search-field,.select-field,.workspace-search{position:relative;display:flex;align-items:center;min-width:220px;flex:1;font-weight:500}
+.search-field>svg,.select-field>svg,.workspace-search>svg{position:absolute;left:13px;color:var(--ui-muted);z-index:1;width:18px;height:18px;pointer-events:none}
+.search-field input,.select-field select,.workspace-search input{padding-left:42px}
+.field-label{display:block;margin:0 0 7px;font-size:15px;font-weight:750}
+.number-stepper{display:grid;grid-template-columns:44px minmax(56px,1fr) 44px;align-items:stretch}
+.number-stepper input{border-radius:0;text-align:center}
+.number-stepper button{border:1px solid var(--ui-control-border);background:var(--ui-surface);color:var(--ui-text);font-size:20px}
+.number-stepper button:first-child{border-radius:11px 0 0 11px}
+.number-stepper button:last-child{border-radius:0 11px 11px 0}
+
+/* Surfaces, tables and common layout */
+.section-card,.data-card,.workspace-panel,.settings-panel,.advanced-panel,.result-panel,.info-panel,.metric-panel,.state-card{border:1px solid var(--ui-border);border-radius:var(--radius-lg);background:var(--ui-surface);box-shadow:var(--shadow-sm);padding:22px}
+.section-title,.workspace-panel>header,.settings-panel>header,.advanced-panel>header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:18px}
+.section-title h2,.workspace-panel h2,.settings-panel h2,.advanced-panel h2{font-size:20px;line-height:1.25;letter-spacing:-.02em}
+.section-title p,.workspace-panel header p,.settings-panel header p{margin-top:4px;color:var(--ui-muted);font-size:15px}
+.toolbar-card{display:flex;align-items:center;gap:12px;margin:20px 0;padding:14px;border:1px solid var(--ui-border);border-radius:var(--radius-lg);background:var(--ui-surface);box-shadow:var(--shadow-xs)}
+.table-wrap,.responsive-table,.workspace-table-wrap{width:100%;overflow:auto;border:1px solid var(--ui-border);border-radius:14px;background:var(--ui-surface)}
+table,.workspace-table{width:100%;border-collapse:collapse;min-width:720px}
+th,td{padding:13px 15px;border-bottom:1px solid var(--ui-border);text-align:left;vertical-align:middle}
+th{background:var(--ui-muted-surface);color:var(--ui-muted);font-size:14px;text-transform:none;letter-spacing:.01em;font-weight:750}
+td{font-size:15px}
+tr:last-child td{border-bottom:0}
+tbody tr:hover{background:var(--ui-surface-hover)}
+.person-cell,.workspace-primary-cell{display:flex;align-items:center;gap:10px}
+.avatar,.mini-avatar{flex:0 0 auto;display:grid;place-items:center;border-radius:50%;background:color-mix(in srgb,var(--ui-primary) 14%,var(--ui-surface));color:var(--ui-primary);font-weight:800}
+.avatar{width:38px;height:38px;font-size:14px}.mini-avatar{width:32px;height:32px;font-size:13px}
+.compact-list,.data-list,.selection-list{display:grid;gap:10px;list-style:none}
+.compact-list>li,.data-list-item,.list-entry{padding:13px 14px;border:1px solid var(--ui-border);border-radius:12px;background:var(--ui-surface)}
+.tabs,.workspace-tabs,.segmented-control{display:flex;align-items:center;gap:6px;padding:5px;border-radius:13px;background:var(--ui-muted-surface);overflow:auto}
+.tabs button,.workspace-tabs button,.segmented-control button{min-height:38px;border:0;border-radius:9px;padding:8px 13px;background:transparent;color:var(--ui-muted);white-space:nowrap;font-weight:700}
+.tabs button.active,.workspace-tabs button.active,.segmented-control button.active{background:var(--ui-surface);color:var(--ui-primary);box-shadow:var(--shadow-xs)}
+.status-pill,.badge{display:inline-flex;align-items:center;gap:6px;min-height:28px;padding:4px 9px;border-radius:999px;background:var(--ui-muted-surface);color:var(--ui-muted);font-size:13px;font-weight:800;white-space:nowrap}
+.status-pill.success,.badge.success{background:var(--ui-success-soft);color:var(--ui-success)}
+.status-pill.warning,.badge.warning{background:var(--ui-warning-soft);color:var(--ui-warning-strong)}
+.status-pill.error,.badge.error{background:var(--ui-danger-soft);color:var(--ui-danger)}
+.progress-block{display:grid;gap:7px}
+.progress-label{display:flex;justify-content:space-between;gap:10px;color:var(--ui-muted);font-size:14px}
+.progress-track{height:9px;border-radius:999px;background:var(--ui-muted-surface);overflow:hidden}
+.progress-track>i,.progress-track>span{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,var(--ui-primary),var(--ui-accent));transition:width .3s ease}
+
+/* Feedback */
+.form-message,.form-alert,.workspace-callout,.dashboard-warning{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;border-radius:12px;font-size:15px;font-weight:600}
+.form-message.error,.form-alert.error{background:var(--ui-danger-soft);color:var(--ui-danger);border:1px solid color-mix(in srgb,var(--ui-danger) 30%,transparent)}
+.form-message.success,.form-alert.success{background:var(--ui-success-soft);color:var(--ui-success);border:1px solid color-mix(in srgb,var(--ui-success) 30%,transparent)}
+.form-alert.info,.workspace-callout{background:var(--ui-info-soft);color:var(--ui-info);border:1px solid color-mix(in srgb,var(--ui-info) 26%,transparent)}
+.state-box,.error-state,.empty-state,.loading-state,.dashboard-empty{min-height:220px;display:grid;place-items:center;text-align:center;padding:28px;border:1px dashed var(--ui-border-strong);border-radius:var(--radius-lg);background:var(--ui-surface)}
+.state-box>div,.error-state>div,.empty-state>div,.loading-state>div{max-width:520px;display:grid;justify-items:center;gap:10px}
+.state-icon{width:54px;height:54px;display:grid;place-items:center;border-radius:16px;background:var(--ui-primary-soft);color:var(--ui-primary)}
+.state-box h2,.error-state h2,.empty-state h2{font-size:20px}
+.state-box p,.error-state p,.empty-state p,.loading-state p{color:var(--ui-muted);font-size:15px}
+.toast{position:fixed;right:24px;bottom:24px;z-index:1200;max-width:min(420px,calc(100vw - 32px));padding:13px 16px;border-radius:13px;background:var(--ui-text);color:var(--ui-bg);box-shadow:var(--shadow-lg);font-weight:650}
+.button-spinner{width:18px;height:18px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:spin .7s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Modal */
+.modal-backdrop{position:fixed;inset:0;z-index:1000;display:grid;place-items:center;padding:20px;background:rgba(8,15,30,.56);backdrop-filter:blur(7px)}
+.modal-panel{width:min(760px,100%);max-height:min(88vh,900px);overflow:auto;border:1px solid var(--ui-border);border-radius:20px;background:var(--ui-surface);box-shadow:var(--shadow-xl)}
+.modal-head{position:sticky;top:0;z-index:2;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:20px 22px;border-bottom:1px solid var(--ui-border);background:color-mix(in srgb,var(--ui-surface) 94%,transparent);backdrop-filter:blur(12px)}
+.modal-head h2{font-size:22px;letter-spacing:-.02em}.modal-head p{margin-top:5px;color:var(--ui-muted);font-size:15px}
+.modal-body{padding:22px}
+
+/* Utility workspace classes used by administrative screens */
+.workspace-grid-three,.advanced-grid,.stat-grid,.advanced-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.workspace-two-column{display:grid;gap:18px;align-items:start}.workspace-two-column.wide-left{grid-template-columns:minmax(0,1.4fr) minmax(300px,.6fr)}
+.workspace-tags{display:flex;gap:8px;flex-wrap:wrap}.workspace-tags>*{border-radius:999px;padding:6px 10px;background:var(--ui-muted-surface);font-size:14px}
+.workspace-table-wrap{padding:0}.sticky-panel{position:sticky;top:88px}
+.role-card-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
+.role-card{border:1px solid var(--ui-border);border-radius:14px;background:var(--ui-surface);padding:18px}.role-symbol{width:42px;height:42px;display:grid;place-items:center;border-radius:12px;background:var(--ui-primary-soft);color:var(--ui-primary);margin-bottom:12px}
+.import-step{display:grid;grid-template-columns:36px 1fr;gap:12px;align-items:start}.import-step>span{width:32px;height:32px;display:grid;place-items:center;border-radius:50%;background:var(--ui-primary-soft);color:var(--ui-primary);font-weight:800}
+
+@media(max-width:820px){
+  .form-grid.two,.form-grid.three,.form-grid.four,.workspace-two-column,.workspace-two-column.wide-left,.workspace-grid-three,.advanced-grid,.stat-grid,.advanced-stats{grid-template-columns:1fr}
+  .form-grid .span-two,.form-grid .span-three,.workspace-form .span-two{grid-column:auto}
+  .toolbar-card{align-items:stretch;flex-direction:column}.search-field,.select-field,.workspace-search{min-width:0;width:100%}
+  .section-card,.data-card,.workspace-panel,.settings-panel,.advanced-panel,.result-panel,.info-panel,.metric-panel{padding:17px}
+  .modal-backdrop{padding:10px;align-items:end}.modal-panel{max-height:92vh;border-radius:18px 18px 0 0}.modal-head,.modal-body{padding:17px}
+}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+
+/* Component-name aliases */
+.modal{width:min(760px,100%);max-height:min(88vh,900px);overflow:auto;border:1px solid var(--ui-border);border-radius:20px;background:var(--ui-surface);box-shadow:var(--shadow-xl)}
+.modal.modal-wide{width:min(1040px,100%)}
+.modal-header{position:sticky;top:0;z-index:2;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:20px 22px;border-bottom:1px solid var(--ui-border);background:color-mix(in srgb,var(--ui-surface) 94%,transparent);backdrop-filter:blur(12px)}
+.modal-header h2{font-size:22px;letter-spacing:-.02em}.modal-header p{margin-top:5px;color:var(--ui-muted);font-size:15px}.modal-open{overflow:hidden}
+.state-box{align-content:center;justify-items:center;gap:10px}.state-box>strong{font-size:20px}.state-box>.loader{width:34px;height:34px;border:3px solid var(--ui-border);border-right-color:var(--ui-primary);border-radius:50%;animation:spin .8s linear infinite}.state-box>.state-icon{margin-bottom:2px}.state-box>p{max-width:520px;color:var(--ui-muted);font-size:15px}.state-box.error-state .state-icon{background:var(--ui-danger-soft);color:var(--ui-danger)}
+.toast{display:grid;grid-template-columns:20px minmax(0,1fr) 34px;align-items:center;gap:9px}.toast button{width:34px;height:34px;display:grid;place-items:center;border:0;border-radius:9px;background:transparent;color:inherit}
+
+/* DOCX course preview */
+.resource-viewer.docx { display: grid; gap: 14px; }
+.docx-preview-header { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border: 1px solid var(--ui-border, #dce3ef); border-radius: 14px; background: var(--ui-surface, #fff); }
+.docx-preview-header > span { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; color: var(--accent, #5b45f5); background: color-mix(in srgb, var(--accent, #5b45f5) 12%, transparent); }
+.docx-preview-header > div { min-width: 0; flex: 1; display: grid; gap: 2px; }
+.docx-preview-header strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.docx-preview-header small { color: var(--muted, #6b7890); }
+.docx-page { max-height: 620px; overflow: auto; padding: clamp(24px, 4vw, 54px); border: 1px solid var(--ui-border, #dce3ef); border-radius: 16px; background: var(--ui-surface, #fff); box-shadow: 0 12px 30px rgba(25, 35, 58, .07); line-height: 1.75; }
+.docx-page p { margin: 0 0 1em; white-space: pre-wrap; }
+
+.demo-role-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 10px;
+}
+.demo-role-grid button {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  border-radius: 12px;
+  padding: 10px 8px;
+  display: grid;
+  gap: 4px;
+  text-align: left;
+  cursor: pointer;
+}
+.demo-role-grid button:hover,
+.demo-role-grid button:focus-visible {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+  outline: none;
+}
+.demo-role-grid code { color: var(--primary); }
+@media (max-width: 560px) {
+  .demo-role-grid { grid-template-columns: 1fr; }
+}
+
 /* LMSPilot 0.17 — one adaptive, lively and accessible design system. */
 :root,[data-theme="unified-light"]{
   color-scheme:light;
@@ -978,3 +1157,19 @@ body.modal-open,body.command-open{overflow:hidden!important}
 @media(max-width:1280px){.exam-editor-source-layout{grid-template-columns:minmax(250px,.78fr) minmax(400px,1.22fr)}.exam-editor-settings-panel{position:static;grid-column:1/-1;max-height:none}.exam-editor-settings-panel .workspace-panel-body{max-height:none}.exam-editor-settings-list{grid-template-columns:repeat(2,minmax(0,1fr));column-gap:24px}}
 @media(max-width:940px){.exam-editor-source-layout{grid-template-columns:1fr}.exam-editor-bank-panel,.exam-editor-settings-panel{position:static;max-height:none}.exam-editor-bank-list{max-height:480px}.exam-editor-settings-list{grid-template-columns:1fr}.exam-editor-selected-item{grid-template-columns:18px 34px minmax(0,1fr) auto}.exam-editor-selected-item>.exam-editor-type-icon{display:none}.exam-editor-points{grid-column:3}.exam-editor-selected-item>.icon-button{grid-column:4;grid-row:1/3}}
 @media(max-width:560px){.exam-editor-selected-item{grid-template-columns:30px minmax(0,1fr) 36px}.exam-editor-drag{display:none}.exam-editor-selected-item .question-number{width:30px;height:30px}.exam-editor-points{grid-column:2}.exam-editor-selected-item>.icon-button{grid-column:3;grid-row:1/3}}
+</style><style>
+.source-proof{position:fixed;right:18px;bottom:16px;z-index:400;padding:7px 10px;border:1px solid var(--ui-border);border-radius:10px;background:color-mix(in srgb,var(--ui-surface) 92%,transparent);color:var(--ui-muted);font:750 11px/1.2 ui-monospace,SFMono-Regular,Consolas,monospace;box-shadow:var(--shadow-xs);backdrop-filter:blur(10px)}
+.preview-page-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;margin-bottom:18px}.preview-page-heading nav{display:flex;gap:8px;color:var(--ui-muted);font-size:12px}.preview-page-heading h1{margin-top:7px;font-size:30px;letter-spacing:-.04em}.preview-page-heading p{margin-top:5px;color:var(--ui-muted);font-size:14px}.preview-heading-actions{display:flex;gap:9px}
+.workspace-panel{padding:0}.workspace-panel>header{display:flex;justify-content:space-between}.workspace-button{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:38px;padding:8px 12px;border:1px solid var(--ui-border);border-radius:10px;background:var(--ui-surface);color:var(--ui-text);font-weight:750}.workspace-button.primary{border-color:var(--ui-primary);background:var(--ui-primary);color:var(--ui-on-primary)}.workspace-button.ghost{background:transparent}.workspace-tag{display:inline-flex;align-items:center;min-height:26px;padding:4px 8px;border-radius:999px;background:var(--ui-muted-surface);color:var(--ui-muted);font-size:12px;font-weight:800}.workspace-tag.teal{background:var(--ui-success-soft);color:var(--ui-success)}
+.workspace-hero{display:grid;grid-template-columns:52px minmax(0,1fr) auto;gap:15px;align-items:center;margin-bottom:20px;padding:22px;border:1px solid var(--ui-border);border-radius:20px;background:var(--ui-surface)}.workspace-hero-glyph{width:52px;height:52px;display:grid;place-items:center;border-radius:15px;background:var(--ui-primary-soft);color:var(--ui-primary)}.workspace-hero-copy>span{color:var(--ui-primary);font-size:11px;font-weight:850;letter-spacing:.1em}.workspace-hero-copy h1{margin-top:4px;font-size:28px}.workspace-hero-copy p{margin-top:5px;color:var(--ui-muted)}.workspace-hero-stats{display:flex;gap:9px}.workspace-hero-stats>div{min-width:92px;padding:10px 12px;border-radius:12px;background:var(--ui-muted-surface);text-align:center}.workspace-hero-stats strong,.workspace-hero-stats span{display:block}.workspace-hero-stats strong{font-size:20px}.workspace-hero-stats span{margin-top:2px;color:var(--ui-muted);font-size:11px}
+.status-badge{display:inline-flex;align-items:center;min-height:28px;padding:4px 9px;border-radius:999px;background:var(--ui-success-soft);color:var(--ui-success);font-size:12px;font-weight:800}.question-number{display:grid;place-items:center}.empty-state{min-height:130px}
+.exam-taking-header>div:first-child{display:flex;align-items:center;gap:12px}.exam-session-signals{display:flex;align-items:center;gap:12px}.exam-timer{display:flex;align-items:center;gap:9px}.exam-timer span{display:grid}.exam-timer small{color:var(--ui-muted);font-size:11px}.exam-timer strong{font-size:18px}.exam-progress-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center}.exam-navigator>div:nth-child(2){display:grid;grid-template-columns:repeat(5,1fr)}.exam-legend{display:grid;gap:7px;margin-top:16px;padding-top:14px;border-top:1px solid var(--ui-border)}.exam-legend span{display:flex;align-items:center;gap:7px;color:var(--ui-muted);font-size:12px}.exam-legend i{width:12px;height:12px;border:1px solid var(--ui-border);border-radius:4px}.exam-legend i.answered{border-color:var(--ui-primary);background:var(--ui-primary)}
+</style></head><body>
+    <div class="app-shell role-instructor" data-portal-role="INSTRUCTOR">
+      <aside class="app-sidebar">
+        <div class="sidebar-brand-row"><div class="app-brand"><span class="brand-mark">L</span><span class="brand-copy"><strong>LMSPilot</strong></span></div></div>
+        <nav class="app-nav"><div class="sidebar-links"><a class="app-nav-link "><span class="app-nav-icon"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></svg></span><span class="app-nav-copy"><strong>Tổng quan</strong></span></a><a class="app-nav-link "><span class="app-nav-icon"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H11v16H6.5A2.5 2.5 0 0 0 4 21.5z"/><path d="M20 5.5A2.5 2.5 0 0 0 17.5 3H13v16h4.5a2.5 2.5 0 0 1 2.5 2.5z"/></svg></span><span class="app-nav-copy"><strong>Khóa học</strong></span></a><a class="app-nav-link active"><span class="app-nav-icon"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span><span class="app-nav-copy"><strong>Bài thi</strong></span></a><a class="app-nav-link "><span class="app-nav-icon"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 2 3 6 7 .9-5 4.8 1.3 6.8-6.3-3.3-6.3 3.3L7 13.7 2 8.9 9 8z"/></svg></span><span class="app-nav-copy"><strong>Chấm điểm</strong></span></a><a class="app-nav-link "><span class="app-nav-icon"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19V9M10 19V5M16 19v-7M22 19H2"/></svg></span><span class="app-nav-copy"><strong>Báo cáo</strong></span></a></div></nav>
+        <div class="sidebar-footer"><button class="sidebar-search"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><span>Tìm nhanh</span><kbd>Ctrl K</kbd></button><div class="sidebar-profile"><span class="avatar">GV</span><span><strong>Nguyễn Minh Anh</strong><small>Giảng viên</small></span></div></div>
+      </aside>
+      <div class="app-workspace"><header class="app-topbar"><div class="topbar-leading"><div class="topbar-context"><small>Không gian giảng viên</small><strong>Bài thi</strong></div></div><button class="topbar-search"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><span>Tìm trong chức năng của giảng viên</span><kbd>Ctrl K</kbd></button><div class="topbar-actions"><button class="icon-button theme-toggle">☾</button><button class="icon-button"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg></button><span class="topbar-profile"><span class="avatar">GV</span><span><strong>Nguyễn Minh Anh</strong><small>Giảng viên</small></span></span></div></header><main class="app-content"><div class="preview-page-heading"><div><nav><span>Trang chủ</span><span>›</span><span>Bài thi</span><span>›</span><strong>Chỉnh sửa</strong></nav><h1>Chỉnh sửa bài thi</h1><p>Chỉnh sửa nội dung và cài đặt cho bài thi.</p></div><div class="preview-heading-actions"><button class="button secondary"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Xem trước đề thi</button></div></div><section class="exam-editor-source-layout"><article class="workspace-panel exam-editor-bank-panel"><header><div><h2>Ngân hàng câu hỏi</h2><p>1.248 câu khả dụng · câu đã chọn được ẩn.</p></div><span class="workspace-tag">1.240 còn lại</span></header><div class="workspace-panel-body"><label class="exam-editor-search"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><input placeholder="Tìm nội dung, loại hoặc mã câu hỏi…"></label><div class="exam-editor-bank-list"><article class="exam-editor-bank-item"><span class="exam-editor-type-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2h8l4 4v16H6z"/><path d="M14 2v6h6M9 13h6M9 17h6"/></svg></span><div><div class="exam-editor-item-title"><strong>Hàm print() trong Python được dùng để…</strong><span>SINGLE CHOICE</span></div><small>1 điểm · 4 phương án</small></div><button class="icon-button"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button></article><article class="exam-editor-bank-item"><span class="exam-editor-type-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2h8l4 4v16H6z"/><path d="M14 2v6h6M9 13h6M9 17h6"/></svg></span><div><div class="exam-editor-item-title"><strong>Python là ngôn ngữ lập trình thông dịch.</strong><span>TRUE FALSE</span></div><small>1 điểm · 4 phương án</small></div><button class="icon-button"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button></article><article class="exam-editor-bank-item"><span class="exam-editor-type-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2h8l4 4v16H6z"/><path d="M14 2v6h6M9 13h6M9 17h6"/></svg></span><div><div class="exam-editor-item-title"><strong>Trong Python, để khai báo biến, ta sử dụng…</strong><span>SHORT TEXT</span></div><small>1 điểm · 4 phương án</small></div><button class="icon-button"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button></article><article class="exam-editor-bank-item"><span class="exam-editor-type-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2h8l4 4v16H6z"/><path d="M14 2v6h6M9 13h6M9 17h6"/></svg></span><div><div class="exam-editor-item-title"><strong>Ghép các kiểu dữ liệu ở cột A với mô tả ở cột B.</strong><span>MULTIPLE CHOICE</span></div><small>2 điểm · 4 phương án</small></div><button class="icon-button"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button></article><article class="exam-editor-bank-item"><span class="exam-editor-type-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2h8l4 4v16H6z"/><path d="M14 2v6h6M9 13h6M9 17h6"/></svg></span><div><div class="exam-editor-item-title"><strong>Kết quả của biểu thức 3 ** 2 là?</strong><span>SINGLE CHOICE</span></div><small>1 điểm · 4 phương án</small></div><button class="icon-button"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button></article></div></div></article><article class="workspace-panel exam-editor-content-panel"><header><div><h2>Nội dung đề thi</h2><p>Phiên bản 3 · 8 câu · 10 điểm</p></div><span class="status-badge">Bản nháp</span></header><div class="workspace-panel-body"><div class="exam-editor-selected-list"><article class="exam-editor-selected-item"><span class="exam-editor-drag">⋮⋮</span><span class="question-number">1</span><span class="exam-editor-type-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2h8l4 4v16H6z"/><path d="M14 2v6h6M9 13h6M9 17h6"/></svg></span><div><div class="exam-editor-item-title"><strong>Hàm print() trong Python được dùng để…</strong><span>TRẮC NGHIỆM</span></div><small>4 phương án</small></div><strong class="exam-editor-points">1 điểm</strong><button class="icon-button"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M7 7l1 14h8l1-14"/></svg></button></article><article class="exam-editor-selected-item"><span class="exam-editor-drag">⋮⋮</span><span class="question-number">2</span><span class="exam-editor-type-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2h8l4 4v16H6z"/><path d="M14 2v6h6M9 13h6M9 17h6"/></svg></span><div><div class="exam-editor-item-title"><strong>Python là ngôn ngữ lập trình thông dịch.</strong><span>TRẮC NGHIỆM</span></div><small>4 phương án</small></div><strong class="exam-editor-points">1 điểm</strong><button class="icon-button"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M7 7l1 14h8l1-14"/></svg></button></article><article class="exam-editor-selected-item"><span class="exam-editor-drag">⋮⋮</span><span class="question-number">3</span><span class="exam-editor-type-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2h8l4 4v16H6z"/><path d="M14 2v6h6M9 13h6M9 17h6"/></svg></span><div><div class="exam-editor-item-title"><strong>Trong Python, để khai báo biến, ta sử dụng…</strong><span>TRẮC NGHIỆM</span></div><small>4 phương án</small></div><strong class="exam-editor-points">1 điểm</strong><button class="icon-button"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M7 7l1 14h8l1-14"/></svg></button></article><article class="exam-editor-selected-item"><span class="exam-editor-drag">⋮⋮</span><span class="question-number">4</span><span class="exam-editor-type-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2h8l4 4v16H6z"/><path d="M14 2v6h6M9 13h6M9 17h6"/></svg></span><div><div class="exam-editor-item-title"><strong>Ghép các kiểu dữ liệu ở cột A với mô tả ở cột B.</strong><span>TRẮC NGHIỆM</span></div><small>4 phương án</small></div><strong class="exam-editor-points">2 điểm</strong><button class="icon-button"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M7 7l1 14h8l1-14"/></svg></button></article><article class="exam-editor-selected-item"><span class="exam-editor-drag">⋮⋮</span><span class="question-number">5</span><span class="exam-editor-type-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2h8l4 4v16H6z"/><path d="M14 2v6h6M9 13h6M9 17h6"/></svg></span><div><div class="exam-editor-item-title"><strong>Kết quả của biểu thức 3 ** 2 là?</strong><span>TRẮC NGHIỆM</span></div><small>4 phương án</small></div><strong class="exam-editor-points">1 điểm</strong><button class="icon-button"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M7 7l1 14h8l1-14"/></svg></button></article><article class="exam-editor-selected-item"><span class="exam-editor-drag">⋮⋮</span><span class="question-number">6</span><span class="exam-editor-type-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2h8l4 4v16H6z"/><path d="M14 2v6h6M9 13h6M9 17h6"/></svg></span><div><div class="exam-editor-item-title"><strong>List trong Python là một kiểu dữ liệu có thứ tự.</strong><span>TRẮC NGHIỆM</span></div><small>4 phương án</small></div><strong class="exam-editor-points">1 điểm</strong><button class="icon-button"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M7 7l1 14h8l1-14"/></svg></button></article></div><div class="exam-editor-drop-zone"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg><span>Kéo thả để sắp xếp thứ tự; từng thẻ câu hỏi có khoảng cách rõ ràng.</span></div></div></article><aside class="workspace-panel exam-editor-settings-panel"><header><div><h2>Cài đặt bài thi</h2><p>Cấu hình thời gian, lần làm và điều kiện đạt.</p></div></header><div class="workspace-panel-body"><dl class="exam-editor-settings-list"><div><dt>Khóa học</dt><dd>Lập trình Python cơ bản</dd></div><div><dt>Thời lượng</dt><dd>60 phút</dd></div><div><dt>Số câu hỏi</dt><dd>8 câu</dd></div><div><dt>Tổng điểm</dt><dd>10 điểm</dd></div><div><dt>Điểm đạt</dt><dd>60%</dd></div><div><dt>Số lượt làm</dt><dd>2</dd></div><div><dt>Thời gian mở</dt><dd>20/05/2026 08:00</dd></div><div><dt>Thời gian đóng</dt><dd>27/05/2026 23:59</dd></div></dl><button class="button primary full"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4z"/></svg>Lưu / sửa cấu hình</button><div class="form-alert info"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>Khi bài thi đã xuất bản hoặc có lượt làm, cấu trúc câu hỏi được khóa.</div></div></aside></section></main></div>
+    </div><div class="source-proof">SOURCE UI QA · v0.24.0</div></body></html>

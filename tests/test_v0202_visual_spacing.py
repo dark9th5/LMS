@@ -8,7 +8,7 @@ def text(path: str) -> str:
 
 class Release0202VisualSpacingTests(unittest.TestCase):
     def test_release_version(self):
-        self.assertEqual("0.23.0", text("VERSION").strip())
+        self.assertEqual("0.24.0", text("VERSION").strip())
 
     def test_answer_choices_use_letter_tiles(self):
         source = text("apps/web/components/ExamDetail.tsx")

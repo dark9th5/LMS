@@ -126,7 +126,7 @@ services:
 
   api-gateway:
     <<: *service-common
-    image: lmspilot/backend-bundle:0.23.0
+    image: lmspilot/backend-bundle:0.24.0
     build: *backend-build
     command: ["api-gateway"]
     ports:
@@ -175,7 +175,7 @@ services:
 
   identity-service:
     <<: *service-common
-    image: lmspilot/backend-bundle:0.23.0
+    image: lmspilot/backend-bundle:0.24.0
     build: *backend-build
     command: ["identity-service"]
     environment:
@@ -200,7 +200,7 @@ services:
 
   organization-service:
     <<: *service-common
-    image: lmspilot/backend-bundle:0.23.0
+    image: lmspilot/backend-bundle:0.24.0
     build: *backend-build
     command: ["organization-service"]
     environment:
@@ -213,7 +213,7 @@ services:
 
   course-service:
     <<: *service-common
-    image: lmspilot/backend-bundle:0.23.0
+    image: lmspilot/backend-bundle:0.24.0
     build: *backend-build
     command: ["course-service"]
     environment:
@@ -228,7 +228,7 @@ services:
 
   enrollment-service:
     <<: *service-common
-    image: lmspilot/backend-bundle:0.23.0
+    image: lmspilot/backend-bundle:0.24.0
     build: *backend-build
     command: ["enrollment-service"]
     environment:
@@ -246,7 +246,7 @@ services:
 
   learning-service:
     <<: *service-common
-    image: lmspilot/backend-bundle:0.23.0
+    image: lmspilot/backend-bundle:0.24.0
     build: *backend-build
     command: ["learning-service"]
     environment:
@@ -264,7 +264,7 @@ services:
 
   assessment-service:
     <<: *service-common
-    image: lmspilot/backend-bundle:0.23.0
+    image: lmspilot/backend-bundle:0.24.0
     build: *backend-build
     command: ["assessment-service"]
     environment:
@@ -280,7 +280,7 @@ services:
 
   grading-service:
     <<: *service-common
-    image: lmspilot/backend-bundle:0.23.0
+    image: lmspilot/backend-bundle:0.24.0
     build: *backend-build
     command: ["grading-service"]
     environment:
@@ -293,7 +293,7 @@ services:
 
   reporting-service:
     <<: *service-common
-    image: lmspilot/backend-bundle:0.23.0
+    image: lmspilot/backend-bundle:0.24.0
     build: *backend-build
     command: ["reporting-service"]
     environment:
@@ -308,7 +308,7 @@ services:
   file-storage-service:
     <<: *service-common
     user: "0:0"
-    image: lmspilot/backend-bundle:0.23.0
+    image: lmspilot/backend-bundle:0.24.0
     build: *backend-build
     command: ["file-storage-service"]
     environment:
@@ -331,7 +331,7 @@ services:
 
   license-service:
     <<: *service-common
-    image: lmspilot/backend-bundle:0.23.0
+    image: lmspilot/backend-bundle:0.24.0
     build: *backend-build
     command: ["license-service"]
     environment:
@@ -346,7 +346,7 @@ services:
 
   audit-service:
     <<: *service-common
-    image: lmspilot/backend-bundle:0.23.0
+    image: lmspilot/backend-bundle:0.24.0
     build: *backend-build
     command: ["audit-service"]
     environment:
@@ -358,7 +358,7 @@ services:
 
   notification-service:
     <<: *service-common
-    image: lmspilot/backend-bundle:0.23.0
+    image: lmspilot/backend-bundle:0.24.0
     build: *backend-build
     command: ["notification-service"]
     environment:
@@ -389,7 +389,7 @@ services:
 
   certificate-service:
     <<: *service-common
-    image: lmspilot/backend-bundle:0.23.0
+    image: lmspilot/backend-bundle:0.24.0
     build: *backend-build
     command: ["certificate-service"]
     environment:
@@ -401,7 +401,7 @@ services:
 
   ai-service:
     <<: *service-common
-    image: lmspilot/backend-bundle:0.23.0
+    image: lmspilot/backend-bundle:0.24.0
     build: *backend-build
     command: ["ai-service"]
     environment:
@@ -423,7 +423,7 @@ services:
 
   configuration-service:
     <<: *service-common
-    image: lmspilot/backend-bundle:0.23.0
+    image: lmspilot/backend-bundle:0.24.0
     build: *backend-build
     command: ["configuration-service"]
     environment:
@@ -438,7 +438,7 @@ services:
   integration-service:
     <<: *service-common
     profiles: [extended]
-    image: lmspilot/backend-bundle:0.23.0
+    image: lmspilot/backend-bundle:0.24.0
     build: *backend-build
     command: ["integration-service"]
     environment:
@@ -450,7 +450,7 @@ services:
 
   operations-service:
     <<: *service-common
-    image: lmspilot/backend-bundle:0.23.0
+    image: lmspilot/backend-bundle:0.24.0
     build: *backend-build
     command: ["operations-service"]
     ports: ["127.0.0.1:8097:8097"]
@@ -465,7 +465,7 @@ services:
 
   competency-service:
     <<: *service-common
-    image: lmspilot/backend-bundle:0.23.0
+    image: lmspilot/backend-bundle:0.24.0
     build: *backend-build
     command: ["competency-service"]
     environment:

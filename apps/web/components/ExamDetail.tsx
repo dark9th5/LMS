@@ -10,6 +10,7 @@ import type {
   ExamQuestion,
   ExamSession,
   Grade,
+  Question,
 } from "@/lib/models";
 import { formatDate, formatDuration } from "@/lib/models";
 import type { PortalUser } from "@/lib/types";
@@ -81,6 +82,14 @@ type AssessmentAssignment = {
   assignedAt: string;
 };
 
+function unwrapQuestionBank(payload: unknown): Question[] {
+  if (Array.isArray(payload)) return payload as Question[];
+  if (payload && typeof payload === "object" && Array.isArray((payload as { items?: unknown[] }).items)) {
+    return (payload as { items: Question[] }).items;
+  }
+  return [];
+}
+
 export function ExamDetail({
   examId,
   user,
@@ -112,6 +121,8 @@ export function ExamDetail({
   const [submitConfirmOpen, setSubmitConfirmOpen] = useState(false);
   const [formError, setFormError] = useState("");
   const [assignments, setAssignments] = useState<AssessmentAssignment[]>([]);
+  const [questionBank, setQuestionBank] = useState<Question[]>([]);
+  const [questionQuery, setQuestionQuery] = useState("");
   const [assignmentDraft, setAssignmentDraft] = useState({
     assigneeType: "USER",
     assigneeId: "",
@@ -139,6 +150,14 @@ export function ExamDetail({
         return;
       }
       setExam(data);
+      if (canManage) {
+        try {
+          const bankPayload = await apiRequest<unknown>("/api/v1/questions?size=250");
+          setQuestionBank(unwrapQuestionBank(bankPayload));
+        } catch {
+          setQuestionBank([]);
+        }
+      }
       if (data.courseId) {
         try {
           setCourse(
@@ -294,6 +313,20 @@ export function ExamDetail({
   const progress = questions.length
     ? Math.round((answered * 100) / questions.length)
     : 0;
+  const selectedQuestionIds = useMemo(
+    () => new Set((exam?.questions ?? []).map((item) => item.id)),
+    [exam?.questions],
+  );
+  const filteredQuestionBank = useMemo(() => {
+    const query = questionQuery.trim().toLocaleLowerCase("vi-VN");
+    return questionBank.filter((item) => {
+      if (selectedQuestionIds.has(item.id)) return false;
+      if (!query) return true;
+      return `${item.prompt} ${item.type} ${item.id}`
+        .toLocaleLowerCase("vi-VN")
+        .includes(query);
+    });
+  }, [questionBank, questionQuery, selectedQuestionIds]);
 
   async function startExam() {
     setBusy(true);
@@ -423,6 +456,54 @@ export function ExamDetail({
       window.setTimeout(() => void refreshGrade(submitted.id), 1200);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Không thể nộp bài");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function updateExamQuestions(nextQuestions: ExamQuestion[]) {
+    if (!exam || !canManage || busy) return;
+    if (exam.status !== "DRAFT") {
+      setFormError("Chỉ có thể thay đổi cấu trúc câu hỏi khi bài thi còn ở trạng thái bản nháp.");
+      return;
+    }
+    if (!nextQuestions.length) {
+      setFormError("Bài thi phải có ít nhất một câu hỏi; hệ thống không cho lưu đề rỗng.");
+      return;
+    }
+    setBusy(true);
+    setFormError("");
+    try {
+      const updated = await apiRequest<Exam>(`/api/v1/exams/${exam.id}`, {
+        method: "PUT",
+        body: JSON.stringify({
+          title: exam.title,
+          courseId: exam.courseId,
+          lessonId: exam.lessonId ?? null,
+          contextType: exam.contextType ?? (exam.courseId ? "COURSE_QUIZ" : "STANDALONE_EXAM"),
+          cohortId: exam.cohortId ?? null,
+          autoGrade: exam.autoGrade,
+          durationMinutes: exam.durationMinutes,
+          opensAt: exam.opensAt ?? null,
+          closesAt: exam.closesAt ?? null,
+          maxAttempts: exam.maxAttempts,
+          waitMinutesBetweenAttempts: exam.waitMinutesBetweenAttempts ?? 0,
+          passingScore: exam.passingScore,
+          shuffleQuestions: exam.shuffleQuestions,
+          shuffleAnswers: exam.shuffleAnswers,
+          scoreStrategy: exam.scoreStrategy,
+          status: exam.status,
+          questions: nextQuestions.map((item, index) => ({
+            questionId: item.id,
+            points: item.points || 1,
+            sortOrder: index + 1,
+          })),
+        }),
+      });
+      setExam(updated);
+      setToast("Đã cập nhật nội dung đề thi.");
+    } catch (caught) {
+      setFormError(caught instanceof Error ? caught.message : "Không thể cập nhật nội dung đề thi");
     } finally {
       setBusy(false);
     }
@@ -643,94 +724,136 @@ export function ExamDetail({
             </>
           }
         />
-        <section className="detail-grid">
-          <article className="section-card">
-            <div className="section-title">
+        <section className="exam-editor-source-layout">
+          <article className="workspace-panel exam-editor-bank-panel">
+            <header>
               <div>
-                <h2>Nội dung đề thi</h2>
-                <p>
-                  Phiên bản {exam.version} · {(exam.questions ?? []).length} câu
-                  hỏi · đề giữ bản chụp độc lập với ngân hàng câu hỏi
-                </p>
+                <h2>Ngân hàng câu hỏi</h2>
+                <p>{questionBank.length} câu khả dụng · câu đã chọn được ẩn khỏi danh sách.</p>
               </div>
-            </div>
-            <div className="question-list">
-              {(exam.questions ?? []).map((item, index) => (
-                <article className="question-preview" key={item.id}>
-                  <span className="question-number">{index + 1}</span>
-                  <div>
-                    <div className="question-heading">
-                      <strong>{item.prompt}</strong>
-                      <span>{item.points} điểm</span>
+              <span className="workspace-tag">{filteredQuestionBank.length} còn lại</span>
+            </header>
+            <div className="workspace-panel-body">
+              <label className="exam-editor-search">
+                <Icon name="search" size={17} />
+                <input
+                  value={questionQuery}
+                  onChange={(event) => setQuestionQuery(event.target.value)}
+                  placeholder="Tìm nội dung, loại hoặc mã câu hỏi…"
+                />
+              </label>
+              <div className="exam-editor-bank-list">
+                {filteredQuestionBank.slice(0, 80).map((item) => (
+                  <article className="exam-editor-bank-item" key={item.id}>
+                    <span className="exam-editor-type-icon"><Icon name="question" size={17} /></span>
+                    <div>
+                      <div className="exam-editor-item-title">
+                        <strong>{item.prompt}</strong>
+                        <span>{(item.type ?? "QUESTION").replaceAll("_", " ")}</span>
+                      </div>
+                      <small>{item.defaultPoints || 1} điểm · {item.options?.length || 0} phương án</small>
                     </div>
-                    <p>
-                      {(item.type ?? "").replaceAll("_", " ")} ·{" "}
-                      {(item.options ?? []).length
-                        ? `${(item.options ?? []).length} phương án`
-                        : "Câu trả lời tự do"}
-                    </p>
-                    {(item.options ?? []).length > 0 && (
-                      <ol>
-                        {(item.options ?? []).map((option) => (
-                          <li key={option}>{option}</li>
-                        ))}
-                      </ol>
-                    )}
-                  </div>
-                </article>
-              ))}
+                    <button
+                      type="button"
+                      className="icon-button"
+                      aria-label={`Thêm câu hỏi ${item.prompt}`}
+                      disabled={busy || exam.status !== "DRAFT"}
+                      onClick={() => void updateExamQuestions([
+                        ...(exam.questions ?? []),
+                        {
+                          id: item.id,
+                          type: item.type,
+                          prompt: item.prompt,
+                          options: item.options ?? [],
+                          points: item.defaultPoints || 1,
+                          sortOrder: (exam.questions?.length ?? 0) + 1,
+                        },
+                      ])}
+                    >
+                      <Icon name="plus" size={17} />
+                    </button>
+                  </article>
+                ))}
+                {!filteredQuestionBank.length && (
+                  <EmptyState
+                    title="Không còn câu hỏi phù hợp"
+                    description="Thay đổi từ khóa hoặc tạo thêm câu hỏi trong ngân hàng."
+                  />
+                )}
+              </div>
             </div>
           </article>
-          <aside className="settings-panel">
-            <h2>Thiết lập</h2>
-            <dl className="summary-list">
+
+          <article className="workspace-panel exam-editor-content-panel">
+            <header>
               <div>
-                <dt>Trạng thái</dt>
-                <dd>
-                  <StatusBadge value={exam.status} />
-                </dd>
+                <h2>Nội dung đề thi</h2>
+                <p>Phiên bản {exam.version} · {(exam.questions ?? []).length} câu · {exam.questions.reduce((sum, item) => sum + Number(item.points || 0), 0)} điểm</p>
               </div>
-              <div>
-                <dt>Thời lượng</dt>
-                <dd>{formatDuration(exam.durationMinutes)}</dd>
+              <StatusBadge value={exam.status} />
+            </header>
+            <div className="workspace-panel-body">
+              {formError && <div className="form-alert error"><Icon name="warning" />{formError}</div>}
+              <div className="exam-editor-selected-list">
+                {(exam.questions ?? []).map((item, index) => (
+                  <article className="exam-editor-selected-item" key={item.id}>
+                    <span className="exam-editor-drag" aria-hidden="true">⋮⋮</span>
+                    <span className="question-number">{index + 1}</span>
+                    <span className="exam-editor-type-icon"><Icon name="question" size={17} /></span>
+                    <div>
+                      <div className="exam-editor-item-title">
+                        <strong>{item.prompt}</strong>
+                        <span>{(item.type ?? "QUESTION").replaceAll("_", " ")}</span>
+                      </div>
+                      <small>{item.options?.length ? `${item.options.length} phương án` : "Câu trả lời tự do"}</small>
+                    </div>
+                    <strong className="exam-editor-points">{item.points} điểm</strong>
+                    <button
+                      type="button"
+                      className="icon-button"
+                      aria-label={`Xóa câu ${index + 1}`}
+                      disabled={busy || exam.status !== "DRAFT" || exam.questions.length <= 1}
+                      onClick={() => void updateExamQuestions(exam.questions.filter((question) => question.id !== item.id))}
+                    >
+                      <Icon name="trash" size={16} />
+                    </button>
+                  </article>
+                ))}
               </div>
-              <div>
-                <dt>Số lần làm</dt>
-                <dd>{exam.maxAttempts}</dd>
+              <div className="exam-editor-drop-zone">
+                <Icon name="list" size={19} />
+                <span>Kéo thả để sắp xếp được giữ làm bước tiếp theo; thứ tự hiện tại được lưu ổn định theo số câu.</span>
               </div>
-              <div>
-                <dt>Điểm đạt</dt>
-                <dd>{exam.passingScore}%</dd>
+            </div>
+          </article>
+
+          <aside className="workspace-panel exam-editor-settings-panel">
+            <header>
+              <div><h2>Cài đặt bài thi</h2><p>Cấu hình thời gian, lần làm và điều kiện đạt.</p></div>
+            </header>
+            <div className="workspace-panel-body">
+              <dl className="exam-editor-settings-list">
+                <div><dt>Khóa học</dt><dd>{course?.name ?? "Kỳ thi độc lập"}</dd></div>
+                <div><dt>Thời lượng</dt><dd>{formatDuration(exam.durationMinutes)}</dd></div>
+                <div><dt>Số câu hỏi</dt><dd>{exam.questions.length} câu</dd></div>
+                <div><dt>Tổng điểm</dt><dd>{exam.questions.reduce((sum, item) => sum + Number(item.points || 0), 0)} điểm</dd></div>
+                <div><dt>Điểm đạt</dt><dd>{exam.passingScore}%</dd></div>
+                <div><dt>Số lượt làm</dt><dd>{exam.maxAttempts}</dd></div>
+                <div><dt>Thời gian mở</dt><dd>{formatDate(exam.opensAt, true)}</dd></div>
+                <div><dt>Thời gian đóng</dt><dd>{formatDate(exam.closesAt, true)}</dd></div>
+              </dl>
+              <button className="button primary full" onClick={() => setEditOpen(true)}>
+                <Icon name="edit" /> Lưu / sửa cấu hình
+              </button>
+              {course && (
+                <Link className="button secondary full" href={instructorCoursePath(course.id)}>
+                  <Icon name="book" /> Mở khóa học
+                </Link>
+              )}
+              <div className="form-alert info">
+                <Icon name="warning" />
+                Khi bài thi đã xuất bản hoặc có lượt làm, cấu trúc câu hỏi được khóa để bảo toàn kết quả.
               </div>
-              <div>
-                <dt>Thời gian mở</dt>
-                <dd>{formatDate(exam.opensAt, true)}</dd>
-              </div>
-              <div>
-                <dt>Thời gian đóng</dt>
-                <dd>{formatDate(exam.closesAt, true)}</dd>
-              </div>
-            </dl>
-            <button
-              className="button primary full"
-              onClick={() => setEditOpen(true)}
-            >
-              <Icon name="edit" />
-              Sửa cấu hình
-            </button>
-            {course && (
-              <Link
-                className="button secondary full"
-                href={instructorCoursePath(course.id)}
-              >
-                <Icon name="book" />
-                Mở khóa học
-              </Link>
-            )}
-            <div className="form-alert info">
-              <Icon name="warning" />
-              Khi đã có lượt làm, cấu trúc đề được khóa. Hãy lưu trữ đề cũ và
-              tạo đề mới nếu cần thay đổi.
             </div>
           </aside>
         </section>
@@ -1369,7 +1492,7 @@ export function ExamDetail({
             <div><dt>Tổng số câu</dt><dd>{questions.length}</dd></div>
             <div><dt>Đã trả lời</dt><dd>{answered}</dd></div>
             <div><dt>Chưa trả lời</dt><dd>{Math.max(0, questions.length - answered)}</dd></div>
-            <div><dt>Thời gian còn lại</dt><dd>{timerLabel(remaining)}</dd></div>
+            <div><dt>Thời gian còn lại</dt><dd>{timerLabel(remaining ?? 0)}</dd></div>
           </dl>
           {questions.length - answered > 0 && (
             <div className="form-alert error" role="alert">

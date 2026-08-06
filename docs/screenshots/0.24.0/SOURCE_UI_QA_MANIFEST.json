@@ -1,0 +1,31 @@
+{
+  "version": "0.24.0",
+  "screens": [
+    {
+      "file": "01-source-organization.png",
+      "sha256": "017773629ab88c09352184959cfd766aff1cdb0704b49a1e933a55d0c8bbb400",
+      "html": "apps/web/public/ui-qa/0.24.0/01-source-organization.html"
+    },
+    {
+      "file": "02-source-exam-list.png",
+      "sha256": "bb2bf434cbcdaec1efb95fae6ac61b944b7f14b29a2c79daf083385be57710c8",
+      "html": "apps/web/public/ui-qa/0.24.0/02-source-exam-list.html"
+    },
+    {
+      "file": "03-source-exam-editor.png",
+      "sha256": "fac4d5537e3e687afc00db7479abc5f96520f1344da7a7ec9c10df7b09cdeb23",
+      "html": "apps/web/public/ui-qa/0.24.0/03-source-exam-editor.html"
+    },
+    {
+      "file": "04-source-exam-taking.png",
+      "sha256": "86840a517fd5cac980068a14db1687999363faafc784186e57d6bbe323bec014",
+      "html": "apps/web/public/ui-qa/0.24.0/04-source-exam-taking.html"
+    }
+  ],
+  "sourceFiles": [
+    "apps/web/components/WorkspaceControlCenter.tsx",
+    "apps/web/components/ExamsPage.tsx",
+    "apps/web/components/ExamDetail.tsx",
+    "apps/web/app/unified.css"
+  ]
+}

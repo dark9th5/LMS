@@ -19,9 +19,9 @@ def java_sources(path: Path) -> str:
 
 class JavaSpringBackendMigrationTests(unittest.TestCase):
     def test_release_version_is_0210(self) -> None:
-        self.assertEqual("0.23.0", read("VERSION").strip())
-        self.assertIn('"version": "0.23.0"', read("apps/web/package.json"))
-        self.assertIn('version = "0.23.0"', read("backend/build.gradle.kts"))
+        self.assertEqual("0.24.0", read("VERSION").strip())
+        self.assertIn('"version": "0.24.0"', read("apps/web/package.json"))
+        self.assertIn('version = "0.24.0"', read("backend/build.gradle.kts"))
 
     def test_application_source_is_java_only(self) -> None:
         self.assertEqual([], list(BACKEND.rglob("*.kt")))

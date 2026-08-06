@@ -12,9 +12,9 @@ def text(relative: str) -> str:
 
 class Release0201PolishedUiTests(unittest.TestCase):
     def test_release_version(self) -> None:
-        self.assertEqual("0.23.0", text("VERSION").strip())
-        self.assertIn('"version": "0.23.0"', text("apps/web/package.json"))
-        self.assertIn('version = "0.23.0"', text("backend/build.gradle.kts"))
+        self.assertEqual("0.24.0", text("VERSION").strip())
+        self.assertIn('"version": "0.24.0"', text("apps/web/package.json"))
+        self.assertIn('version = "0.24.0"', text("backend/build.gradle.kts"))
 
     def test_sidebar_keeps_role_separation_without_crowding(self) -> None:
         shell = text("apps/web/components/AppShell.tsx")

@@ -10,9 +10,9 @@ def text(path: str) -> str:
 
 class Release023UiFlowPerformanceTests(unittest.TestCase):
     def test_version_is_0230(self):
-        self.assertEqual("0.23.0", text("VERSION").strip())
-        self.assertIn('"version": "0.23.0"', text("apps/web/package.json"))
-        self.assertIn('version = "0.23.0"', text("backend/build.gradle.kts"))
+        self.assertEqual("0.24.0", text("VERSION").strip())
+        self.assertIn('"version": "0.24.0"', text("apps/web/package.json"))
+        self.assertIn('version = "0.24.0"', text("backend/build.gradle.kts"))
 
     def test_modal_is_portaled_focus_trapped_and_viewport_stable(self):
         modal = text("apps/web/components/Modal.tsx")

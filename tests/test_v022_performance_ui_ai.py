@@ -11,9 +11,9 @@ def text(path: str) -> str:
 
 class Release022PerformanceUiAiTests(unittest.TestCase):
     def test_version_is_0220(self):
-        self.assertEqual("0.23.0", text("VERSION").strip())
-        self.assertIn('"version": "0.23.0"', text("apps/web/package.json"))
-        self.assertIn('version = "0.23.0"', text("backend/build.gradle.kts"))
+        self.assertEqual("0.24.0", text("VERSION").strip())
+        self.assertIn('"version": "0.24.0"', text("apps/web/package.json"))
+        self.assertIn('version = "0.24.0"', text("backend/build.gradle.kts"))
 
     def test_client_api_has_cache_dedupe_timeout_and_retry(self):
         source = text("apps/web/lib/api.ts")
@@ -77,7 +77,7 @@ class Release022PerformanceUiAiTests(unittest.TestCase):
         compose = text("docker-compose.yml")
         self.assertIn("--parallel", dockerfile)
         self.assertIn("/app/services/${service}.jar", dockerfile)
-        self.assertIn("lmspilot/backend-bundle:0.23.0", compose)
+        self.assertIn("lmspilot/backend-bundle:0.24.0", compose)
         self.assertIn("ollama/ollama", compose)
         self.assertIn("OLLAMA_MANAGEMENT_URL", compose)
         self.assertIn("SPRING_JPA_OPEN_IN_VIEW", compose)

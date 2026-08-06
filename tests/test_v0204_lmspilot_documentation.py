@@ -11,9 +11,9 @@ def text(path: str) -> str:
 
 class LmsPilotDocumentationTest(unittest.TestCase):
     def test_current_version_is_consistent(self):
-        self.assertEqual("0.23.0", text("VERSION").strip())
-        self.assertIn('"version": "0.23.0"', text("apps/web/package.json"))
-        self.assertIn('version = "0.23.0"', text("backend/build.gradle.kts"))
+        self.assertEqual("0.24.0", text("VERSION").strip())
+        self.assertIn('"version": "0.24.0"', text("apps/web/package.json"))
+        self.assertIn('version = "0.24.0"', text("backend/build.gradle.kts"))
 
     def test_readme_contains_roles_services_api_and_database(self):
         readme = text("README.md")
@@ -65,9 +65,9 @@ class LmsPilotDocumentationTest(unittest.TestCase):
             "docs/API_DATABASE_MAP.md",
             "docs/TEAM_SERVICE_ASSIGNMENT.md",
             "contracts/lmspilot/question-set.schema.json",
-            "MANIFEST_LMSPILOT_0.23.0.json",
-            "RELEASE_LMSPILOT_0.23.0.md",
-            "TEST_RESULTS_LMSPILOT_0.23.0.md",
+            "MANIFEST_LMSPILOT_0.24.0.json",
+            "RELEASE_LMSPILOT_0.24.0.md",
+            "TEST_RESULTS_LMSPILOT_0.24.0.md",
         ):
             self.assertTrue((ROOT / path).exists(), path)
 
