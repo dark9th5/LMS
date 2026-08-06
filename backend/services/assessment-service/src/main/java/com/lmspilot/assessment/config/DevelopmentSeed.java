@@ -1,6 +1,7 @@
 package com.lmspilot.assessment.config;
 
 import com.lmspilot.assessment.domain.*;
+import com.lmspilot.assessment.platform.AssessmentContextType;
 import java.time.Instant;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Value;
@@ -10,7 +11,7 @@ import org.springframework.context.annotation.*;
 @Configuration
 public class DevelopmentSeed {
     @Bean
-    CommandLineRunner seedAssessment(QuestionRepository questions, ExamRepository exams, AssessmentAssignmentRepository assignments,
+    CommandLineRunner seedAssessment(QuestionRepository questions, ExamRepository exams, AssessmentContextRepository contexts, AssessmentAssignmentRepository assignments,
                                     @Value("${lmspilot.seed-demo:true}") boolean enabled) {
         return args -> {
             if (!enabled) return;
@@ -47,6 +48,15 @@ public class DevelopmentSeed {
                 q2.defaultPoints = 10;
                 q2.status = QuestionStatus.ACTIVE;
                 questions.save(q2);
+            }
+
+            if (contexts.findById(examId1).isEmpty()) {
+                AssessmentContextEntity ctx = new AssessmentContextEntity();
+                ctx.assessmentId = examId1;
+                ctx.contextType = AssessmentContextType.STANDALONE_EXAM;
+                ctx.maxAttempts = 3;
+                ctx.autoGrade = true;
+                contexts.save(ctx);
             }
 
             if (exams.count() == 0) {
