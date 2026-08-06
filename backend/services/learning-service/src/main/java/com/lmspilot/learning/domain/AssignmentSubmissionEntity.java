@@ -1,2 +1,60 @@
-package com.lmspilot.learning.domain; import jakarta.persistence.*; import java.time.*; import java.util.*;
-@Entity @Table(name="assignment_submissions") public class AssignmentSubmissionEntity { @Id public UUID id=UUID.randomUUID(); @Column(nullable=false) public UUID enrollmentId; @Column(nullable=false) public UUID classId; @Column(nullable=false) public UUID courseId; @Column(nullable=false) public UUID lessonId; @Column(nullable=false) public UUID userId; @Column(nullable=false) public int attemptNo=1; @Column(columnDefinition="text") public String textAnswer; @Column(columnDefinition="text") public String fileIdsJson="[]"; @Enumerated(EnumType.STRING) @Column(nullable=false,length=30) public AssignmentSubmissionStatus status=AssignmentSubmissionStatus.SUBMITTED; @Column(nullable=false) public Instant submittedAt=Instant.now(); public Double score; @Column(columnDefinition="text") public String feedback; public UUID gradedBy; public Instant gradedAt; @Column(nullable=false) public Instant updatedAt=Instant.now(); @Version public long version; public AssignmentSubmissionEntity(){} }
+package com.lmspilot.learning.domain;
+
+import jakarta.persistence.*;
+import java.time.*;
+import java.util.*;
+
+@Entity
+@Table(name="assignment_submissions")
+public class AssignmentSubmissionEntity {
+    @Id
+    public UUID id = UUID.randomUUID();
+
+    @Column(nullable=false)
+    public UUID enrollmentId;
+
+    @Column(nullable=false)
+    public UUID classId;
+
+    @Column(nullable=false)
+    public UUID courseId;
+
+    @Column(nullable=false)
+    public UUID lessonId;
+
+    @Column(nullable=false)
+    public UUID userId;
+
+    @Column(name="attempt_no", nullable=false)
+    public int attemptNo = 1;
+
+    @Column(name="text_answer", columnDefinition="text")
+    public String textAnswer;
+
+    @Column(name="file_ids_json", columnDefinition="text")
+    public String fileIdsJson = "[]";
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable=false, length=30)
+    public AssignmentSubmissionStatus status = AssignmentSubmissionStatus.SUBMITTED;
+
+    @Column(nullable=false)
+    public Instant submittedAt = Instant.now();
+
+    public Double score;
+
+    @Column(columnDefinition="text")
+    public String feedback;
+
+    public UUID gradedBy;
+
+    public Instant gradedAt;
+
+    @Column(nullable=false)
+    public Instant updatedAt = Instant.now();
+
+    @Version
+    public long version;
+
+    public AssignmentSubmissionEntity() {}
+}

@@ -1,2 +1,51 @@
-package com.lmspilot.notification.domain; import jakarta.persistence.*;import java.time.*;import java.util.*;
-@Entity @Table(name="news_articles") public class NewsArticleEntity{@Id public UUID id=UUID.randomUUID();@Column(nullable=false,length=240)public String title="";@Column(nullable=false,columnDefinition="text")public String summary="";@Column(nullable=false,columnDefinition="text")public String content="";@Enumerated(EnumType.STRING)@Column(nullable=false,length=20)public NewsStatus status=NewsStatus.DRAFT;@Enumerated(EnumType.STRING)@Column(nullable=false,length=20)public NewsAudienceType audienceType=NewsAudienceType.SYSTEM;public UUID audienceId;@Column(nullable=false)public boolean pinned=false;@Column(nullable=false)public int priority=0;public Instant publishFrom;public Instant publishUntil;@Column(nullable=false)public UUID createdBy;@Column(nullable=false)public Instant createdAt=Instant.now();@Column(nullable=false)public Instant updatedAt=Instant.now();public NewsArticleEntity(){}}
+package com.lmspilot.notification.domain;
+
+import jakarta.persistence.*;
+import java.time.*;
+import java.util.*;
+
+@Entity
+@Table(name="news_articles")
+public class NewsArticleEntity {
+    @Id
+    public UUID id = UUID.randomUUID();
+
+    @Column(nullable=false, length=240)
+    public String title = "";
+
+    @Column(columnDefinition="text")
+    public String summary = "";
+
+    @Column(name="content_html", nullable=false, columnDefinition="text")
+    public String content = "";
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable=false, length=20)
+    public NewsStatus status = NewsStatus.DRAFT;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable=false, length=20)
+    public NewsAudienceType audienceType = NewsAudienceType.SYSTEM;
+
+    public UUID audienceId;
+
+    @Column(nullable=false)
+    public boolean pinned = false;
+
+    @Column(nullable=false)
+    public int priority = 0;
+
+    public Instant publishFrom;
+    public Instant publishUntil;
+
+    @Column(name="author_id", nullable=false)
+    public UUID createdBy;
+
+    @Column(nullable=false)
+    public Instant createdAt = Instant.now();
+
+    @Column(nullable=false)
+    public Instant updatedAt = Instant.now();
+
+    public NewsArticleEntity() {}
+}
