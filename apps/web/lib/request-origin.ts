@@ -15,8 +15,22 @@ export function isSameOriginMutation(request: Request): boolean {
 
   try {
     const supplied = new URL(origin);
-    const expected = new URL(request.url);
-    return supplied.protocol === expected.protocol && supplied.host === expected.host;
+    const hostHeader = request.headers.get("x-forwarded-host") ?? request.headers.get("host");
+
+    let expectedHost = new URL(request.url).host;
+    if (hostHeader) {
+      expectedHost = hostHeader.split(",")[0].trim();
+    }
+
+    const isSuppliedLocal = supplied.hostname === "localhost" || supplied.hostname === "127.0.0.1";
+    const expectedHostname = expectedHost.split(":")[0];
+    const isExpectedLocal = expectedHostname === "localhost" || expectedHostname === "127.0.0.1";
+
+    if (isSuppliedLocal && isExpectedLocal) {
+      return true;
+    }
+
+    return supplied.host === expectedHost;
   } catch {
     return false;
   }

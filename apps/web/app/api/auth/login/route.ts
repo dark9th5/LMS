@@ -19,10 +19,10 @@ function validUser(value: unknown): value is PortalUser {
     typeof user.username === "string" &&
     typeof user.fullName === "string" &&
     Array.isArray(user.roles) &&
-    user.roles.length === 1 &&
+    user.roles.length >= 1 &&
     user.roles.every((role) => ["ADMIN", "INSTRUCTOR", "STUDENT"].includes(String(role))) &&
     typeof user.primaryRole === "string" &&
-    user.primaryRole === user.roles[0] &&
+    ["ADMIN", "INSTRUCTOR", "STUDENT"].includes(user.primaryRole) &&
     Array.isArray(user.permissions) &&
     user.permissions.every((permission) => typeof permission === "string")
   );
