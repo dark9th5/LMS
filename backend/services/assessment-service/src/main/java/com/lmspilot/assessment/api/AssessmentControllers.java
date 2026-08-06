@@ -1,9 +1,97 @@
 package com.lmspilot.assessment.api;
-import com.lmspilot.assessment.api.AssessmentModels.*; import jakarta.validation.Valid; import java.util.*; import org.springframework.http.HttpStatus; import org.springframework.security.access.prepost.PreAuthorize; import org.springframework.web.bind.annotation.*;
 
-@RestController @RequestMapping("/api/v1/questions") class QuestionController { private final AssessmentManagementService s; QuestionController(AssessmentManagementService s){this.s=s;} @GetMapping List<QuestionResponse> list(){return s.listQuestions();} @PostMapping @ResponseStatus(HttpStatus.CREATED) QuestionResponse create(@Valid @RequestBody QuestionRequest i){return s.createQuestion(i);} @PutMapping("/{id}") QuestionResponse update(@PathVariable UUID id,@Valid @RequestBody QuestionRequest i){return s.updateQuestion(id,i);} @DeleteMapping("/{id}") @ResponseStatus(HttpStatus.NO_CONTENT) void archive(@PathVariable UUID id){s.archiveQuestion(id);} }
-@RestController @RequestMapping("/api/v1/exams") class ExamController { private final AssessmentManagementService s; ExamController(AssessmentManagementService s){this.s=s;} @GetMapping List<ExamResponse> list(){return s.listExams();} @GetMapping("/{id}") ExamResponse get(@PathVariable UUID id){return s.getExam(id);} @PostMapping @ResponseStatus(HttpStatus.CREATED) ExamResponse create(@Valid @RequestBody ExamRequest i){return s.createExam(i);} @PutMapping("/{id}") ExamResponse update(@PathVariable UUID id,@Valid @RequestBody ExamRequest i){return s.updateExam(id,i);} @DeleteMapping("/{id}") @ResponseStatus(HttpStatus.NO_CONTENT) void archive(@PathVariable UUID id){s.archiveExam(id);} @PostMapping("/start") SessionResponse start(@RequestBody StartSessionRequest i){return s.start(i);} }
-@RestController @RequestMapping("/api/v1/exam-sessions") class ExamSessionController { private final AssessmentManagementService s; ExamSessionController(AssessmentManagementService s){this.s=s;} @GetMapping("/{id}") SessionResponse resume(@PathVariable UUID id){return s.resume(id);} @PostMapping("/{id}/heartbeat") SessionResponse heartbeat(@PathVariable UUID id){return s.heartbeat(id);} @PutMapping("/{id}/answers") SessionResponse answers(@PathVariable UUID id,@RequestBody SaveAnswersRequest i){return s.save(id,i);} @PostMapping("/{id}/submit") SessionResponse submit(@PathVariable UUID id,@RequestHeader("Idempotency-Key") String key){return s.submit(id,key);} @PostMapping("/{id}/events") SessionEventResponse event(@PathVariable UUID id,@RequestBody SessionEventRequest i){return s.event(id,i);} @GetMapping("/{id}/events") List<SessionEventResponse> events(@PathVariable UUID id){return s.events(id);} }
-@RestController @RequestMapping("/api/v1/assessment-assignments") class AssessmentAssignmentController { private final AssessmentManagementService s; AssessmentAssignmentController(AssessmentManagementService s){this.s=s;} @PostMapping("/{assessmentId}") AssignmentResponse assign(@PathVariable UUID assessmentId,@RequestBody AssignmentRequest i){return s.assign(assessmentId,i);} @GetMapping("/{assessmentId}") List<AssignmentResponse> list(@PathVariable UUID assessmentId){return s.assignments(assessmentId);} @DeleteMapping("/{id}") @ResponseStatus(HttpStatus.NO_CONTENT) void revoke(@PathVariable UUID id){s.revokeAssignment(id);} }
-@RestController @RequestMapping("/api/v1/competitions") class CompetitionController { private final AssessmentManagementService s; CompetitionController(AssessmentManagementService s){this.s=s;} @GetMapping List<ExamResponse> list(){return s.listExams().stream().filter(e->e.contextType()==com.lmspilot.assessment.platform.AssessmentContextType.COMPETITION).toList();} @GetMapping("/{id}") ExamResponse get(@PathVariable UUID id){return s.getExam(id);} @PostMapping @ResponseStatus(HttpStatus.CREATED) ExamResponse create(@RequestBody CompetitionRequest i){return s.createCompetition(i);} @GetMapping("/{id}/leaderboard") List<LeaderboardEntry> leaderboard(@PathVariable UUID id){return s.leaderboard(id);} @PostMapping("/{id}/publish") @ResponseStatus(HttpStatus.NO_CONTENT) void publish(@PathVariable UUID id){s.publishCompetition(id);} }
-@RestController @RequestMapping("/internal/v1/assessment") class InternalAssessmentController { private final AssessmentManagementService s; private final com.lmspilot.support.security.InternalTokenAuthorizer internal; InternalAssessmentController(AssessmentManagementService s, com.lmspilot.support.security.InternalTokenAuthorizer internal){this.s=s;this.internal=internal;} @GetMapping("/sessions/{id}/grading-payload") GradingPayload grading(@PathVariable UUID id,@RequestHeader(value="X-Service-Token",required=false) String token){internal.require(token);return s.grading(id);} @PostMapping("/sessions/{id}/graded") @ResponseStatus(HttpStatus.NO_CONTENT) void graded(@PathVariable UUID id,@RequestHeader(value="X-Service-Token",required=false) String token){internal.require(token);s.markGraded(id);} @GetMapping("/exams/manageable/{userId}") List<UUID> manageable(@PathVariable UUID userId,@RequestHeader(value="X-Service-Token",required=false) String token){internal.require(token);return s.listExams().stream().map(ExamResponse::id).toList();} @PostMapping("/questions/import-generated") List<QuestionResponse> generated(@RequestBody List<GeneratedQuestionImport> i,@RequestHeader(value="X-Service-Token",required=false) String token){internal.require(token);return s.importGenerated(i);} @GetMapping("/competitions/{id}/results") List<LeaderboardEntry> results(@PathVariable UUID id,@RequestHeader(value="X-Service-Token",required=false) String token){internal.require(token);return s.leaderboard(id);} }
+import com.lmspilot.assessment.api.AssessmentModels.*;
+import jakarta.validation.Valid;
+import java.util.*;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/api/v1/questions")
+class QuestionController {
+    private final AssessmentManagementService s;
+
+    QuestionController(AssessmentManagementService s) { this.s = s; }
+
+    @GetMapping List<QuestionResponse> list() { return s.listQuestions(); }
+    @PostMapping @ResponseStatus(HttpStatus.CREATED) QuestionResponse create(@Valid @RequestBody QuestionRequest i) { return s.createQuestion(i); }
+    @PutMapping("/{id}") QuestionResponse update(@PathVariable UUID id, @Valid @RequestBody QuestionRequest i) { return s.updateQuestion(id, i); }
+    @DeleteMapping("/{id}") @ResponseStatus(HttpStatus.NO_CONTENT) void archive(@PathVariable UUID id) { s.archiveQuestion(id); }
+}
+
+@RestController
+@RequestMapping("/api/v1/exams")
+class ExamController {
+    private final AssessmentManagementService s;
+
+    ExamController(AssessmentManagementService s) { this.s = s; }
+
+    @GetMapping List<ExamResponse> list() { return s.listExams(); }
+    @GetMapping("/{id}") ExamResponse get(@PathVariable UUID id) { return s.getExam(id); }
+    @PostMapping @ResponseStatus(HttpStatus.CREATED) ExamResponse create(@Valid @RequestBody ExamRequest i) { return s.createExam(i); }
+    @PutMapping("/{id}") ExamResponse update(@PathVariable UUID id, @Valid @RequestBody ExamRequest i) { return s.updateExam(id, i); }
+    @DeleteMapping("/{id}") @ResponseStatus(HttpStatus.NO_CONTENT) void archive(@PathVariable UUID id) { s.archiveExam(id); }
+    @PostMapping("/start") SessionResponse start(@RequestBody StartSessionRequest i) { return s.start(i); }
+}
+
+@RestController
+@RequestMapping("/api/v1/exam-sessions")
+class ExamSessionController {
+    private final AssessmentManagementService s;
+
+    ExamSessionController(AssessmentManagementService s) { this.s = s; }
+
+    @GetMapping("/{id}") SessionResponse resume(@PathVariable UUID id) { return s.resume(id); }
+    @PostMapping("/{id}/heartbeat") SessionResponse heartbeat(@PathVariable UUID id) { return s.heartbeat(id); }
+    @PutMapping("/{id}/answers") SessionResponse answers(@PathVariable UUID id, @RequestBody SaveAnswersRequest i) { return s.save(id, i); }
+    @PostMapping("/{id}/submit") SessionResponse submit(@PathVariable UUID id, @RequestHeader("Idempotency-Key") String key) { return s.submit(id, key); }
+    @PostMapping("/{id}/events") SessionEventResponse event(@PathVariable UUID id, @RequestBody SessionEventRequest i) { return s.event(id, i); }
+    @GetMapping("/{id}/events") List<SessionEventResponse> events(@PathVariable UUID id) { return s.events(id); }
+}
+
+@RestController
+@RequestMapping("/api/v1/assessment-assignments")
+class AssessmentAssignmentController {
+    private final AssessmentManagementService s;
+
+    AssessmentAssignmentController(AssessmentManagementService s) { this.s = s; }
+
+    @GetMapping List<AssignmentResponse> defaultList() { return s.myAssignments(); }
+    @GetMapping("/me") List<AssignmentResponse> mine() { return s.myAssignments(); }
+    @PostMapping("/{assessmentId}") AssignmentResponse assign(@PathVariable UUID assessmentId, @RequestBody AssignmentRequest i) { return s.assign(assessmentId, i); }
+    @GetMapping("/{assessmentId}") List<AssignmentResponse> list(@PathVariable UUID assessmentId) { return s.assignments(assessmentId); }
+    @DeleteMapping("/{id}") @ResponseStatus(HttpStatus.NO_CONTENT) void revoke(@PathVariable UUID id) { s.revokeAssignment(id); }
+}
+
+@RestController
+@RequestMapping("/api/v1/competitions")
+class CompetitionController {
+    private final AssessmentManagementService s;
+
+    CompetitionController(AssessmentManagementService s) { this.s = s; }
+
+    @GetMapping List<ExamResponse> list() { return s.listExams().stream().filter(e -> e.contextType() == com.lmspilot.assessment.platform.AssessmentContextType.COMPETITION).toList(); }
+    @GetMapping("/{id}") ExamResponse get(@PathVariable UUID id) { return s.getExam(id); }
+    @PostMapping @ResponseStatus(HttpStatus.CREATED) ExamResponse create(@RequestBody CompetitionRequest i) { return s.createCompetition(i); }
+    @GetMapping("/{id}/leaderboard") List<LeaderboardEntry> leaderboard(@PathVariable UUID id) { return s.leaderboard(id); }
+    @PostMapping("/{id}/publish") @ResponseStatus(HttpStatus.NO_CONTENT) void publish(@PathVariable UUID id) { s.publishCompetition(id); }
+}
+
+@RestController
+@RequestMapping("/internal/v1/assessment")
+class InternalAssessmentController {
+    private final AssessmentManagementService s;
+    private final com.lmspilot.support.security.InternalTokenAuthorizer internal;
+
+    InternalAssessmentController(AssessmentManagementService s, com.lmspilot.support.security.InternalTokenAuthorizer internal) {
+        this.s = s;
+        this.internal = internal;
+    }
+
+    @GetMapping("/sessions/{id}/grading-payload") GradingPayload grading(@PathVariable UUID id, @RequestHeader(value="X-Service-Token", required=false) String token) { internal.require(token); return s.grading(id); }
+    @PostMapping("/sessions/{id}/graded") @ResponseStatus(HttpStatus.NO_CONTENT) void graded(@PathVariable UUID id, @RequestHeader(value="X-Service-Token", required=false) String token) { internal.require(token); s.markGraded(id); }
+    @GetMapping("/exams/manageable/{userId}") List<UUID> manageable(@PathVariable UUID userId, @RequestHeader(value="X-Service-Token", required=false) String token) { internal.require(token); return s.listExams().stream().map(ExamResponse::id).toList(); }
+    @PostMapping("/questions/import-generated") List<QuestionResponse> generated(@RequestBody List<GeneratedQuestionImport> i, @RequestHeader(value="X-Service-Token", required=false) String token) { internal.require(token); return s.importGenerated(i); }
+    @GetMapping("/competitions/{id}/results") List<LeaderboardEntry> results(@PathVariable UUID id, @RequestHeader(value="X-Service-Token", required=false) String token) { internal.require(token); return s.leaderboard(id); }
+}
