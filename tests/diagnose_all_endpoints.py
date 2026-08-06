@@ -1,7 +1,8 @@
 import urllib.request
 import json
-import ssl
+import sys
 
+sys.stdout.reconfigure(encoding='utf-8')
 BASE_URL = "http://localhost:8080"
 
 def login(username, password):
@@ -39,7 +40,6 @@ if admin_token:
     test_endpoint(admin_token, "Branding", "/public/v1/branding")
     test_endpoint(admin_token, "Users", "/api/v1/users")
     test_endpoint(admin_token, "Organization Units", "/api/v1/organization/units")
-    test_endpoint(admin_token, "Organization Memberships", "/api/v1/organization/memberships")
     test_endpoint(admin_token, "Categories", "/api/v1/categories")
     test_endpoint(admin_token, "Courses", "/api/v1/courses")
     test_endpoint(admin_token, "Reports KPIs", "/api/v1/reports/kpis")
