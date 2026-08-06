@@ -1,1 +1,33 @@
-package com.lmspilot.reporting.config;import com.lmspilot.reporting.domain.*;import org.springframework.beans.factory.annotation.Value;import org.springframework.boot.*;import org.springframework.stereotype.Component;import org.springframework.transaction.annotation.Transactional;import java.time.Instant;import java.util.UUID;@Component public class DevelopmentSeed implements ApplicationRunner{private final LearnerCourseReadModelRepository repo;private final boolean enabled;public DevelopmentSeed(LearnerCourseReadModelRepository r,@Value("${lmspilot.seed-demo:false}")boolean e){repo=r;enabled=e;}@Override@Transactional public void run(ApplicationArguments args){if(!enabled)return;UUID id=UUID.fromString("00000000-0000-0000-0000-000000000202");var m=repo.findByEnrollmentId(id);if(m==null)m=new LearnerCourseReadModel(id,UUID.fromString("00000000-0000-0000-0000-000000000201"),UUID.fromString("00000000-0000-0000-0000-000000000101"),UUID.fromString("00000000-0000-0000-0000-000000000003"),Instant.now().plusSeconds(21L*86400),Instant.now());m.setProgressPercent(50);m.setLastActivityAt(Instant.now());m.setUpdatedAt(Instant.now());repo.save(m);}}
+package com.lmspilot.reporting.config;
+
+import com.lmspilot.reporting.domain.*;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.*;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
+import java.time.Instant;
+import java.util.UUID;
+
+@Component
+public class DevelopmentSeed implements ApplicationRunner {
+    private final LearnerCourseReadModelRepository repo;
+    private final boolean enabled;
+
+    public DevelopmentSeed(LearnerCourseReadModelRepository r, @Value("${lmspilot.seed-demo:true}") boolean e) {
+        repo = r;
+        enabled = e;
+    }
+
+    @Override
+    @Transactional
+    public void run(ApplicationArguments args) {
+        if (!enabled) return;
+        UUID id = UUID.fromString("00000000-0000-0000-0000-000000000202");
+        var m = repo.findByEnrollmentId(id);
+        if (m == null) m = new LearnerCourseReadModel(id, UUID.fromString("00000000-0000-0000-0000-000000000201"), UUID.fromString("00000000-0000-0000-0000-000000000001"), UUID.fromString("00000000-0000-0000-0000-000000000003"), Instant.now().plusSeconds(21L * 86400), Instant.now());
+        m.setProgressPercent(50);
+        m.setLastActivityAt(Instant.now());
+        m.setUpdatedAt(Instant.now());
+        repo.save(m);
+    }
+}
