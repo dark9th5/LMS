@@ -46,6 +46,7 @@ const responseHopByHopHeaders = [
   "trailer",
   "transfer-encoding",
   "upgrade",
+  "www-authenticate",
 ];
 
 function cookieSecure(): boolean {
@@ -321,6 +322,8 @@ async function proxy(req: NextRequest, { params }: RouteContext) {
 
   const headers = new Headers(upstream.headers);
   responseHopByHopHeaders.forEach((name) => headers.delete(name));
+  headers.delete("www-authenticate");
+  headers.delete("WWW-Authenticate");
   headers.set("Cache-Control", headers.get("Cache-Control") ?? "no-store");
 
   const response = new NextResponse(upstream.body, {
