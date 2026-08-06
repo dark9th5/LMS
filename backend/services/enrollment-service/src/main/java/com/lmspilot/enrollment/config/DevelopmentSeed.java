@@ -45,6 +45,7 @@ public class DevelopmentSeed {
             if (enrollments.count() == 0) {
                 EnrollmentEntity e1 = new EnrollmentEntity();
                 e1.courseId = courseId1;
+                e1.classId = classId;
                 e1.userId = studentId;
                 e1.status = EnrollmentStatus.ENROLLED;
                 e1.enrolledAt = Instant.now();
@@ -52,6 +53,7 @@ public class DevelopmentSeed {
 
                 EnrollmentEntity e2 = new EnrollmentEntity();
                 e2.courseId = courseId2;
+                e2.classId = classId;
                 e2.userId = studentId;
                 e2.status = EnrollmentStatus.ENROLLED;
                 e2.enrolledAt = Instant.now();
