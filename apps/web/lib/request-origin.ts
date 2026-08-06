@@ -30,6 +30,10 @@ export function isSameOriginMutation(request: Request): boolean {
       return true;
     }
 
+    if (supplied.hostname === expectedHostname) {
+      return true;
+    }
+
     return supplied.host === expectedHost;
   } catch {
     return false;
