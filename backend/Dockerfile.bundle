@@ -6,9 +6,7 @@ COPY gradle ./gradle
 COPY platform-contracts ./platform-contracts
 COPY service-support ./service-support
 COPY services ./services
-RUN --mount=type=cache,target=/root/.gradle/caches \
-    --mount=type=cache,target=/root/.gradle/wrapper \
-    chmod +x ./gradlew && ./gradlew \
+RUN chmod +x ./gradlew && ./gradlew \
     :services:api-gateway:bootJar \
     :services:identity-service:bootJar \
     :services:organization-service:bootJar \
