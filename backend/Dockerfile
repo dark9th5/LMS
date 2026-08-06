@@ -9,11 +9,8 @@ COPY gradle ./gradle
 COPY platform-contracts ./platform-contracts
 COPY service-support ./service-support
 COPY services ./services
-RUN set -eux; \
-    jar="$(find "/workspace/services/${SERVICE}/build/libs" -maxdepth 1 -type f -name '*.jar' ! -name '*-plain.jar' 2>/dev/null | head -n 1 || true)"; \
-    if [ -z "$jar" ]; then \
-        chmod +x ./gradlew && ./gradlew ":services:${SERVICE}:bootJar" --no-daemon --stacktrace; \
-    fi
+RUN chmod +x ./gradlew \
+    && ./gradlew ":services:${SERVICE}:bootJar" --no-daemon --stacktrace
 
 FROM eclipse-temurin:21-jre-alpine
 ARG SERVICE

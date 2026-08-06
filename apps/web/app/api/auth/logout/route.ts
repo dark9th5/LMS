@@ -1,8 +1,7 @@
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { isSameOriginMutation } from "@/lib/request-origin";
-
-const gateway = process.env.LMSPILOT_GATEWAY_URL ?? "http://localhost:8080";
+import { fetchGateway } from "@/lib/upstream-fetch";
 
 export async function POST(request: NextRequest) {
   if (!isSameOriginMutation(request)) {
@@ -14,7 +13,7 @@ export async function POST(request: NextRequest) {
   const jar = await cookies();
   const refresh = jar.get("lmspilot_refresh")?.value;
   if (refresh) {
-    await fetch(`${gateway}/api/v1/auth/logout`, {
+    await fetchGateway("/api/v1/auth/logout", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ refreshToken: refresh }),

@@ -16,7 +16,7 @@ def source(service: str) -> str:
 
 class ThreeRoleCourseOnlyTests(unittest.TestCase):
     def test_release_version(self) -> None:
-        self.assertEqual("0.21.0", read("VERSION").strip())
+        self.assertEqual("0.23.0", read("VERSION").strip())
 
     def test_exact_three_roles(self) -> None:
         contracts = "\n".join(p.read_text(encoding="utf-8") for p in (ROOT / "backend/platform-contracts/src/main/java").rglob("*.java"))

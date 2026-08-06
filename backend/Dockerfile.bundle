@@ -1,0 +1,56 @@
+# syntax=docker/dockerfile:1.7
+FROM eclipse-temurin:21-jdk-alpine AS build
+WORKDIR /workspace
+COPY gradlew gradlew.bat settings.gradle.kts build.gradle.kts gradle.properties ./
+COPY gradle ./gradle
+COPY platform-contracts ./platform-contracts
+COPY service-support ./service-support
+COPY services ./services
+RUN --mount=type=cache,target=/root/.gradle/caches \
+    --mount=type=cache,target=/root/.gradle/wrapper \
+    chmod +x ./gradlew && ./gradlew \
+    :services:api-gateway:bootJar \
+    :services:identity-service:bootJar \
+    :services:organization-service:bootJar \
+    :services:course-service:bootJar \
+    :services:enrollment-service:bootJar \
+    :services:learning-service:bootJar \
+    :services:assessment-service:bootJar \
+    :services:grading-service:bootJar \
+    :services:reporting-service:bootJar \
+    :services:file-storage-service:bootJar \
+    :services:license-service:bootJar \
+    :services:audit-service:bootJar \
+    :services:notification-service:bootJar \
+    :services:certificate-service:bootJar \
+    :services:ai-service:bootJar \
+    :services:configuration-service:bootJar \
+    :services:integration-service:bootJar \
+    :services:operations-service:bootJar \
+    :services:competency-service:bootJar \
+    --no-daemon --parallel --stacktrace
+RUN set -eux; mkdir -p /bundle; \
+    for service in api-gateway identity-service organization-service course-service enrollment-service learning-service assessment-service grading-service reporting-service file-storage-service license-service audit-service notification-service certificate-service ai-service configuration-service integration-service operations-service competency-service; do \
+      jar="$(find "/workspace/services/${service}/build/libs" -maxdepth 1 -type f -name '*.jar' ! -name '*-plain.jar' | head -n 1)"; \
+      test -n "$jar"; cp "$jar" "/bundle/${service}.jar"; \
+    done
+
+FROM eclipse-temurin:21-jre-alpine
+RUN apk add --no-cache curl tini \
+    && addgroup -S lmspilot \
+    && adduser -S lmspilot -G lmspilot
+WORKDIR /app
+COPY --from=build /bundle /app/services
+COPY <<'SCRIPT' /app/start-service.sh
+#!/bin/sh
+set -eu
+service="${1:-${SERVICE_NAME:-}}"
+case "$service" in
+  api-gateway|identity-service|organization-service|course-service|enrollment-service|learning-service|assessment-service|grading-service|reporting-service|file-storage-service|license-service|audit-service|notification-service|certificate-service|ai-service|configuration-service|integration-service|operations-service|competency-service) ;;
+  *) echo "Unknown LMSPilot service: $service" >&2; exit 64 ;;
+esac
+exec java ${JAVA_OPTS:-} -jar "/app/services/${service}.jar"
+SCRIPT
+RUN chmod 0555 /app/start-service.sh && chown -R lmspilot:lmspilot /app
+USER lmspilot
+ENTRYPOINT ["/sbin/tini", "--", "/app/start-service.sh"]

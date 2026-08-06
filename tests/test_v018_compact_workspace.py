@@ -13,9 +13,9 @@ def text(relative: str) -> str:
 
 class Release018CompactWorkspaceTests(unittest.TestCase):
     def test_release_version_is_bumped(self) -> None:
-        self.assertEqual("0.21.0", text("VERSION").strip())
-        self.assertIn('"version": "0.21.0"', text("apps/web/package.json"))
-        self.assertIn('version = "0.21.0"', text("backend/build.gradle.kts"))
+        self.assertEqual("0.23.0", text("VERSION").strip())
+        self.assertIn('"version": "0.23.0"', text("apps/web/package.json"))
+        self.assertIn('version = "0.23.0"', text("backend/build.gradle.kts"))
 
     def test_sidebar_uses_single_line_labels_and_persists_collapse(self) -> None:
         shell = text("apps/web/components/AppShell.tsx")

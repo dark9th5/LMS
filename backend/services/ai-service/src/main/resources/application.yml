@@ -39,6 +39,8 @@ ai:
   secret-key: ${AI_SECRET_KEY}
   connect-timeout: ${AI_CONNECT_TIMEOUT:10s}
   read-timeout: ${AI_READ_TIMEOUT:120s}
+  ollama-management-url: ${OLLAMA_MANAGEMENT_URL:http://ollama:11434}
+  ollama-openai-base-url: ${OLLAMA_OPENAI_BASE_URL:http://ollama:11434/v1}
 file-storage-service:
   url: ${FILE_STORAGE_SERVICE_URL:http://localhost:8089}
 assessment-service:

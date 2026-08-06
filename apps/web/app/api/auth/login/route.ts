@@ -2,19 +2,7 @@ import { NextResponse } from "next/server";
 import type { PortalUser } from "@/lib/types";
 import { encodeUserCookie } from "@/lib/session-cookie";
 import { isSameOriginMutation } from "@/lib/request-origin";
-
-function getGatewayUrl(): string {
-  const envUrl = process.env.LMSPILOT_GATEWAY_URL;
-  if (envUrl && envUrl.trim().length > 0) {
-    return envUrl.trim().replace(/\/+$/, "");
-  }
-  return "http://localhost:8080";
-}
-
-const upstreamTimeoutMs = positiveInteger(
-  process.env.LMSPILOT_UPSTREAM_TIMEOUT_MS,
-  10_000,
-);
+import { fetchGateway } from "@/lib/upstream-fetch";
 
 type LoginPayload = {
   accessToken: string;
@@ -22,11 +10,6 @@ type LoginPayload = {
   expiresInSeconds: number;
   user: PortalUser;
 };
-
-function positiveInteger(value: string | undefined, fallback: number): number {
-  const parsed = Number(value);
-  return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
-}
 
 function validUser(value: unknown): value is PortalUser {
   if (!value || typeof value !== "object") return false;
@@ -60,40 +43,8 @@ function validPayload(value: unknown): value is LoginPayload {
   );
 }
 
-async function fetchWithTimeout(
-  path: string,
-  init: RequestInit,
-): Promise<Response> {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), upstreamTimeoutMs);
-  const primaryGateway = getGatewayUrl();
-
-  const urlsToTry = Array.from(
-    new Set([
-      `${primaryGateway}${path}`,
-      `http://127.0.0.1:8080${path}`,
-      `http://localhost:8080${path}`,
-      `http://api-gateway:8080${path}`,
-    ]),
-  );
-
-  let lastError: unknown;
-  try {
-    for (const url of urlsToTry) {
-      try {
-        const res = await fetch(url, { ...init, signal: controller.signal });
-        if (res.ok || res.status === 400 || res.status === 401) {
-          return res;
-        }
-        lastError = new Error(`HTTP ${res.status} from ${url}`);
-      } catch (err) {
-        lastError = err;
-      }
-    }
-    throw lastError;
-  } finally {
-    clearTimeout(timer);
-  }
+async function fetchWithTimeout(path: string, init: RequestInit): Promise<Response> {
+  return fetchGateway(path, init);
 }
 
 function noStoreJson(

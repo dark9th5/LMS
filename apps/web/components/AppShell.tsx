@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import type { PublicBranding } from "@/lib/branding";
 import { landingForUser } from "@/lib/authorization";
 import { resolvePortalRole, roleLabel, type PortalRole } from "@/lib/role";
@@ -108,6 +109,22 @@ export function AppShell({
   }, []);
 
   useEffect(() => {
+    if (!commandOpen) return;
+    const body = document.body;
+    const previousOverflow = body.style.overflow;
+    const previousPaddingRight = body.style.paddingRight;
+    const scrollbarWidth = Math.max(0, window.innerWidth - document.documentElement.clientWidth);
+    body.classList.add("command-open");
+    body.style.overflow = "hidden";
+    if (scrollbarWidth > 0) body.style.paddingRight = `${scrollbarWidth}px`;
+    return () => {
+      body.classList.remove("command-open");
+      body.style.overflow = previousOverflow;
+      body.style.paddingRight = previousPaddingRight;
+    };
+  }, [commandOpen]);
+
+  useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
         event.preventDefault();
@@ -184,8 +201,12 @@ export function AppShell({
           <div className="sidebar-profile">
             <span className="avatar">{initials || "LP"}</span>
             <span><strong>{user.fullName}</strong><small>{roleLabel(role)}</small></span>
-            <form action="/api/auth/logout" method="post"><button className="icon-button" title="Đăng xuất" aria-label="Đăng xuất"><Icon name="logout" size={18} /></button></form>
           </div>
+          <form action="/api/auth/logout" method="post">
+            <button className="sidebar-logout-button" title="Đăng xuất" aria-label="Đăng xuất">
+              <Icon name="logout" size={18} /><span>Đăng xuất</span>
+            </button>
+          </form>
         </div>
       </aside>
 
@@ -208,7 +229,7 @@ export function AppShell({
         <main className="app-content" id="main-content" tabIndex={-1}>{children}</main>
       </div>
 
-      {commandOpen && (
+      {commandOpen && typeof document !== "undefined" && createPortal(
         <div className="command-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) closeCommand(); }}>
           <section className="command-dialog" role="dialog" aria-modal="true" aria-label="Tìm nhanh">
             <header className="command-header"><Icon name="search" size={20} /><input autoFocus value={commandQuery} onChange={(event) => setCommandQuery(event.target.value)} placeholder="Nhập tên chức năng" /><button type="button" className="icon-button" onClick={closeCommand} aria-label="Đóng"><Icon name="close" /></button></header>
@@ -218,7 +239,8 @@ export function AppShell({
               )) : <div className="command-empty"><Icon name="search" size={28} /><strong>Không tìm thấy kết quả</strong><p>Thử một từ khóa ngắn hơn.</p></div>}
             </div>
           </section>
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   );

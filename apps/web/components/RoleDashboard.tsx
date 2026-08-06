@@ -60,26 +60,29 @@ export function RoleDashboard({ user }: { user: PortalUser }) {
   const load = useCallback(async () => {
     setLoading(true);
     setWarning("");
-    const notifications = await safe<{ unread: number; items: Row[] }>("/api/v1/notifications", { unread: 0, items: [] });
+    const notificationRequest = safe<{ unread: number; items: Row[] }>("/api/v1/notifications", { unread: 0, items: [] });
     if (role === "ADMIN") {
-      const [users, units, reports] = await Promise.all([
+      const [users, units, reports, notifications] = await Promise.all([
         safe<unknown>("/api/v1/users?size=100", []),
         safe<unknown>("/api/v1/organization/units", []),
         safe<unknown>("/api/v1/reports/learning", []),
+        notificationRequest,
       ]);
       setState({ primary: list(users), secondary: list(units), tertiary: list(reports), notifications });
     } else if (role === "INSTRUCTOR") {
-      const [courses, exams, grades] = await Promise.all([
+      const [courses, exams, grades, notifications] = await Promise.all([
         safe<unknown>("/api/v1/courses?size=100", []),
         safe<unknown>("/api/v1/exams?scope=standalone", []),
         safe<unknown>("/api/v1/grades/queue", []),
+        notificationRequest,
       ]);
       setState({ primary: list(courses), secondary: list(exams), tertiary: list(grades), notifications });
     } else {
-      const [learning, exams, grades] = await Promise.all([
+      const [learning, exams, grades, notifications] = await Promise.all([
         safe<unknown>("/api/v1/learning/me", []),
         safe<unknown>("/api/v1/exams?scope=standalone", []),
         safe<unknown>("/api/v1/grades/me", []),
+        notificationRequest,
       ]);
       setState({ primary: list(learning), secondary: list(exams), tertiary: list(grades), notifications });
     }

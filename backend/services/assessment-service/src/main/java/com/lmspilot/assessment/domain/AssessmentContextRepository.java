@@ -1,1 +1,8 @@
-package com.lmspilot.assessment.domain; import java.util.*; import org.springframework.data.jpa.repository.*; import org.springframework.data.repository.query.Param; import jakarta.persistence.LockModeType; public interface AssessmentContextRepository extends JpaRepository<AssessmentContextEntity,UUID> {}
+package com.lmspilot.assessment.domain;
+
+import java.util.*;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface AssessmentContextRepository extends JpaRepository<AssessmentContextEntity, UUID> {
+    List<AssessmentContextEntity> findAllByAssessmentIdIn(Collection<UUID> assessmentIds);
+}

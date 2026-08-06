@@ -1,4 +1,5 @@
 import { normalizeHex, readableText } from "./color";
+import { fetchGateway } from "./upstream-fetch";
 
 export type PublicBranding = {
   systemName: string;
@@ -25,39 +26,47 @@ export const defaultBranding: PublicBranding = {
   textColor: "#172033",
 };
 
-function gatewayUrl(): string {
-  return (process.env.LMSPILOT_GATEWAY_URL || "http://localhost:8080").replace(
-    /\/+$/,
-    "",
-  );
-}
-
 function browserAsset(path?: string | null): string | null {
   if (!path) return null;
   if (/^https?:\/\//i.test(path)) return path;
   return `/api/gateway/${path.replace(/^\/+/, "")}`;
 }
 
+let cachedBranding: { value: PublicBranding; expiresAt: number } | null = null;
+let brandingInFlight: Promise<PublicBranding> | null = null;
+
 export async function getPublicBranding(): Promise<PublicBranding> {
+  if (cachedBranding && cachedBranding.expiresAt > Date.now()) return cachedBranding.value;
+  if (brandingInFlight) return brandingInFlight;
+
+  brandingInFlight = (async () => {
+    try {
+      const response = await fetchGateway("/public/v1/branding", {
+        cache: "no-store",
+      });
+      if (!response.ok) return defaultBranding;
+      const data = (await response.json()) as Partial<PublicBranding>;
+      return {
+        ...defaultBranding,
+        ...data,
+        primaryColor: normalizeHex(data.primaryColor ?? "", defaultBranding.primaryColor),
+        secondaryColor: normalizeHex(data.secondaryColor ?? "", defaultBranding.secondaryColor),
+        backgroundColor: normalizeHex(data.backgroundColor ?? "", defaultBranding.backgroundColor),
+        logoUrl: browserAsset(data.logoUrl),
+        faviconUrl: browserAsset(data.faviconUrl),
+        backgroundUrl: browserAsset(data.backgroundUrl),
+      };
+    } catch {
+      return defaultBranding;
+    }
+  })();
+
   try {
-    const response = await fetch(`${gatewayUrl()}/public/v1/branding`, {
-      cache: "no-store",
-      signal: AbortSignal.timeout(2500),
-    });
-    if (!response.ok) return defaultBranding;
-    const data = (await response.json()) as Partial<PublicBranding>;
-    return {
-      ...defaultBranding,
-      ...data,
-      primaryColor: normalizeHex(data.primaryColor ?? "", defaultBranding.primaryColor),
-      secondaryColor: normalizeHex(data.secondaryColor ?? "", defaultBranding.secondaryColor),
-      backgroundColor: normalizeHex(data.backgroundColor ?? "", defaultBranding.backgroundColor),
-      logoUrl: browserAsset(data.logoUrl),
-      faviconUrl: browserAsset(data.faviconUrl),
-      backgroundUrl: browserAsset(data.backgroundUrl),
-    };
-  } catch {
-    return defaultBranding;
+    const value = await brandingInFlight;
+    cachedBranding = { value, expiresAt: Date.now() + (value === defaultBranding ? 5_000 : 30_000) };
+    return value;
+  } finally {
+    brandingInFlight = null;
   }
 }
 

@@ -133,9 +133,11 @@ class Release017AccessibleLmsUiTests(unittest.TestCase):
         self.assertNotIn(".exam-navigator button{aspect-ratio", css)
         self.assertIn(".exam-navigator>div:nth-child(2)>button{aspect-ratio", css)
 
-    def test_release_prunes_obsolete_preview_bundles(self) -> None:
-        self.assertFalse((ROOT / "docs/screenshots").exists())
+    def test_release_keeps_current_visual_acceptance_previews_only(self) -> None:
+        screenshots = ROOT / "docs/screenshots"
+        self.assertTrue(screenshots.exists())
         self.assertTrue((ROOT / "docs/JAVA_SPRING_MIGRATION_0.21.0.md").exists())
+        self.assertFalse((ROOT / ".preview-render-v017").exists())
 
 if __name__ == "__main__":
     unittest.main()

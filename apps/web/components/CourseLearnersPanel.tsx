@@ -80,8 +80,8 @@ export function CourseLearnersPanel({ course }: { course: Course }) {
     setBusy(true);
     setFormError("");
     try {
-      for (const studentId of selected) {
-        await apiRequest("/api/v1/course-assignments", {
+      await Promise.all(selected.map((studentId) =>
+        apiRequest("/api/v1/course-assignments", {
           method: "POST",
           body: JSON.stringify({
             courseId: course.id,
@@ -92,8 +92,8 @@ export function CourseLearnersPanel({ course }: { course: Course }) {
             gracePeriodMinutes: 0,
             required: true,
           }),
-        });
-      }
+        }),
+      ));
       setOpen(false);
       setSelected([]);
       setToast(`Đã giao khóa học cho ${selected.length} học viên.`);

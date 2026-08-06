@@ -3,19 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { encodeUserCookie } from "@/lib/session-cookie";
 import type { PortalUser } from "@/lib/types";
 import { isSameOriginMutation } from "@/lib/request-origin";
-
-function getGatewayUrl(): string {
-  const envUrl = process.env.LMSPILOT_GATEWAY_URL;
-  if (envUrl && envUrl.trim().length > 0) {
-    return envUrl.trim().replace(/\/+$/, "");
-  }
-  return "http://localhost:8080";
-}
-
-const upstreamTimeoutMs = positiveInteger(
-  process.env.LMSPILOT_UPSTREAM_TIMEOUT_MS,
-  15_000,
-);
+import { fetchGateway, gatewayBaseUrl } from "@/lib/upstream-fetch";
 
 type RouteContext = { params: Promise<{ path: string[] }> };
 type TokenPayload = {
@@ -60,11 +48,6 @@ const responseHopByHopHeaders = [
   "upgrade",
 ];
 
-function positiveInteger(value: string | undefined, fallback: number): number {
-  const parsed = Number(value);
-  return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
-}
-
 function cookieSecure(): boolean {
   return process.env.LMSPILOT_COOKIE_SECURE === "true";
 }
@@ -92,7 +75,10 @@ function validUser(value: unknown): value is PortalUser {
     typeof user.username === "string" &&
     typeof user.fullName === "string" &&
     Array.isArray(user.roles) &&
-    user.roles.every((role) => typeof role === "string") &&
+    user.roles.length === 1 &&
+    user.roles.every((role) => ["ADMIN", "INSTRUCTOR", "STUDENT"].includes(String(role))) &&
+    typeof user.primaryRole === "string" &&
+    user.primaryRole === user.roles[0] &&
     Array.isArray(user.permissions) &&
     user.permissions.every((permission) => typeof permission === "string")
   );
@@ -156,44 +142,8 @@ function clearSessionCookies(response: NextResponse) {
   });
 }
 
-async function fetchWithTimeout(
-  input: string | URL,
-  init: RequestInit,
-): Promise<Response> {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), upstreamTimeoutMs);
-
-  const primaryGateway = getGatewayUrl();
-  let rawPathOrUrl = typeof input === "string" ? input : input.toString();
-  let path = rawPathOrUrl;
-  if (rawPathOrUrl.startsWith("http://") || rawPathOrUrl.startsWith("https://")) {
-    const parsed = new URL(rawPathOrUrl);
-    path = parsed.pathname + parsed.search;
-  }
-  if (!path.startsWith("/")) path = "/" + path;
-
-  const urlsToTry = Array.from(
-    new Set([
-      `${primaryGateway}${path}`,
-      `http://127.0.0.1:8080${path}`,
-      `http://localhost:8080${path}`,
-      `http://api-gateway:8080${path}`,
-    ]),
-  );
-
-  let lastError: unknown;
-  try {
-    for (const url of urlsToTry) {
-      try {
-        return await fetch(url, { ...init, signal: controller.signal });
-      } catch (err) {
-        lastError = err;
-      }
-    }
-    throw lastError;
-  } finally {
-    clearTimeout(timer);
-  }
+async function fetchWithTimeout(input: string | URL, init: RequestInit): Promise<Response> {
+  return fetchGateway(input, init);
 }
 
 function refreshSession(refreshToken: string): Promise<RefreshResult> {
@@ -334,7 +284,7 @@ async function proxy(req: NextRequest, { params }: RouteContext) {
   }
 
   const encodedPath = path.map((segment) => encodeURIComponent(segment)).join("/");
-  const url = new URL(encodedPath, `${getGatewayUrl()}/`);
+  const url = new URL(encodedPath, `${gatewayBaseUrl()}/`);
   req.nextUrl.searchParams.forEach((value, key) => {
     url.searchParams.append(key, value);
   });

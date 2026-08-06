@@ -8,6 +8,18 @@ spring:
     gateway:
       server:
         webflux:
+          httpclient:
+            connect-timeout: ${GATEWAY_CONNECT_TIMEOUT_MS:2000}
+            response-timeout: ${GATEWAY_RESPONSE_TIMEOUT:8s}
+            compression: true
+            pool:
+              type: FIXED
+              max-connections: ${GATEWAY_MAX_CONNECTIONS:200}
+              acquire-timeout: ${GATEWAY_ACQUIRE_TIMEOUT_MS:1500}
+              max-idle-time: ${GATEWAY_MAX_IDLE_TIME:30s}
+              max-life-time: ${GATEWAY_MAX_LIFE_TIME:5m}
+              metrics: true
+              leasing-strategy: lifo
           routes:
             - id: identity
               uri: ${IDENTITY_URL:http://localhost:8081}

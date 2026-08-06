@@ -1,8 +1,7 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { isSameOriginMutation } from "@/lib/request-origin";
-
-const gateway = (process.env.LMSPILOT_GATEWAY_URL ?? "http://localhost:8080").replace(/\/+$/, "");
+import { fetchGateway } from "@/lib/upstream-fetch";
 
 export async function POST(request: Request) {
   if (!isSameOriginMutation(request)) {
@@ -15,7 +14,7 @@ export async function POST(request: Request) {
   const access = jar.get("lmspilot_access")?.value;
   if (!access) return NextResponse.json({ message: "Phiên đăng nhập đã hết hạn" }, { status: 401 });
   const body = await request.text();
-  const upstream = await fetch(`${gateway}/api/v1/auth/change-password`, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${access}` }, body, cache: "no-store" }).catch(() => null);
+  const upstream = await fetchGateway("/api/v1/auth/change-password", { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${access}` }, body, cache: "no-store" }).catch(() => null);
   if (!upstream) return NextResponse.json({ message: "Dịch vụ xác thực không khả dụng" }, { status: 503 });
   if (!upstream.ok) {
     const error = await upstream.json().catch(() => ({ message: "Không thể đổi mật khẩu" }));

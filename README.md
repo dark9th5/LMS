@@ -1,4 +1,4 @@
-# LMSPilot 0.21.0
+# LMSPilot 0.23.0
 
 **LMSPilot** là nền tảng quản lý học tập theo kiến trúc microservice, phục vụ doanh nghiệp, trường học và trung tâm đào tạo. Repository là monorepo gồm frontend Next.js và 19 backend service Java Spring Boot có thể phát triển, nâng cấp và kiểm thử độc lập.
 
@@ -33,6 +33,18 @@ Không có giao diện **Lớp học**. Học viên được giao trực tiếp 
 - AI sinh câu hỏi từ PDF/DOCX theo Dễ/Trung bình/Khó/Hỗn hợp; kiểm tra schema, đáp án, trùng lặp, phân bố độ khó và citation; giảng viên review trước khi import.
 - Báo cáo, KPI, CSV, lịch báo cáo, thông báo, email, chứng chỉ và audit.
 - Logo, tên hệ thống, màu thương hiệu, tên miền và ảnh nền đăng nhập.
+
+## Điểm mới trong 0.23.0
+
+- Đồng bộ giao diện thật theo bộ thiết kế trắng–tím đã duyệt: tiêu đề trang gọn, panel thoáng, danh sách bài thi, trình soạn đề ba cột và màn hình làm bài A/B/C/D.
+- Chuẩn hóa popup/form bằng portal, khóa cuộn nền, focus trap, giới hạn theo `100dvh`, nội dung cuộn độc lập và vùng thao tác bám đáy; form không còn tự nhảy khỏi cửa sổ ở màn hình thấp.
+- Ghim cụm **Tìm nhanh – hồ sơ – Đăng xuất** ở đáy trái sidebar, không bị đẩy xa khi nội dung menu ngắn hoặc dài.
+- Sửa luồng làm bài: từ chối đề rỗng, không khôi phục attempt hết giờ, đồng bộ thời gian với server và không tự nộp phiên chưa tải được câu hỏi.
+- Mỗi attempt lưu snapshot bất biến của câu hỏi, đáp án chấm, điểm đạt và chính sách chấm; giảng viên sửa đề sau khi học viên bắt đầu không làm thay đổi phiên đang thi.
+- Sửa hợp đồng database/API của Learning và Notification sau chuyển đổi Java; hoàn thành bài kiểm tra/bài thực hành chỉ qua sự kiện điểm hợp lệ, không qua nút đánh dấu thủ công.
+- Giảm độ trễ bằng cache GET ngắn hạn, gộp request đang chạy, timeout rõ ràng, truy vấn batch thay N+1, connection pool gateway và Hikari phù hợp 19 service.
+- Docker build một backend bundle dùng chung, khởi động có health dependency và script `start-fast` chờ đến khi hệ thống thật sự dùng được.
+- Admin có trung tâm **Kết nối model AI**: tải model Ollama mẫu bằng nút bấm, kết nối local OpenAI-compatible hoặc cấu hình endpoint/API key riêng.
 
 ## Sơ đồ runtime
 
@@ -75,13 +87,7 @@ API Gateway :8080
 | 8097 | `operations-service` | Health tổng hợp, job vận hành, lịch chạy và agent lease. | `operations` | `/api/v1/operations`, `/internal/v1/operations/jobs` |
 | 8098 | `competency-service` | Khung năng lực, hồ sơ, khoảng thiếu và ánh xạ khóa học. | `competency` | `/api/v1/competencies` |
 
-Chi tiết đầy đủ:
-
-- [`docs/SERVICE_CATALOG.md`](docs/SERVICE_CATALOG.md): phạm vi, dependency, controller, port và cách chạy từng service.
-- [`docs/API_DATABASE_MAP.md`](docs/API_DATABASE_MAP.md): API base, controller, schema, bảng và migration tương ứng.
-- [`docs/TEAM_SERVICE_ASSIGNMENT.md`](docs/TEAM_SERVICE_ASSIGNMENT.md): bảng để thành viên đăng ký owner/reviewer và phạm vi nâng cấp/test.
-- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md): nguyên tắc microservice và giao tiếp liên service.
-- [`docs/JAVA_SPRING_MIGRATION_0.21.0.md`](docs/JAVA_SPRING_MIGRATION_0.21.0.md): phạm vi chuyển đổi Kotlin sang Java.
+Các thông tin chi tiết về từng dịch vụ được mô tả chi tiết tại tệp README.md trong mỗi thư mục dịch vụ tương ứng tại `backend/services/<service_name>/README.md`.
 
 ## Cấu trúc repository
 
@@ -113,101 +119,172 @@ backend/services/<service>/
     └── test/java/com/lmspilot/...
 ```
 
-## Hướng dẫn cài đặt và khởi chạy hệ thống (Dành cho người mới / Clone repository)
+## Chạy nhanh
 
-### 1. Yêu cầu môi trường (Prerequisites)
+## Hướng dẫn Clone & Khởi chạy hệ thống bằng Docker
 
-- **Git** (đã cài đặt trên máy).
-- **Docker Desktop** (Windows/macOS) hoặc **Docker Engine & Docker Compose v2** (Linux).
-- *(Tùy chọn cho Developer)*: Java 21 JDK và Node.js 20+ nếu muốn phát triển/chạy từng microservice cục bộ mà không dùng Docker.
+### 📋 Yêu cầu tiên quyết
+1. **Git**: Đã cài đặt Git.
+2. **Docker Desktop / Docker Engine**: Đã cài đặt Docker và Docker Engine đang chạy (Khuyến nghị cấp tối thiểu 6GB–8GB RAM).
 
 ---
 
-### 2. Các bước khởi chạy toàn bộ hệ thống bằng Docker Compose (Khuyên dùng)
+### 🚀 Các bước khởi chạy nhanh (30s – 1 phút)
 
-#### Bước 1: Clone Repository về máy cục bộ
+#### Bước 1: Clone dự án về máy
 ```bash
-git clone https://github.com/dark9th5/LMS.git LMSPilot
+git clone https://github.com/dark9th5/LMSPilot.git
 cd LMSPilot
 ```
 
 #### Bước 2: Tạo tệp cấu hình môi trường `.env`
-Sao chép tệp mẫu `.env.example` thành `.env`:
-- Trên Linux / macOS / Git Bash:
+- Trên **Linux / macOS**:
   ```bash
   cp .env.example .env
   ```
-- Trên Windows PowerShell:
+- Trên **Windows (PowerShell)**:
   ```powershell
   Copy-Item .env.example .env
   ```
 
-#### Bước 3: Khởi chạy Docker Desktop
-Đảm bảo ứng dụng **Docker Desktop** đã được mở và chuyển sang trạng thái **Engine Running** (màu xanh).
+#### Bước 3: Khởi chạy toàn bộ hệ thống bằng Docker
+Chạy script khởi động nhanh được tích hợp sẵn:
 
-#### Bước 4: Build và khởi chạy toàn bộ 22 container dịch vụ
-```bash
-docker compose up -d --build
-```
-> **Lưu ý**: Nếu bạn từng chạy các phiên bản cũ và gặp lỗi dữ liệu database cũ xung đột, hãy reset sạch volume và rebuild lại bằng lệnh:
-> ```bash
-> docker compose down -v
-> docker compose up -d --build
-> ```
+- Trên **Windows (PowerShell)**:
+  ```powershell
+  .\scripts\start-fast.ps1
+  ```
+- Trên **Linux / macOS**:
+  ```bash
+  chmod +x ./scripts/start-fast.sh
+  ./scripts/start-fast.sh
+  ```
 
-#### Bước 5: Kiểm tra trạng thái container
-```bash
-docker compose ps
-```
-Khi toàn bộ các dịch vụ hiển thị trạng thái `Up` hoặc `healthy` là hệ thống đã sẵn sàng sử dụng.
+👉 Sau khi khởi chạy thành công, mở trình duyệt và truy cập hệ thống tại: **`http://localhost:3000`**
 
 ---
 
-### 3. Địa chỉ truy cập & Tài khoản đăng nhập thử nghiệm
+### 🛠️ Tùy chọn: Biên dịch lại mã nguồn từ local (Local Build)
 
-- **Giao diện người dùng Web Frontend**: [http://localhost:3000](http://localhost:3000)
-- **API Gateway**: [http://localhost:8080](http://localhost:8080)
-- **RabbitMQ Management**: [http://localhost:15672](http://localhost:15672) *(Mặc định: guest / guest hoặc theo `.env`)*
+Nếu bạn vừa chỉnh sửa mã nguồn Java/Next.js và muốn Docker biên dịch lại hoàn toàn từ local source code:
 
-#### Tài khoản đăng nhập mặc định:
-Hệ thống áp dụng mô hình một tài khoản–một vai trò độc quyền:
+- **Windows (PowerShell)**:
+  ```powershell
+  .\scripts\start-fast.ps1 -Build
+  ```
+- **Linux / macOS**:
+  ```bash
+  ./scripts/start-fast.sh --build
+  ```
 
-| Cổng đăng nhập | Username | Mật khẩu mặc định | Vai trò |
-|---|---|---|---|
-| **Quản trị (Admin)** | `admin` | `admin123` | `ADMIN` |
-| **Giảng viên (Instructor)** | `instructor` | `instructor123` | `INSTRUCTOR` |
-| **Học viên (Student)** | `student` | `student123` | `STUDENT` |
+Hoặc dùng câu lệnh Docker Compose chuẩn:
+```bash
+docker compose up -d --build --wait
+```
 
 ---
 
-### 4. Hướng dẫn dành cho Developer (Chạy & kiểm thử cục bộ)
+### 🔑 Tài khoản mặc định hệ thống
 
-#### Chạy toàn bộ backend JARs bằng Gradle:
+Sau khi khởi chạy, hệ thống đã nạp sẵn dữ liệu demo ban đầu với 3 tài khoản thử nghiệm tương ứng 3 vai trò:
+
+| Vai trò | Email đăng nhập | Mật khẩu mặc định |
+|---|---|---|
+| **ADMIN** (Quản trị) | `admin@lmspilot.local` | `Admin123!` |
+| **INSTRUCTOR** (Giảng viên) | `instructor@lmspilot.local` | `Instructor123!` |
+| **STUDENT** (Học viên) | `student@lmspilot.local` | `Student123!` |
+
+---
+
+### 🛑 Tắt hoặc dừng hệ thống
+
+Để dừng toàn bộ container:
 ```bash
-cd backend
-./gradlew bootJar -x test
+docker compose down
 ```
 
-#### Chạy một backend microservice độc lập:
+Các profile tùy chọn khác (Metrics/Observability, Cache):
+```bash
+docker compose --profile observability up -d  # Prometheus + Grafana (:3001)
+docker compose --profile redis up -d          # Redis
+```
+
+### Chạy một backend service
+
 ```bash
 cd backend
 ./gradlew :services:course-service:bootRun
 ```
 
-#### Chạy tests cho toàn bộ backend:
+### Test một backend service
+
+```bash
+cd backend
+./gradlew :services:course-service:test
+```
+
+### Test toàn backend
+
 ```bash
 cd backend
 ./gradlew test
 ```
 
-#### Chạy frontend Next.js ở chế độ Development:
+### Frontend
+
 ```bash
 cd apps/web
 npm ci
 npm run dev
 ```
-Giao diện dev sẽ lắng nghe tại [http://localhost:3000](http://localhost:3000).
 
+## Luồng làm bài được bảo vệ
+
+```text
+Học viên bấm Làm bài
+    → Assessment kiểm tra bài thi đang mở và có câu hỏi
+    → tạo/khôi phục attempt IN_PROGRESS còn thời gian
+    → đóng băng snapshot câu hỏi + đáp án chấm + chính sách điểm
+    → frontend chỉ mở trình làm bài khi nhận đủ câu hỏi và thời gian server
+    → autosave đáp án + heartbeat
+    → nộp chủ động hoặc hết giờ đã được server xác nhận
+    → Grading phát sự kiện điểm
+    → Learning cập nhật bài học/khóa học khi đạt điều kiện
+```
+
+Không có đường tắt “đánh dấu hoàn thành” cho bài thi hoặc bài thực hành. Nếu đề rỗng, attempt hết hạn hoặc dịch vụ chưa trả đủ dữ liệu, UI hiển thị trạng thái lỗi có thể thử lại thay vì tự hoàn thành.
+
+## Tài liệu kiểm toán 0.23.0
+
+- [`docs/PERFORMANCE_AND_FLOW_AUDIT_0.23.0.md`](docs/PERFORMANCE_AND_FLOW_AUDIT_0.23.0.md)
+- [`docs/UI_QA_CHECKLIST_0.23.0.md`](docs/UI_QA_CHECKLIST_0.23.0.md)
+- [`docs/LOGIN_AUDIT_0.23.0.md`](docs/LOGIN_AUDIT_0.23.0.md)
+
+
+## Kiểm tra đăng nhập và hiệu năng sau khi chạy
+
+```bash
+node scripts/smoke-login-roles.mjs
+node scripts/performance-smoke.mjs
+```
+
+Các script kiểm tra ba tài khoản demo, role trả về, thời gian phản hồi và một số API dữ liệu chính. Không dùng tài khoản demo ở staging/production.
+
+## Cấu hình AI cho Admin
+
+Ba cách kết nối được hỗ trợ:
+
+1. **Tải model mẫu tự động:** Ollama chạy trong Compose; Admin chọn `qwen3:4b`, `qwen3:8b` hoặc `llama3.1:8b`. Backend tải bất đồng bộ, trả tiến độ và tự tạo provider.
+2. **AI local có sẵn:** nhập Base URL của Ollama, LM Studio, vLLM hoặc máy chủ OpenAI-compatible trong mạng nội bộ.
+3. **API key riêng:** nhập Base URL, model và API key của nhà cung cấp tương thích; key được mã hóa ở backend.
+
+API quản trị liên quan:
+
+- `GET /api/v1/ai/local-runtime`
+- `POST /api/v1/ai/local-runtime/pull`
+- `GET /api/v1/ai/local-runtime/pull/{jobId}`
+- `GET|POST|PUT /api/v1/ai/providers`
+- `POST /api/v1/ai/providers/{id}/test`
 
 ## Quy tắc làm việc theo service
 

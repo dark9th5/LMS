@@ -51,6 +51,8 @@ export function ExamsPage({
   const [questions, setQuestions] = useState<Question[]>([]);
   const [providers, setProviders] = useState<AiProvider[]>([]);
   const [query, setQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("ALL");
+  const [sortOrder, setSortOrder] = useState("NEWEST");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [examModal, setExamModal] = useState(false);
@@ -72,7 +74,13 @@ export function ExamsPage({
     setLoading(true);
     setError("");
     try {
-      const examData = await apiRequest<unknown>("/api/v1/exams");
+      const [examData, questionData, providerData] = await Promise.all([
+        apiRequest<unknown>("/api/v1/exams"),
+        canManage ? apiRequest<unknown>("/api/v1/questions") : Promise.resolve([]),
+        canManage
+          ? apiRequest<unknown>("/api/v1/ai/providers").catch(() => [])
+          : Promise.resolve([]),
+      ]);
       const loadedExams = unwrapItems<Exam>(examData as never);
       setExams(
         standaloneOnly
@@ -80,14 +88,10 @@ export function ExamsPage({
           : loadedExams,
       );
       if (canManage) {
-        const questionData = await apiRequest<unknown>("/api/v1/questions");
         setQuestions(unwrapItems<Question>(questionData as never));
-        try {
-          const providerData = await apiRequest<unknown>("/api/v1/ai/providers");
-          setProviders(unwrapItems<AiProvider>(providerData as never).filter((item) => item.enabled));
-        } catch {
-          setProviders([]);
-        }
+        setProviders(
+          unwrapItems<AiProvider>(providerData as never).filter((item) => item.enabled),
+        );
       }
     } catch (caught) {
       setError(
@@ -102,10 +106,28 @@ export function ExamsPage({
     void load();
   }, [load]);
 
-  const normalizedQuery = query.trim().toLowerCase();
-  const filtered = exams.filter((exam) =>
-    `${exam.title} ${exam.contextType ?? ""}`.toLowerCase().includes(normalizedQuery),
-  );
+  const filtered = useMemo(() => {
+    const normalizedQuery = query.trim().toLocaleLowerCase("vi-VN");
+    const result = exams.filter((exam) => {
+      const matchesQuery = `${exam.title} ${exam.contextType ?? ""} ${exam.id}`
+        .toLocaleLowerCase("vi-VN")
+        .includes(normalizedQuery);
+      return matchesQuery && (statusFilter === "ALL" || exam.status === statusFilter);
+    });
+    return [...result].sort((left, right) => {
+      if (sortOrder === "TITLE") return left.title.localeCompare(right.title, "vi");
+      const leftTime = Date.parse(left.opensAt ?? left.closesAt ?? "") || 0;
+      const rightTime = Date.parse(right.opensAt ?? right.closesAt ?? "") || 0;
+      return sortOrder === "OLDEST" ? leftTime - rightTime : rightTime - leftTime;
+    });
+  }, [exams, query, sortOrder, statusFilter]);
+
+  const examStats = useMemo(() => ({
+    total: exams.length,
+    active: exams.filter((item) => item.status === "ACTIVE").length,
+    draft: exams.filter((item) => item.status === "DRAFT").length,
+    completed: exams.filter((item) => ["INACTIVE", "ARCHIVED"].includes(item.status)).length,
+  }), [exams]);
 
   function openQuestion(question: Question | null = null) {
     setEditingQuestion(question);
@@ -358,144 +380,117 @@ export function ExamsPage({
 
   return (
     <>
-      <PageHeader
-        eyebrow={canManage ? "Kỳ thi độc lập" : "Bài thi được giao"}
-        title={standaloneOnly ? "Bài thi" : "Đánh giá"}
-        description={
-          canManage
-            ? "Tạo và vận hành kỳ thi độc lập. Bài kiểm tra khóa học được quản lý ngay trong từng khóa học."
-            : "Tham gia các kỳ thi độc lập đã được giao cho tài khoản học viên."
-        }
-        icon="exam"
-        actions={
-          canManage ? (
-            <>
-              <button
-                className="button secondary"
-                onClick={() => { setFormError(""); setDocumentExamModal(true); }}
-              >
-                <Icon name="file" />
-                Tạo từ PDF/DOCX
-              </button>
-              <button
-                className="button secondary"
-                onClick={() => openQuestion()}
-              >
-                <Icon name="plus" />
-                Thêm câu hỏi
-              </button>
-              <button
-                className="button primary"
-                onClick={() => {
-                  setFormError("");
-                  setExamModal(true);
-                }}
-              >
-                <Icon name="plus" />
-                Tạo bài thi
-              </button>
-            </>
-          ) : undefined
-        }
-      />
+      <header className="exam-page-heading">
+        <div>
+          <nav aria-label="Đường dẫn"><span>Trang chủ</span><i>•</i><strong>Bài thi</strong></nav>
+          <h1>{standaloneOnly ? "Bài thi" : "Đánh giá"}</h1>
+          <p>{canManage
+            ? "Quản lý, tạo và theo dõi các kỳ thi độc lập trong hệ thống."
+            : "Theo dõi và tham gia các kỳ thi đã được giao cho bạn."}</p>
+        </div>
+        {canManage && (
+          <div className="exam-heading-actions">
+            <button className="button secondary" onClick={() => { setFormError(""); setDocumentExamModal(true); }}>
+              <Icon name="file" />Tạo từ PDF/DOCX
+            </button>
+            <button className="button primary" onClick={() => { setFormError(""); setExamModal(true); }}>
+              <Icon name="plus" />Tạo bài thi
+            </button>
+          </div>
+        )}
+      </header>
 
-      <section className="toolbar-card">
-        <label className="search-field">
-          <Icon name="search" />
-          <input
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Tìm bài thi"
-          />
-        </label>
-        <button className="button secondary" onClick={() => void load()}>
-          <Icon name="refresh" />
-          Làm mới
-        </button>
+      <section className="exam-stat-grid" aria-label="Tổng quan bài thi">
+        {[
+          ["Tổng bài thi", examStats.total, "Tất cả kỳ thi", "exam", "violet"],
+          ["Đang mở", examStats.active, "Đang diễn ra", "check", "green"],
+          ["Bản nháp", examStats.draft, "Chưa xuất bản", "file", "amber"],
+          ["Đã hoàn thành", examStats.completed, "Đã kết thúc", "report", "blue"],
+        ].map(([label, value, hint, icon, tone]) => (
+          <article className={`exam-stat-card ${tone}`} key={String(label)}>
+            <span><Icon name={icon as any} size={22} /></span>
+            <div><small>{label}</small><strong>{value}</strong><p>{hint}</p></div>
+          </article>
+        ))}
       </section>
 
-      {loading ? (
-        <LoadingState />
-      ) : error ? (
-        <ErrorState message={error} onRetry={() => void load()} />
-      ) : filtered.length === 0 ? (
-        <EmptyState
-          title="Chưa có bài thi"
-          description={
-            canManage
-              ? "Tạo câu hỏi trong ngân hàng, sau đó xây dựng một kỳ thi độc lập."
-              : "Bài thi sẽ xuất hiện khi giảng viên giao cho bạn."
-          }
-        />
-      ) : (
-        <section className="exam-grid">
-          {filtered.map((exam, index) => (
-            <Link
-              className="exam-card"
-              href={standaloneExamPath(role, exam.id)}
-              key={exam.id}
-            >
-              <div className="exam-card-scene">
-                <span className="exam-sequence">
-                  BÀI THI {String(index + 1).padStart(2, "0")}
-                </span>
-                <div className="exam-card-icon">
-                  <Icon name="exam" size={29} />
-                  <i />
-                  <b />
-                </div>
-                <div className="exam-card-score">
-                  <strong>{exam.passingScore}</strong>
-                  <small>% ĐIỂM ĐẠT</small>
-                </div>
-                <div className="exam-color-shapes" aria-hidden="true">
-                  <i />
-                  <i />
-                  <i />
-                  <span>+</span>
-                </div>
-              </div>
-              <div className="exam-card-body">
-                <div>
-                  <StatusBadge value={exam.status} />
-                  <span>Phiên bản {exam.version}</span>
-                </div>
-                <h2>{exam.title}</h2>
-                <p>
-                  {exam.courseId ? "Bài kiểm tra khóa học" : "Kỳ thi độc lập"}
-                </p>
-                <dl>
-                  <div>
-                    <dt>Thời lượng</dt>
-                    <dd>{formatDuration(exam.durationMinutes)}</dd>
+      <div className="exam-overview-layout">
+        <section className="exam-main-column">
+          <div className="exam-filter-panel">
+            <label className="exam-search-field">
+              <Icon name="search" size={18} />
+              <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Tìm theo tên hoặc mã bài thi…" />
+            </label>
+            <div className="exam-filter-row">
+              <label><span>Trạng thái</span><select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}><option value="ALL">Tất cả</option><option value="ACTIVE">Đang mở</option><option value="DRAFT">Bản nháp</option><option value="INACTIVE">Đã đóng</option><option value="ARCHIVED">Lưu trữ</option></select></label>
+              <label><span>Sắp xếp</span><select value={sortOrder} onChange={(event) => setSortOrder(event.target.value)}><option value="NEWEST">Mới nhất</option><option value="OLDEST">Cũ nhất</option><option value="TITLE">Theo tên</option></select></label>
+              <button className="button secondary compact" onClick={() => void load()}><Icon name="refresh" />Làm mới</button>
+            </div>
+          </div>
+
+          {loading ? (
+            <LoadingState />
+          ) : error ? (
+            <ErrorState message={error} onRetry={() => void load()} />
+          ) : filtered.length === 0 ? (
+            <EmptyState title="Chưa có bài thi phù hợp" description={canManage ? "Tạo kỳ thi mới hoặc thay đổi bộ lọc tìm kiếm." : "Bài thi sẽ xuất hiện khi giảng viên giao cho bạn."} />
+          ) : (
+            <div className="exam-list">
+              {filtered.map((exam) => (
+                <Link className="exam-list-item" href={standaloneExamPath(role, exam.id)} key={exam.id}>
+                  <span className={`exam-list-icon status-${exam.status.toLowerCase()}`}><Icon name="exam" size={22} /></span>
+                  <div className="exam-list-primary">
+                    <div className="exam-title-line"><h2>{exam.title}</h2><span className="exam-code">{exam.id.slice(0, 8).toUpperCase()}</span><StatusBadge value={exam.status} /></div>
+                    <p>{exam.courseId ? "Bài kiểm tra khóa học" : "Kỳ thi độc lập"}<i>•</i>Phiên bản {exam.version}</p>
+                    <div className="exam-date-line"><Icon name="clock" size={15} /><span>Mở: {formatDate(exam.opensAt)}</span><i>•</i><span>Đóng: {formatDate(exam.closesAt)}</span></div>
                   </div>
-                  <div>
-                    <dt>Số câu hỏi</dt>
-                    <dd>{exam.questions.length}</dd>
-                  </div>
-                  <div>
-                    <dt>Điểm đạt</dt>
-                    <dd>{exam.passingScore}%</dd>
-                  </div>
-                  <div>
-                    <dt>Mở đến</dt>
-                    <dd>{formatDate(exam.closesAt)}</dd>
-                  </div>
-                </dl>
-                <span className="exam-open">
-                  <span>
-                    <small>Chi tiết bài thi</small>
-                    {canManage ? "Xem và chỉnh sửa" : "Mở bài thi"}
-                  </span>
-                  <i>
-                    <Icon name="arrow" />
-                  </i>
-                </span>
-              </div>
-            </Link>
-          ))}
+                  <dl className="exam-list-metrics">
+                    <div><dt>Thời lượng</dt><dd>{formatDuration(exam.durationMinutes)}</dd></div>
+                    <div><dt>Số câu</dt><dd>{exam.questions.length}</dd></div>
+                    <div><dt>Điểm đạt</dt><dd>{exam.passingScore}%</dd></div>
+                    <div><dt>Lượt làm</dt><dd>{exam.maxAttempts}</dd></div>
+                  </dl>
+                  <span className="exam-row-action" aria-hidden="true"><Icon name="arrow" size={18} /></span>
+                </Link>
+              ))}
+            </div>
+          )}
         </section>
-      )}
+
+        <aside className="exam-side-column">
+          <section className="exam-side-card">
+            <header><h2>Tổng quan nhanh</h2></header>
+            <dl className="exam-quick-stats">
+              <div><dt>Kỳ thi đang mở</dt><dd>{examStats.active}</dd></div>
+              <div><dt>Tổng câu hỏi</dt><dd>{exams.reduce((sum, item) => sum + item.questions.length, 0)}</dd></div>
+              <div><dt>Cần xuất bản</dt><dd>{examStats.draft}</dd></div>
+              <div><dt>Tỷ lệ hoạt động</dt><dd>{examStats.total ? Math.round((examStats.active / examStats.total) * 100) : 0}%</dd></div>
+            </dl>
+          </section>
+          <section className="exam-side-card">
+            <header><h2>Bài thi gần đây</h2></header>
+            <div className="upcoming-exams">
+              {exams.slice(0, 3).map((item, index) => (
+                <Link href={standaloneExamPath(role, item.id)} key={item.id}>
+                  <span><b>{String(index + 1).padStart(2, "0")}</b><small>KỲ THI</small></span>
+                  <div><strong>{item.title}</strong><small>{formatDuration(item.durationMinutes)} · {item.questions.length} câu</small></div>
+                </Link>
+              ))}
+              {!exams.length && <p className="muted">Chưa có kỳ thi.</p>}
+            </div>
+          </section>
+          {canManage && (
+            <section className="exam-side-card">
+              <header><h2>Thao tác nhanh</h2></header>
+              <div className="exam-quick-actions">
+                <button onClick={() => { setFormError(""); setExamModal(true); }}><Icon name="plus" />Tạo bài thi mới</button>
+                <button onClick={() => { setFormError(""); setDocumentExamModal(true); }}><Icon name="file" />Sinh đề từ tài liệu</button>
+                <button onClick={() => openQuestion()}><Icon name="question" />Thêm câu hỏi</button>
+              </div>
+            </section>
+          )}
+        </aside>
+      </div>
 
       {canManage && !loading && !error && (
         <section className="section-card" style={{ marginTop: 22 }}>

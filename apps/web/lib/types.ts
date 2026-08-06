@@ -23,4 +23,4 @@ export type IconName =
   | "search" | "arrow" | "plus" | "menu" | "close" | "clock" | "check"
   | "edit" | "play" | "upload" | "chevron" | "logout" | "eye" | "calendar"
   | "more" | "warning" | "back" | "refresh" | "file" | "download" | "filter"
-  | "trash" | "lock" | "unlock" | "list" | "target" | "question" | "save";
+  | "trash" | "lock" | "unlock" | "list" | "target" | "question" | "save" | "link";

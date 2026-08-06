@@ -1,2 +1,26 @@
-package com.lmspilot.learning.domain; import jakarta.persistence.*; import java.time.*; import java.util.*;
-@Entity @Table(name="lesson_progress",uniqueConstraints=@UniqueConstraint(name="uq_lesson_progress",columnNames={"enrollment_id","lesson_id"})) public class LessonProgressEntity { @Id public UUID id=UUID.randomUUID(); @Column(nullable=false) public UUID enrollmentId; @Column(nullable=false) public UUID lessonId; @Column(nullable=false) public UUID userId; @Column(nullable=false) public int progressPercent; @Enumerated(EnumType.STRING) @Column(nullable=false,length=30) public LearningStatus status=LearningStatus.NOT_STARTED; public Instant completedAt; @Column(nullable=false) public Instant updatedAt=Instant.now(); @Version public long version; public LessonProgressEntity(){} }
+package com.lmspilot.learning.domain;
+
+import jakarta.persistence.*;
+import java.time.Instant;
+import java.util.UUID;
+
+@Entity
+@Table(
+    name = "lesson_progress",
+    uniqueConstraints = @UniqueConstraint(name = "uq_lesson_progress", columnNames = {"enrollment_id", "lesson_id"})
+)
+public class LessonProgressEntity {
+    @Id public UUID id = UUID.randomUUID();
+    @Column(name = "enrollment_id", nullable = false) public UUID enrollmentId;
+    @Column(name = "course_id", nullable = false) public UUID courseId;
+    @Column(name = "lesson_id", nullable = false) public UUID lessonId;
+    @Column(name = "user_id", nullable = false) public UUID userId;
+    @Column(nullable = false) public boolean completed;
+    @Column(name = "learning_seconds", nullable = false) public long learningSeconds;
+    @Column(length = 500) public String position;
+    @Column(name = "opened_at") public Instant openedAt;
+    @Column(name = "completed_at") public Instant completedAt;
+    @Column(name = "updated_at", nullable = false) public Instant updatedAt = Instant.now();
+    @Version public long version;
+    public LessonProgressEntity() {}
+}

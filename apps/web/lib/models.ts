@@ -140,6 +140,7 @@ export type ExamSession = {
   startedAt: string;
   expiresAt: string;
   graceUntil?: string;
+  remainingSeconds: number;
   lastHeartbeatAt?: string;
   suspiciousEventCount?: number;
   submittedAt?: string | null;

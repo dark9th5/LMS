@@ -13,6 +13,7 @@ import { readableText } from "@/lib/color";
 import { normalizeThemeKey, type ThemeKey } from "@/lib/themes";
 import type { PortalUser } from "@/lib/types";
 import { Icon } from "./Icon";
+import { AiConnectionCenter } from "./AiConnectionCenter";
 import { RepeatableField } from "./RepeatableField";
 
 type Row = Record<string, any>;
@@ -69,20 +70,35 @@ function useLoad<T>(loader: () => Promise<T>, dependencies: unknown[] = []) {
   const [data, setData] = useState<T | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const requestId = useRef(0);
+  const mounted = useRef(true);
+  const hasData = useRef(false);
+
+  useEffect(() => () => {
+    mounted.current = false;
+  }, []);
+
   const refresh = useCallback(async () => {
-    setLoading(true);
+    const currentRequest = ++requestId.current;
+    // Preserve already-rendered content during background refresh to avoid page flicker.
+    if (!hasData.current) setLoading(true);
     setError("");
     try {
-      setData(await loader());
+      const next = await loader();
+      if (mounted.current && currentRequest === requestId.current) {
+        hasData.current = true;
+        setData(next);
+      }
     } catch (cause) {
-      setError(
-        cause instanceof Error ? cause.message : "Không thể tải dữ liệu",
-      );
+      if (mounted.current && currentRequest === requestId.current) {
+        setError(cause instanceof Error ? cause.message : "Không thể tải dữ liệu");
+      }
     } finally {
-      setLoading(false);
+      if (mounted.current && currentRequest === requestId.current) setLoading(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, dependencies);
+
   useEffect(() => {
     void refresh();
   }, [refresh]);
@@ -1696,7 +1712,7 @@ function WorldSettingsConsole({ user }: { user: PortalUser }) {
     }),
     [canBrand, canServices],
   );
-  const [tab, setTabState] = useState<"brand" | "services">(
+  const [tab, setTabState] = useState<"brand" | "services" | "ai">(
     canBrand ? "brand" : "services",
   );
   const [brand, setBrand] = useState<BrandingRow | null>(null);
@@ -1709,14 +1725,15 @@ function WorldSettingsConsole({ user }: { user: PortalUser }) {
   const [notice, setNotice] = useState<Notice>(null);
   const [working, setWorking] = useState(false);
 
-  function setTab(next: "brand" | "services") {
+  function setTab(next: "brand" | "services" | "ai") {
     setTabState(next);
     window.localStorage.setItem("lmspilot-settings-tab", next);
   }
 
   useEffect(() => {
     const remembered = window.localStorage.getItem("lmspilot-settings-tab");
-    if (remembered === "services" && canServices) setTabState("services");
+    if (remembered === "ai" && canServices) setTabState("ai");
+    else if (remembered === "services" && canServices) setTabState("services");
     else if (remembered === "brand" && canBrand) setTabState("brand");
   }, [canBrand, canServices]);
 
@@ -2033,6 +2050,15 @@ function WorldSettingsConsole({ user }: { user: PortalUser }) {
             <Icon name="operations" size={16} /> Dịch vụ ngoài
           </button>
         )}
+        {canServices && (
+          <button
+            type="button"
+            className={tab === "ai" ? "active" : ""}
+            onClick={() => setTab("ai")}
+          >
+            <span className="settings-ai-tab-icon">AI</span> Kết nối model AI
+          </button>
+        )}
       </div>
 
       {loading ? (
@@ -2236,6 +2262,8 @@ function WorldSettingsConsole({ user }: { user: PortalUser }) {
           </Panel>
         </form>
       )}
+
+      {!loading && tab === "ai" && canServices && <AiConnectionCenter />}
 
       {!loading && tab === "services" && canServices && (
         <div className="workspace-two-column wide-left settings-services-layout">

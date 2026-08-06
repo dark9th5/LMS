@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { landingForUser } from "@/lib/authorization";
 import type { PortalUser } from "@/lib/types";
 import { Icon } from "@/components/Icon";
@@ -19,21 +19,27 @@ export function LoginForm({
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const submitting = useRef(false);
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
+    if (submitting.current) return;
     if (!username.trim() || !password) {
       setError("Vui lòng nhập đầy đủ tên đăng nhập và mật khẩu.");
       return;
     }
+    submitting.current = true;
     setLoading(true);
     setError("");
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 10_000);
     try {
       const response = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username: username.trim(), password }),
         cache: "no-store",
+        signal: controller.signal,
       });
       const data = (await response
         .json()
@@ -50,9 +56,15 @@ export function LoginForm({
           ? "/change-password"
           : landingForUser(data.user),
       );
-    } catch {
-      setError("Không thể kết nối máy chủ. Vui lòng thử lại hoặc liên hệ quản trị viên.");
+    } catch (cause) {
+      setError(
+        cause instanceof DOMException && cause.name === "AbortError"
+          ? "Máy chủ phản hồi quá chậm. Hãy kiểm tra trạng thái dịch vụ rồi thử lại."
+          : "Không thể kết nối máy chủ. Vui lòng thử lại hoặc liên hệ quản trị viên.",
+      );
     } finally {
+      window.clearTimeout(timeout);
+      submitting.current = false;
       setLoading(false);
     }
   }

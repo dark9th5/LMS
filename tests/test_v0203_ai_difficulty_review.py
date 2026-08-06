@@ -8,9 +8,9 @@ def text(path: str) -> str:
 
 class Release0203AiDifficultyReviewTests(unittest.TestCase):
     def test_release_version(self):
-        self.assertEqual("0.21.0", text("VERSION").strip())
-        self.assertIn('"version": "0.21.0"', text("apps/web/package.json"))
-        self.assertIn('version = "0.21.0"', text("backend/build.gradle.kts"))
+        self.assertEqual("0.23.0", text("VERSION").strip())
+        self.assertIn('"version": "0.23.0"', text("apps/web/package.json"))
+        self.assertIn('version = "0.23.0"', text("backend/build.gradle.kts"))
 
     def test_frontend_has_difficulty_presets_and_review_step(self):
         component = text("apps/web/components/AiQuestionGeneration.tsx")

@@ -580,23 +580,22 @@ function LegacySectionPage({
       const needsUnits =
         ["organization", "users"].includes(section) &&
         user.permissions.includes("organization:read");
-      const [coursePayload, unitPayload] = await Promise.all(
-        [
-          needsCourses
-            ? apiRequest("/api/v1/courses?size=100").catch(() => [])
-            : Promise.resolve([]),
-          needsUnits
-            ? apiRequest("/api/v1/organization/units").catch(() => [])
-            : Promise.resolve([]),
-        ],
-      );
+      const [coursePayload, unitPayload, mainPayload] = await Promise.all([
+        needsCourses
+          ? apiRequest("/api/v1/courses?size=100").catch(() => [])
+          : Promise.resolve([]),
+        needsUnits
+          ? apiRequest("/api/v1/organization/units").catch(() => [])
+          : Promise.resolve([]),
+        apiRequest(definition.endpoint(user)),
+      ]);
       setReferences({
         courses: unwrapItems<UnknownRecord>(
           coursePayload as { items?: UnknownRecord[] } | UnknownRecord[],
         ),
         units: unwrapItems<UnknownRecord>(unitPayload as UnknownRecord[]),
       });
-      setPayload(await apiRequest(definition.endpoint(user)));
+      setPayload(mainPayload);
     } catch (caught) {
       setError(
         caught instanceof Error ? caught.message : "Không thể tải dữ liệu",

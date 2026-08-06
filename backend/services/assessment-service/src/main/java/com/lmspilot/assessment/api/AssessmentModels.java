@@ -9,7 +9,7 @@ public final class AssessmentModels { private AssessmentModels(){}
  public record ExamResponse(UUID id,String title,UUID courseId,UUID lessonId,AssessmentContextType contextType,UUID cohortId,boolean autoGrade,int durationMinutes,Instant opensAt,Instant closesAt,int maxAttempts,int waitMinutesBetweenAttempts,double passingScore,boolean shuffleQuestions,boolean shuffleAnswers,ScoreStrategy scoreStrategy,ExamStatus status,int version,List<ExamQuestionView> questions){}
  public record StartSessionRequest(UUID examId,UUID enrollmentId){}
  public record SaveAnswersRequest(Map<String,JsonNode> answers){ public SaveAnswersRequest{answers=answers==null?Map.of():answers;} }
- public record SessionResponse(UUID id,UUID examId,UUID enrollmentId,UUID courseId,UUID lessonId,int attemptNo,ExamSessionStatus status,Instant startedAt,Instant expiresAt,Instant graceUntil,Instant lastHeartbeatAt,int suspiciousEventCount,Instant submittedAt,Map<String,JsonNode> answers,List<ExamQuestionView> questions){}
+ public record SessionResponse(UUID id,UUID examId,UUID enrollmentId,UUID courseId,UUID lessonId,int attemptNo,ExamSessionStatus status,Instant startedAt,Instant expiresAt,Instant graceUntil,long remainingSeconds,Instant lastHeartbeatAt,int suspiciousEventCount,Instant submittedAt,Map<String,JsonNode> answers,List<ExamQuestionView> questions){}
  public record SessionEventRequest(ExamSessionEventType type,String details,Instant occurredAt){}
  public record SessionEventResponse(UUID id,ExamSessionEventType type,String details,Instant occurredAt,Instant storedAt){}
  public record GradingQuestionPayload(UUID questionId,QuestionType type,String prompt,List<String> correctAnswers,double points){}

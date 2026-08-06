@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import { Modal } from "./Modal";
 
 export type FormOption = { label: string; value: string };
 export type FormField = {
@@ -48,65 +49,57 @@ export function EntityDialog({
     if (open) setValues(initialValues);
   }, [open, initialValues]);
 
-  if (!open) return null;
-
   async function submit(event: FormEvent) {
     event.preventDefault();
     await onSubmit(values);
   }
 
   return (
-    <div className="modal-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
-      <section className="modal-card" role="dialog" aria-modal="true" aria-labelledby="entity-dialog-title">
-        <header className="modal-head">
-          <div>
-            <h2 id="entity-dialog-title">{title}</h2>
-            {description && <p>{description}</p>}
-          </div>
-          <button type="button" className="modal-close" onClick={onClose} aria-label="Đóng">×</button>
-        </header>
-        <form onSubmit={submit} className="entity-form">
-          <div className="form-grid">
-            {fields.map((field) => (
-              <label key={field.name} className={field.type === "textarea" ? "field-wide" : undefined}>
-                <span>{field.label}{field.required && <b> *</b>}</span>
-                {field.type === "select" ? (
-                  <select
-                    required={field.required}
-                    value={values[field.name] ?? ""}
-                    onChange={(event) => setValues((current) => ({ ...current, [field.name]: event.target.value }))}
-                  >
-                    <option value="">Chọn giá trị</option>
-                    {field.options?.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-                  </select>
-                ) : field.type === "textarea" ? (
-                  <textarea
-                    required={field.required}
-                    placeholder={field.placeholder}
-                    value={values[field.name] ?? ""}
-                    onChange={(event) => setValues((current) => ({ ...current, [field.name]: event.target.value }))}
-                  />
-                ) : (
-                  <input
-                    type={field.type ?? "text"}
-                    required={field.required}
-                    placeholder={field.placeholder}
-                    min={field.min}
-                    max={field.max}
-                    value={values[field.name] ?? ""}
-                    onChange={(event) => setValues((current) => ({ ...current, [field.name]: event.target.value }))}
-                  />
-                )}
-              </label>
-            ))}
-          </div>
-          {error && <div className="form-error">{error}</div>}
-          <footer className="modal-actions">
-            <button type="button" className="soft-button" onClick={onClose} disabled={busy}>Hủy</button>
-            <button type="submit" className="primary-button" disabled={busy}>{busy ? "Đang lưu..." : submitLabel}</button>
-          </footer>
-        </form>
-      </section>
-    </div>
+    <Modal open={open} title={title} description={description} onClose={onClose}>
+      <form onSubmit={submit} className="entity-form">
+        <div className="form-grid">
+          {fields.map((field, index) => (
+            <label key={field.name} className={field.type === "textarea" ? "field-wide" : undefined}>
+              <span>{field.label}{field.required && <b> *</b>}</span>
+              {field.type === "select" ? (
+                <select
+                  data-autofocus={index === 0 ? "true" : undefined}
+                  required={field.required}
+                  value={values[field.name] ?? ""}
+                  onChange={(event) => setValues((current) => ({ ...current, [field.name]: event.target.value }))}
+                >
+                  <option value="">Chọn giá trị</option>
+                  {field.options?.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                </select>
+              ) : field.type === "textarea" ? (
+                <textarea
+                  data-autofocus={index === 0 ? "true" : undefined}
+                  required={field.required}
+                  placeholder={field.placeholder}
+                  value={values[field.name] ?? ""}
+                  onChange={(event) => setValues((current) => ({ ...current, [field.name]: event.target.value }))}
+                />
+              ) : (
+                <input
+                  data-autofocus={index === 0 ? "true" : undefined}
+                  type={field.type ?? "text"}
+                  required={field.required}
+                  placeholder={field.placeholder}
+                  min={field.min}
+                  max={field.max}
+                  value={values[field.name] ?? ""}
+                  onChange={(event) => setValues((current) => ({ ...current, [field.name]: event.target.value }))}
+                />
+              )}
+            </label>
+          ))}
+        </div>
+        {error && <div className="form-error" role="alert">{error}</div>}
+        <footer className="modal-actions entity-form-actions">
+          <button type="button" className="soft-button" onClick={onClose} disabled={busy}>Hủy</button>
+          <button type="submit" className="primary-button" disabled={busy}>{busy ? "Đang lưu..." : submitLabel}</button>
+        </footer>
+      </form>
+    </Modal>
   );
 }

@@ -1,7 +1,7 @@
 package com.lmspilot.identity.api;
 import com.lmspilot.contracts.*; import com.lmspilot.identity.domain.*; import jakarta.validation.Valid; import jakarta.validation.constraints.*; import java.time.Instant; import java.util.*;
 public final class IdentityModels { private IdentityModels(){}
- public record LoginRequest(@NotBlank String username,@NotBlank String password){}
+ public record LoginRequest(@NotBlank @Size(max=128) String username,@NotBlank @Size(max=1024) String password){}
  public record RefreshRequest(@NotBlank String refreshToken){}
  public record LogoutRequest(@NotBlank String refreshToken){}
  public record ChangePasswordRequest(@NotBlank String currentPassword,@NotBlank @Size(min=12,max=128) String newPassword){}

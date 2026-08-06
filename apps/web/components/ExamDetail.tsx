@@ -23,9 +23,20 @@ import { Modal } from "./Modal";
 import { StatusBadge } from "./StatusBadge";
 
 function secondsLeft(expiresAt: string): number {
-  return Math.max(
-    0,
-    Math.ceil((new Date(expiresAt).getTime() - Date.now()) / 1000),
+  return Math.max(0, Math.ceil((new Date(expiresAt).getTime() - Date.now()) / 1000));
+}
+function serverRemaining(session: ExamSession): number {
+  return Number.isFinite(session.remainingSeconds)
+    ? Math.max(0, Math.floor(session.remainingSeconds))
+    : secondsLeft(session.expiresAt);
+}
+function validAttempt(session: ExamSession, examId: string): boolean {
+  return (
+    session.examId === examId &&
+    session.status === "IN_PROGRESS" &&
+    Array.isArray(session.questions) &&
+    session.questions.length > 0 &&
+    serverRemaining(session) > 0
   );
 }
 function timerLabel(value: number): string {
@@ -91,7 +102,7 @@ export function ExamDetail({
   const [session, setSession] = useState<ExamSession | null>(null);
   const [answers, setAnswers] = useState<Record<string, unknown>>({});
   const [current, setCurrent] = useState(0);
-  const [remaining, setRemaining] = useState(0);
+  const [remaining, setRemaining] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -110,6 +121,7 @@ export function ExamDetail({
   });
   const lastSaved = useRef("");
   const autoSubmitted = useRef(false);
+  const sessionReadyAt = useRef(0);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -156,18 +168,21 @@ export function ExamDetail({
             const resumed = await apiRequest<ExamSession>(
               `/api/v1/exam-sessions/${remembered}`,
             );
-            if (
-              resumed.examId === data.id &&
-              resumed.status === "IN_PROGRESS"
-            ) {
+            if (validAttempt(resumed, data.id)) {
+              setRemaining(serverRemaining(resumed));
+              autoSubmitted.current = false;
+              sessionReadyAt.current = Date.now();
               setSession(resumed);
               setAnswers(resumed.answers ?? {});
               lastSaved.current = JSON.stringify(resumed.answers ?? {});
               setToast("Đã khôi phục phiên thi đang làm trên máy chủ.");
-            } else if (resumed.status !== "IN_PROGRESS") {
+            } else {
               window.localStorage.removeItem(
                 sessionStorageKey(data.id, enrollmentId),
               );
+              if (resumed.status === "IN_PROGRESS" && (!resumed.questions || resumed.questions.length === 0)) {
+                setError("Phiên thi không có câu hỏi. Hệ thống đã dừng phiên để tránh tự hoàn thành một đề rỗng.");
+              }
             }
           } catch {
             window.localStorage.removeItem(
@@ -262,13 +277,14 @@ export function ExamDetail({
   }
 
   useEffect(() => {
-    if (!session || session.status !== "IN_PROGRESS") return;
-    const deadline = session.expiresAt;
-    setRemaining(secondsLeft(deadline));
-    const timer = window.setInterval(
-      () => setRemaining(secondsLeft(deadline)),
-      1000,
-    );
+    if (!session || session.status !== "IN_PROGRESS") {
+      setRemaining(null);
+      return;
+    }
+    setRemaining(serverRemaining(session));
+    const timer = window.setInterval(() => {
+      setRemaining((value) => (value === null ? serverRemaining(session) : Math.max(0, value - 1)));
+    }, 1000);
     return () => window.clearInterval(timer);
   }, [session]);
 
@@ -287,6 +303,18 @@ export function ExamDetail({
         method: "POST",
         body: JSON.stringify({ examId, enrollmentId: enrollmentId || null }),
       });
+      if (!validAttempt(started, examId)) {
+        if (started.status !== "IN_PROGRESS") {
+          throw new Error("Phiên thi vừa tạo đã kết thúc. Vui lòng tải lại bài thi trước khi bắt đầu lượt mới.");
+        }
+        if (!started.questions?.length) {
+          throw new Error("Đề thi chưa tải được câu hỏi. Hệ thống không ghi nhận hoàn thành và không trừ lượt làm.");
+        }
+        throw new Error("Thời gian phiên thi không hợp lệ. Vui lòng đồng bộ thời gian máy chủ rồi thử lại.");
+      }
+      setRemaining(serverRemaining(started));
+      autoSubmitted.current = false;
+      sessionReadyAt.current = Date.now();
       setSession(started);
       setAnswers(started.answers ?? {});
       setCurrent(0);
@@ -479,8 +507,11 @@ export function ExamDetail({
     if (!session || session.status !== "IN_PROGRESS") return;
     let online = navigator.onLine;
     const heartbeat = () => {
-      void apiRequest(`/api/v1/exam-sessions/${session.id}/heartbeat`, {
+      void apiRequest<ExamSession>(`/api/v1/exam-sessions/${session.id}/heartbeat`, {
         method: "POST",
+      }).then((updated) => {
+        setSession(updated);
+        if (updated.status === "IN_PROGRESS") setRemaining(serverRemaining(updated));
       }).catch(() => undefined);
     };
     const record = (type: string, details?: string) => {
@@ -535,13 +566,30 @@ export function ExamDetail({
     if (
       !session ||
       session.status !== "IN_PROGRESS" ||
+      remaining === null ||
       remaining > 0 ||
-      autoSubmitted.current
-    )
-      return;
+      autoSubmitted.current ||
+      !session.questions?.length ||
+      Date.now() - sessionReadyAt.current < 1_500
+    ) return;
+
     autoSubmitted.current = true;
-    void submitExam(true);
-  }, [remaining, session]);
+    void apiRequest<ExamSession>(`/api/v1/exam-sessions/${session.id}/heartbeat`, { method: "POST" })
+      .then((verified) => {
+        setSession(verified);
+        const verifiedRemaining = serverRemaining(verified);
+        setRemaining(verifiedRemaining);
+        if (verified.status === "IN_PROGRESS" && verified.questions?.length && verifiedRemaining === 0) {
+          return submitExam(true);
+        }
+        autoSubmitted.current = false;
+        return undefined;
+      })
+      .catch((caught) => {
+        autoSubmitted.current = false;
+        setError(caught instanceof Error ? caught.message : "Không thể xác minh thời gian phiên thi");
+      });
+  }, [remaining, session?.id, session?.status, session?.questions?.length]);
 
   if (loading)
     return <LoadingState label="Đang tải cấu hình bài kiểm tra..." />;
@@ -1064,6 +1112,64 @@ export function ExamDetail({
       </>
     );
 
+  if (!canManage && (exam.questions ?? []).length === 0)
+    return (
+      <>
+        <PageHeader
+          backHref={backHref}
+          eyebrow="ĐỀ THI CHƯA SẴN SÀNG"
+          title={exam.title}
+          description={course?.name ?? "Kỳ thi độc lập được cấp quyền"}
+        />
+        <section className="result-panel exam-not-ready-panel">
+          <span className="result-icon">
+            <Icon name="warning" size={34} />
+          </span>
+          <h2>Đề thi chưa có câu hỏi</h2>
+          <p>
+            Hệ thống không tạo phiên làm bài rỗng. Giảng viên cần thêm ít nhất
+            một câu hỏi và xuất bản lại đề trước khi học viên bắt đầu.
+          </p>
+          <button className="button secondary" onClick={() => void load()}>
+            <Icon name="refresh" />
+            Kiểm tra lại đề
+          </button>
+          <Link className="button primary" href={backHref}>
+            Quay lại
+          </Link>
+        </section>
+      </>
+    );
+
+  if (session?.status === "IN_PROGRESS" && questions.length === 0)
+    return (
+      <>
+        <PageHeader
+          backHref={backHref}
+          eyebrow="PHIÊN THI KHÔNG HỢP LỆ"
+          title={exam.title}
+          description="Máy chủ đã tạo phiên nhưng không trả về câu hỏi."
+        />
+        <section className="result-panel exam-not-ready-panel">
+          <span className="result-icon">
+            <Icon name="warning" size={34} />
+          </span>
+          <h2>Không thể hiển thị đề thi</h2>
+          <p>
+            Phiên này được giữ nguyên để tránh mất lượt làm. Hãy tải lại dữ liệu;
+            hệ thống sẽ không tự nộp một đề rỗng.
+          </p>
+          <button className="button secondary" onClick={() => void load()}>
+            <Icon name="refresh" />
+            Tải lại dữ liệu
+          </button>
+          <Link className="button primary" href={backHref}>
+            Quay lại
+          </Link>
+        </section>
+      </>
+    );
+
   if (!session)
     return (
       <>
@@ -1123,7 +1229,7 @@ export function ExamDetail({
           )}
           <button
             className="button primary large-action"
-            disabled={busy || exam.status !== "ACTIVE"}
+            disabled={busy || exam.status !== "ACTIVE" || (exam.questions ?? []).length === 0}
             onClick={() => void startExam()}
           >
             {busy ? "Đang tạo phiên thi..." : "Bắt đầu làm bài"}
@@ -1152,11 +1258,11 @@ export function ExamDetail({
               {session.suspiciousEventCount}
             </span>
           )}
-          <div className={`exam-timer ${remaining < 300 ? "urgent" : ""}`}>
+          <div className={`exam-timer ${remaining !== null && remaining < 300 ? "urgent" : ""}`}>
             <Icon name="clock" />
             <span>
               <small>Thời gian làm bài còn lại</small>
-              <strong>{timerLabel(remaining)}</strong>
+              <strong>{timerLabel(remaining ?? 0)}</strong>
             </span>
           </div>
         </div>

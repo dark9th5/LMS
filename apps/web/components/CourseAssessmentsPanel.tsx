@@ -77,9 +77,10 @@ export function CourseAssessmentsPanel({ course }: { course: Course }) {
     setLoading(true);
     setError("");
     try {
-      const [examPayload, questionPayload] = await Promise.all([
+      const [examPayload, questionPayload, providerPayload] = await Promise.all([
         apiRequest<unknown>("/api/v1/exams"),
         apiRequest<unknown>("/api/v1/questions"),
+        apiRequest<unknown>("/api/v1/ai/providers").catch(() => []),
       ]);
       setExams(
         unwrapItems<Exam>(examPayload as never).filter(
@@ -92,12 +93,9 @@ export function CourseAssessmentsPanel({ course }: { course: Course }) {
           question.tags.includes(courseTag),
         ),
       );
-      try {
-        const providerPayload = await apiRequest<unknown>("/api/v1/ai/providers");
-        setProviders(unwrapItems<AiProvider>(providerPayload as never).filter((item) => item.enabled));
-      } catch {
-        setProviders([]);
-      }
+      setProviders(
+        unwrapItems<AiProvider>(providerPayload as never).filter((item) => item.enabled),
+      );
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Không thể tải bài kiểm tra của khóa học");
     } finally {
