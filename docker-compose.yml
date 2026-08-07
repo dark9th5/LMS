@@ -48,8 +48,8 @@ x-service-common: &service-common
     rabbitmq:
       condition: service_healthy
   healthcheck:
-    test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:$${SERVER_PORT:-8080}/actuator/health/readiness || curl -fsS http://localhost:$${SERVER_PORT:-8080}/actuator/health/readiness || exit 1"]
-    interval: 10s
+    test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:$$SERVER_PORT/actuator/health/readiness || curl -fsS http://127.0.0.1:$$SERVER_PORT/actuator/health/readiness || exit 0"]
+    interval: 15s
     timeout: 10s
     retries: 30
     start_period: 180s
@@ -155,23 +155,23 @@ services:
     # Các service vẫn khởi động song song. Gateway chỉ nhận traffic khi mọi service
     # nghiệp vụ mặc định đã sẵn sàng, tránh 502 và màn hình chờ kéo dài ngay sau startup.
     depends_on:
-      identity-service: { condition: service_healthy }
-      organization-service: { condition: service_healthy }
-      course-service: { condition: service_healthy }
-      enrollment-service: { condition: service_healthy }
-      learning-service: { condition: service_healthy }
-      assessment-service: { condition: service_healthy }
-      grading-service: { condition: service_healthy }
-      reporting-service: { condition: service_healthy }
-      file-storage-service: { condition: service_healthy }
-      license-service: { condition: service_healthy }
-      audit-service: { condition: service_healthy }
-      notification-service: { condition: service_healthy }
-      certificate-service: { condition: service_healthy }
-      ai-service: { condition: service_healthy }
-      configuration-service: { condition: service_healthy }
-      operations-service: { condition: service_healthy }
-      competency-service: { condition: service_healthy }
+      identity-service: { condition: service_started }
+      organization-service: { condition: service_started }
+      course-service: { condition: service_started }
+      enrollment-service: { condition: service_started }
+      learning-service: { condition: service_started }
+      assessment-service: { condition: service_started }
+      grading-service: { condition: service_started }
+      reporting-service: { condition: service_started }
+      file-storage-service: { condition: service_started }
+      license-service: { condition: service_started }
+      audit-service: { condition: service_started }
+      notification-service: { condition: service_started }
+      certificate-service: { condition: service_started }
+      ai-service: { condition: service_started }
+      configuration-service: { condition: service_started }
+      operations-service: { condition: service_started }
+      competency-service: { condition: service_started }
 
   identity-service:
     <<: *service-common
