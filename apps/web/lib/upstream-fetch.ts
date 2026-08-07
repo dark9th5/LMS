@@ -23,7 +23,7 @@ function timeoutFor(target: string, method: string): number {
     target.includes("/ai/question-generation-jobs") ||
     target.includes("/files/upload")
   ) return aiTimeoutMs;
-  if (target.includes("/auth/")) return Math.min(defaultTimeoutMs, 8_000);
+  if (target.includes("/auth/")) return Math.max(defaultTimeoutMs, 15_000);
   return ["GET", "HEAD"].includes(method) ? defaultTimeoutMs : mutationTimeoutMs;
 }
 
