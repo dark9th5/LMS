@@ -1,0 +1,101 @@
+name: lmspilot-course-only
+
+services:
+  course-db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: course_db
+      POSTGRES_USER: course_user
+      POSTGRES_PASSWORD: course_dev
+    ports:
+      - "15432:5432"
+    volumes:
+      - course_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U course_user -d course_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  course-rabbitmq:
+    image: rabbitmq:4-management-alpine
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: course
+      RABBITMQ_DEFAULT_PASS: course_dev
+    ports:
+      - "15683:15672"
+    volumes:
+      - course_rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 10s
+      retries: 20
+
+  course-service:
+    build:
+      context: ../..
+      dockerfile: Dockerfile.runtime
+      args:
+        SERVICE: course-service
+    restart: unless-stopped
+    depends_on:
+      course-db:
+        condition: service_healthy
+      course-rabbitmq:
+        condition: service_healthy
+    environment:
+      SERVER_PORT: 8083
+      DB_URL: jdbc:postgresql://course-db:5432/course_db?currentSchema=public
+      DB_USERNAME: course_user
+      DB_PASSWORD: course_dev
+      SPRING_RABBITMQ_HOST: course-rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: course
+      SPRING_RABBITMQ_PASSWORD: course_dev
+      LMSPILOT_JWT_SECRET: course-service-local-dev-secret-change-me-at-least-64-characters
+      LMSPILOT_INTERNAL_TOKEN: course-service-local-internal-token
+      LMSPILOT_LICENSE_ENFORCEMENT_ENABLED: "false"
+      LMSPILOT_SEED_DEMO: "true"
+      FILE_STORAGE_SERVICE_URL: http://localhost:8089
+      JAVA_OPTS: -Xms128m -Xmx384m
+    ports:
+      - "18083:8083"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8083/actuator/health/readiness || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 18
+      start_period: 90s
+
+  api-gateway:
+    build:
+      context: ../..
+      dockerfile: Dockerfile.runtime
+      args:
+        SERVICE: api-gateway
+    restart: unless-stopped
+    depends_on:
+      course-service:
+        condition: service_healthy
+    environment:
+      SERVER_PORT: 8080
+      COURSE_URL: http://course-service:8083
+      LMSPILOT_JWT_SECRET: course-service-local-dev-secret-change-me-at-least-64-characters
+      GATEWAY_CONNECT_TIMEOUT_MS: 2000
+      GATEWAY_RESPONSE_TIMEOUT: 12s
+      JAVA_OPTS: -Xms128m -Xmx384m
+    ports:
+      - "18080:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8080/actuator/health/readiness || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 18
+      start_period: 60s
+
+volumes:
+  course_db_data:
+  course_rabbitmq_data:

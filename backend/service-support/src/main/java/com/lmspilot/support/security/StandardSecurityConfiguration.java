@@ -23,7 +23,9 @@ public class StandardSecurityConfiguration {
             .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .exceptionHandling(e -> e.authenticationEntryPoint((req, res, ex) -> writeUnauthorized(res)))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/actuator/health/**", "/actuator/info", "/error", "/internal/v1/**", "/public/v1/**").permitAll()
+                .requestMatchers("/actuator/health/**", "/actuator/info", "/error",
+                    "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html",
+                    "/internal/v1/**", "/public/v1/**").permitAll()
                 .anyRequest().authenticated())
             .oauth2ResourceServer(resource -> resource
                 .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter))
