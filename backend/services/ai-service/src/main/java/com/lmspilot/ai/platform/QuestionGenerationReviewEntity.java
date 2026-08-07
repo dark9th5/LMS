@@ -1,2 +1,27 @@
-package com.lmspilot.ai.platform;import jakarta.persistence.*;import java.time.*;import java.util.*;
-@Entity @Table(name="question_generation_reviews") public class QuestionGenerationReviewEntity{@Id public UUID id=UUID.randomUUID();@Column(name="job_id",nullable=false)public UUID jobId;@Column(name="reviewer_id",nullable=false)public UUID reviewerId;@Enumerated(EnumType.STRING)@Column(nullable=false,length=20)public ReviewDecision decision=ReviewDecision.APPROVE;@Column(columnDefinition="text")public String comments;@Column(name="created_at",nullable=false)public Instant createdAt=Instant.now();public QuestionGenerationReviewEntity(){}}
+package com.lmspilot.ai.platform;
+
+import jakarta.persistence.*;
+
+import java.time.*;
+
+import java.util.*;
+@Entity
+@Table(name="question_generation_reviews")
+public class QuestionGenerationReviewEntity{
+    @Id
+    public UUID id=UUID.randomUUID();
+    @Column(name="job_id",nullable=false)
+    public UUID jobId;
+    @Column(name="reviewer_id",nullable=false)
+    public UUID reviewerId;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable=false,length=20)
+    public ReviewDecision decision=ReviewDecision.APPROVE;
+    @Column(columnDefinition="text")
+    public String comments;
+    @Column(name="created_at",nullable=false)
+    public Instant createdAt=Instant.now();
+    public QuestionGenerationReviewEntity(){
+    }
+
+}

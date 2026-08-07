@@ -1,2 +1,34 @@
-package com.lmspilot.enrollment.domain; import jakarta.persistence.*; import java.time.*; import java.util.*;
-@Entity @Table(name="learning_paths") public class LearningPathEntity { @Id public UUID id=UUID.randomUUID(); @Column(nullable=false,unique=true,length=80) public String code=""; @Column(nullable=false,length=220) public String name=""; @Column(columnDefinition="text") public String description; @Enumerated(EnumType.STRING) @Column(nullable=false,length=20) public LearningPathStatus status=LearningPathStatus.DRAFT; @Column(nullable=false) public UUID ownerId; public Instant publishedAt; @Column(nullable=false) public Instant createdAt=Instant.now(); @Column(nullable=false) public Instant updatedAt=Instant.now(); @Version public long version; public LearningPathEntity(){} }
+package com.lmspilot.enrollment.domain;
+
+import jakarta.persistence.*;
+
+import java.time.*;
+
+import java.util.*;
+@Entity
+@Table(name="learning_paths")
+public class LearningPathEntity {
+    @Id
+    public UUID id=UUID.randomUUID();
+    @Column(nullable=false,unique=true,length=80)
+    public String code="";
+    @Column(nullable=false,length=220)
+    public String name="";
+    @Column(columnDefinition="text")
+    public String description;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable=false,length=20)
+    public LearningPathStatus status=LearningPathStatus.DRAFT;
+    @Column(nullable=false)
+    public UUID ownerId;
+    public Instant publishedAt;
+    @Column(nullable=false)
+    public Instant createdAt=Instant.now();
+    @Column(nullable=false)
+    public Instant updatedAt=Instant.now();
+    @Version
+    public long version;
+    public LearningPathEntity(){
+    }
+
+}

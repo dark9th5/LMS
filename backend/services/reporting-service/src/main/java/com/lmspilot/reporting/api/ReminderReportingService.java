@@ -1,1 +1,29 @@
-package com.lmspilot.reporting.api;import com.lmspilot.reporting.domain.*;import com.lmspilot.support.api.ApiException;import org.springframework.http.HttpStatus;import org.springframework.stereotype.Service;import org.springframework.transaction.annotation.Transactional;import java.time.Instant;import java.util.*;@Service public class ReminderReportingService{private final LearnerCourseReadModelRepository repo;public ReminderReportingService(LearnerCourseReadModelRepository r){repo=r;}@Transactional(readOnly=true)public List<DueLearningReminder>dueBetween(Instant f,Instant t){if(!f.isBefore(t))throw new ApiException(HttpStatus.BAD_REQUEST,"REMINDER_WINDOW_INVALID","Thời điểm bắt đầu phải trước thời điểm kết thúc");if(t.getEpochSecond()-f.getEpochSecond()>32L*86400)throw new ApiException(HttpStatus.BAD_REQUEST,"REMINDER_WINDOW_TOO_LARGE","Khoảng truy vấn nhắc hạn không được vượt quá 32 ngày");return repo.findAllByCompletedFalseAndDueAtGreaterThanEqualAndDueAtLessThanOrderByDueAtAsc(f,t).stream().map(x->new DueLearningReminder(x.getEnrollmentId(),x.getClassId(),x.getCourseId(),x.getUserId(),x.getDueAt(),x.getProgressPercent())).toList();}}
+package com.lmspilot.reporting.api;
+
+import com.lmspilot.reporting.domain.*;
+
+import com.lmspilot.support.api.ApiException;
+
+import org.springframework.http.HttpStatus;
+
+import org.springframework.stereotype.Service;
+
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.Instant;
+
+import java.util.*;
+@Service
+public class ReminderReportingService{
+    private final LearnerCourseReadModelRepository repo;
+    public ReminderReportingService(LearnerCourseReadModelRepository r){
+        repo=r;
+    }
+    @Transactional(readOnly=true)
+    public List<DueLearningReminder>dueBetween(Instant f,Instant t){
+        if(!f.isBefore(t))throw new ApiException(HttpStatus.BAD_REQUEST,"REMINDER_WINDOW_INVALID","Thời điểm bắt đầu phải trước thời điểm kết thúc");
+        if(t.getEpochSecond()-f.getEpochSecond()>32L*86400)throw new ApiException(HttpStatus.BAD_REQUEST,"REMINDER_WINDOW_TOO_LARGE","Khoảng truy vấn nhắc hạn không được vượt quá 32 ngày");
+        return repo.findAllByCompletedFalseAndDueAtGreaterThanEqualAndDueAtLessThanOrderByDueAtAsc(f,t).stream().map(x->new DueLearningReminder(x.getEnrollmentId(),x.getClassId(),x.getCourseId(),x.getUserId(),x.getDueAt(),x.getProgressPercent())).toList();
+    }
+
+}

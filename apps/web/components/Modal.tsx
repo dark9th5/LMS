@@ -39,14 +39,18 @@ export function Modal({
 
   useEffect(() => {
     if (!open) return;
-    previousFocus.current = document.activeElement instanceof HTMLElement
-      ? document.activeElement
-      : null;
+    previousFocus.current =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
 
     const body = document.body;
     const previousOverflow = body.style.overflow;
     const previousPaddingRight = body.style.paddingRight;
-    const scrollbarWidth = Math.max(0, window.innerWidth - document.documentElement.clientWidth);
+    const scrollbarWidth = Math.max(
+      0,
+      window.innerWidth - document.documentElement.clientWidth,
+    );
     body.classList.add("modal-open");
     body.style.overflow = "hidden";
     if (scrollbarWidth > 0) body.style.paddingRight = `${scrollbarWidth}px`;
@@ -67,8 +71,12 @@ export function Modal({
       if (event.key !== "Tab") return;
       const panel = panelRef.current;
       if (!panel) return;
-      const focusable = Array.from(panel.querySelectorAll<HTMLElement>(FOCUSABLE))
-        .filter((element) => !element.hidden && element.getAttribute("aria-hidden") !== "true");
+      const focusable = Array.from(
+        panel.querySelectorAll<HTMLElement>(FOCUSABLE),
+      ).filter(
+        (element) =>
+          !element.hidden && element.getAttribute("aria-hidden") !== "true",
+      );
       if (!focusable.length) {
         event.preventDefault();
         panel.focus();
@@ -120,7 +128,12 @@ export function Modal({
             <h2 id={titleId}>{title}</h2>
             {description && <p id={descriptionId}>{description}</p>}
           </div>
-          <button type="button" className="icon-button" onClick={onClose} aria-label="Đóng">
+          <button
+            type="button"
+            className="icon-button"
+            onClick={onClose}
+            aria-label="Đóng"
+          >
             <Icon name="close" />
           </button>
         </header>

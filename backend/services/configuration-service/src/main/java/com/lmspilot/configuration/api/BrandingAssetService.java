@@ -1,1 +1,40 @@
-package com.lmspilot.configuration.api;import com.lmspilot.configuration.domain.*;import com.lmspilot.support.api.ApiException;import org.springframework.beans.factory.annotation.Value;import org.springframework.http.*;import org.springframework.stereotype.Service;import org.springframework.web.client.RestClient;@Service public class BrandingAssetService{private final BrandingProfileRepository repo;private final RestClient client;private final String token;public BrandingAssetService(BrandingProfileRepository r,RestClient.Builder b,@Value("${file-storage-service.url:http://localhost:8089}")String url,@Value("${lmspilot.internal-token}")String t){repo=r;client=b.baseUrl(url).build();token=t;}public ResponseEntity<byte[]>content(String kind){var br=repo.findByProfileKey("default");if(br==null)throw new ApiException(HttpStatus.NOT_FOUND,"BRANDING_NOT_FOUND","Chưa cấu hình thương hiệu");var id=switch(kind.toLowerCase()){case"logo"->br.getLogoFileId();case"favicon"->br.getFaviconFileId();case"background"->br.getBackgroundFileId();default->null;};if(id==null)throw new ApiException(HttpStatus.NOT_FOUND,"BRANDING_ASSET_NOT_FOUND","Không tìm thấy tài nguyên thương hiệu");var up=client.get().uri("/internal/v1/files/{id}/content",id).header("X-Service-Token",token).retrieve().toEntity(byte[].class);MediaType type=up.getHeaders().getContentType()==null?MediaType.APPLICATION_OCTET_STREAM:up.getHeaders().getContentType();return ResponseEntity.ok().contentType(type).cacheControl(CacheControl.noCache()).header("X-Content-Type-Options","nosniff").body(up.getBody()==null?new byte[0]:up.getBody());}}
+package com.lmspilot.configuration.api;
+
+import com.lmspilot.configuration.domain.*;
+
+import com.lmspilot.support.api.ApiException;
+
+import org.springframework.beans.factory.annotation.Value;
+
+import org.springframework.http.*;
+
+import org.springframework.stereotype.Service;
+
+import org.springframework.web.client.RestClient;
+@Service
+public class BrandingAssetService{
+    private final BrandingProfileRepository repo;
+    private final RestClient client;
+    private final String token;
+    public BrandingAssetService(BrandingProfileRepository r,RestClient.Builder b,@Value("${file-storage-service.url:http://localhost:8089}")String url,@Value("${lmspilot.internal-token}")String t){
+        repo=r;
+        client=b.baseUrl(url).build();
+        token=t;
+    }
+    public ResponseEntity<byte[]>content(String kind){
+        var br=repo.findByProfileKey("default");
+        if(br==null)throw new ApiException(HttpStatus.NOT_FOUND,"BRANDING_NOT_FOUND","Chưa cấu hình thương hiệu");
+        var id=switch(kind.toLowerCase()){
+            case"logo"->br.getLogoFileId();
+            case"favicon"->br.getFaviconFileId();
+            case"background"->br.getBackgroundFileId();
+            default->null;
+        }
+        ;
+        if(id==null)throw new ApiException(HttpStatus.NOT_FOUND,"BRANDING_ASSET_NOT_FOUND","Không tìm thấy tài nguyên thương hiệu");
+        var up=client.get().uri("/internal/v1/files/{id}/content",id).header("X-Service-Token",token).retrieve().toEntity(byte[].class);
+        MediaType type=up.getHeaders().getContentType()==null?MediaType.APPLICATION_OCTET_STREAM:up.getHeaders().getContentType();
+        return ResponseEntity.ok().contentType(type).cacheControl(CacheControl.noCache()).header("X-Content-Type-Options","nosniff").body(up.getBody()==null?new byte[0]:up.getBody());
+    }
+
+}

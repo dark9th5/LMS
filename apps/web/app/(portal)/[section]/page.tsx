@@ -11,7 +11,11 @@ const LEGACY_TARGETS = {
   certificates: PORTAL_PATHS.STUDENT.certificates,
 } as const;
 
-export default async function Page({ params }: { params: Promise<{ section: string }> }) {
+export default async function Page({
+  params,
+}: {
+  params: Promise<{ section: string }>;
+}) {
   const user = await getUser();
   if (!user) redirect("/login");
   const { section } = await params;
@@ -23,7 +27,11 @@ export default async function Page({ params }: { params: Promise<{ section: stri
   }
   const target = LEGACY_TARGETS[section as keyof typeof LEGACY_TARGETS];
   if (!target) notFound();
-  if (section === "users" || section === "organization" || section === "settings") {
+  if (
+    section === "users" ||
+    section === "organization" ||
+    section === "settings"
+  ) {
     if (role !== "ADMIN") redirect(PORTAL_PATHS[role].home);
   } else if (role !== "STUDENT") {
     redirect(PORTAL_PATHS[role].home);

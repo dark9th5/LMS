@@ -37,7 +37,9 @@ export function RepeatableField({
   }
 
   function update(index: number, value: string) {
-    commit(values.map((item, itemIndex) => (itemIndex === index ? value : item)));
+    commit(
+      values.map((item, itemIndex) => (itemIndex === index ? value : item)),
+    );
   }
 
   function add() {
@@ -46,7 +48,9 @@ export function RepeatableField({
 
   function remove(index: number) {
     if (values.length <= minItems) {
-      commit(values.map((item, itemIndex) => (itemIndex === index ? "" : item)));
+      commit(
+        values.map((item, itemIndex) => (itemIndex === index ? "" : item)),
+      );
       return;
     }
     commit(values.filter((_, itemIndex) => itemIndex !== index));

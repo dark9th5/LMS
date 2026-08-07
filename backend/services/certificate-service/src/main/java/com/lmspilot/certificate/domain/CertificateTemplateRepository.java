@@ -1,1 +1,10 @@
-package com.lmspilot.certificate.domain;import java.util.*;import org.springframework.data.jpa.repository.JpaRepository;public interface CertificateTemplateRepository extends JpaRepository<CertificateTemplateEntity,UUID>{CertificateTemplateEntity findFirstByCourseIdAndActiveTrueOrderByUpdatedAtDesc(UUID courseId);CertificateTemplateEntity findFirstByCourseIdIsNullAndActiveTrueOrderByUpdatedAtDesc();List<CertificateTemplateEntity> findAllByOrderByUpdatedAtDesc();}
+package com.lmspilot.certificate.domain;
+
+import java.util.*;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+public interface CertificateTemplateRepository extends JpaRepository<CertificateTemplateEntity,UUID>{
+    CertificateTemplateEntity findFirstByCourseIdAndActiveTrueOrderByUpdatedAtDesc(UUID courseId);
+    CertificateTemplateEntity findFirstByCourseIdIsNullAndActiveTrueOrderByUpdatedAtDesc();
+    List<CertificateTemplateEntity> findAllByOrderByUpdatedAtDesc();
+}

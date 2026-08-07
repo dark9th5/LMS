@@ -1,1 +1,9 @@
-package com.lmspilot.competency.domain; import org.springframework.data.jpa.repository.JpaRepository; import java.util.*; public interface CompetencyProfileRequirementRepository extends JpaRepository<CompetencyProfileRequirementEntity,UUID>{ List<CompetencyProfileRequirementEntity> findAllByProfileId(UUID profileId); void deleteAllByProfileId(UUID profileId); }
+package com.lmspilot.competency.domain;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.*;
+public interface CompetencyProfileRequirementRepository extends JpaRepository<CompetencyProfileRequirementEntity,UUID>{
+    List<CompetencyProfileRequirementEntity> findAllByProfileId(UUID profileId);
+    void deleteAllByProfileId(UUID profileId);
+}

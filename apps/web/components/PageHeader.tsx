@@ -21,7 +21,11 @@ export function PageHeader({
     <header className="page-head">
       <div className="page-head-main">
         {backHref ? (
-          <Link className="icon-button page-back" href={backHref} aria-label="Quay lại">
+          <Link
+            className="icon-button page-back"
+            href={backHref}
+            aria-label="Quay lại"
+          >
             <Icon name="back" />
           </Link>
         ) : icon ? (

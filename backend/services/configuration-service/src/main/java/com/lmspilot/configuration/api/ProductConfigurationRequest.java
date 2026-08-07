@@ -1,1 +1,14 @@
-package com.lmspilot.configuration.api;import jakarta.validation.constraints.*;import java.util.Map;public record ProductConfigurationRequest(@NotBlank String productName,String logoUrl,@Pattern(regexp="^#[0-9A-Fa-f]{6}$")String primaryColor,@Pattern(regexp="^#[0-9A-Fa-f]{6}$")String accentColor,String defaultLocale,Map<String,Boolean>featureFlags,Map<String,String>terminology){public ProductConfigurationRequest{if(logoUrl==null)logoUrl="";if(defaultLocale==null)defaultLocale="vi";featureFlags=featureFlags==null?Map.of():Map.copyOf(featureFlags);terminology=terminology==null?Map.of():Map.copyOf(terminology);}}
+package com.lmspilot.configuration.api;
+
+import jakarta.validation.constraints.*;
+
+import java.util.Map;
+public record ProductConfigurationRequest(@NotBlank String productName,String logoUrl,@Pattern(regexp="^#[0-9A-Fa-f]{6}$")String primaryColor,@Pattern(regexp="^#[0-9A-Fa-f]{6}$")String accentColor,String defaultLocale,Map<String,Boolean>featureFlags,Map<String,String>terminology){
+    public ProductConfigurationRequest{
+        if(logoUrl==null)logoUrl="";
+        if(defaultLocale==null)defaultLocale="vi";
+        featureFlags=featureFlags==null?Map.of():Map.copyOf(featureFlags);
+        terminology=terminology==null?Map.of():Map.copyOf(terminology);
+    }
+
+}

@@ -1,1 +1,12 @@
-package com.lmspilot.competency.api; import jakarta.validation.constraints.*; import java.util.UUID; public record RequirementRequest(UUID competencyId,@Min(0) @Max(10) int requiredLevel,@Min(0) double weight){ public RequirementRequest{if(weight==0)weight=1.0;} }
+package com.lmspilot.competency.api;
+
+import jakarta.validation.constraints.*;
+
+import java.util.UUID;
+public record RequirementRequest(UUID competencyId,@Min(0)
+@Max(10) int requiredLevel,@Min(0) double weight){
+    public RequirementRequest{
+        if(weight==0)weight=1.0;
+    }
+
+}

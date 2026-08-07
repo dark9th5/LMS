@@ -1,1 +1,15 @@
-package com.lmspilot.certificate.api;import jakarta.validation.constraints.NotBlank;import java.util.UUID;public record CertificateTemplateRequest(@NotBlank String name,UUID courseId,@NotBlank String title,@NotBlank String issuerName,@NotBlank String bodyText,String primaryColor,String secondaryColor,String logoUrl,String signatureName,boolean active){public CertificateTemplateRequest{title=title==null?"CHỨNG CHỈ HOÀN THÀNH":title;issuerName=issuerName==null?"LMSPilot":issuerName;bodyText=bodyText==null?"Xác nhận người học đã hoàn thành chương trình đào tạo.":bodyText;primaryColor=primaryColor==null?"#173b65":primaryColor;secondaryColor=secondaryColor==null?"#b99044":secondaryColor;}}
+package com.lmspilot.certificate.api;
+
+import jakarta.validation.constraints.NotBlank;
+
+import java.util.UUID;
+public record CertificateTemplateRequest(@NotBlank String name,UUID courseId,@NotBlank String title,@NotBlank String issuerName,@NotBlank String bodyText,String primaryColor,String secondaryColor,String logoUrl,String signatureName,boolean active){
+    public CertificateTemplateRequest{
+        title=title==null?"CHỨNG CHỈ HOÀN THÀNH":title;
+        issuerName=issuerName==null?"LMSPilot":issuerName;
+        bodyText=bodyText==null?"Xác nhận người học đã hoàn thành chương trình đào tạo.":bodyText;
+        primaryColor=primaryColor==null?"#173b65":primaryColor;
+        secondaryColor=secondaryColor==null?"#b99044":secondaryColor;
+    }
+
+}

@@ -20,7 +20,9 @@ function validUser(value: unknown): value is PortalUser {
     typeof user.fullName === "string" &&
     Array.isArray(user.roles) &&
     user.roles.length >= 1 &&
-    user.roles.every((role) => ["ADMIN", "INSTRUCTOR", "STUDENT"].includes(String(role))) &&
+    user.roles.every((role) =>
+      ["ADMIN", "INSTRUCTOR", "STUDENT"].includes(String(role)),
+    ) &&
     typeof user.primaryRole === "string" &&
     ["ADMIN", "INSTRUCTOR", "STUDENT"].includes(user.primaryRole) &&
     Array.isArray(user.permissions) &&
@@ -43,7 +45,10 @@ function validPayload(value: unknown): value is LoginPayload {
   );
 }
 
-async function fetchWithTimeout(path: string, init: RequestInit): Promise<Response> {
+async function fetchWithTimeout(
+  path: string,
+  init: RequestInit,
+): Promise<Response> {
   return fetchGateway(path, init);
 }
 
@@ -63,9 +68,10 @@ async function upstreamError(response: Response): Promise<NextResponse> {
   let code = "LOGIN_REJECTED";
 
   if (contentType.includes("application/json")) {
-    const data = (await response.json().catch(() => null)) as
-      | { message?: unknown; code?: unknown }
-      | null;
+    const data = (await response.json().catch(() => null)) as {
+      message?: unknown;
+      code?: unknown;
+    } | null;
     if (typeof data?.message === "string" && data.message.trim()) {
       message = data.message;
     }
@@ -110,9 +116,7 @@ export async function POST(request: Request) {
   }
 
   const username =
-    typeof credentials.username === "string"
-      ? credentials.username.trim()
-      : "";
+    typeof credentials.username === "string" ? credentials.username.trim() : "";
   const password =
     typeof credentials.password === "string" ? credentials.password : "";
 

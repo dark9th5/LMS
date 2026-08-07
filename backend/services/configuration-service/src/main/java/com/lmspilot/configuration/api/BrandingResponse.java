@@ -1,1 +1,7 @@
-package com.lmspilot.configuration.api;import java.time.Instant;import java.util.UUID;public record BrandingResponse(String profileKey,String systemName,String introduction,UUID logoFileId,UUID faviconFileId,UUID backgroundFileId,String logoUrl,String faviconUrl,String backgroundUrl,String themeKey,String primaryColor,String secondaryColor,String backgroundColor,String textColor,String customDomain,Instant updatedAt){}
+package com.lmspilot.configuration.api;
+
+import java.time.Instant;
+
+import java.util.UUID;
+public record BrandingResponse(String profileKey,String systemName,String introduction,UUID logoFileId,UUID faviconFileId,UUID backgroundFileId,String logoUrl,String faviconUrl,String backgroundUrl,String themeKey,String primaryColor,String secondaryColor,String backgroundColor,String textColor,String customDomain,Instant updatedAt){
+}

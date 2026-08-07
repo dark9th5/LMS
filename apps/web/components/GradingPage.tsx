@@ -44,7 +44,10 @@ export function GradingPage() {
           apiRequest<unknown>("/api/v1/courses?size=100"),
           apiRequest<StudentDirectoryItem[]>("/api/v1/directory/students"),
         ]);
-      const courseItems = unwrapItems<Course>(coursePayload as never).slice(0, 100);
+      const courseItems = unwrapItems<Course>(coursePayload as never).slice(
+        0,
+        100,
+      );
       setGrades(unwrapItems<Grade>(queue as never));
       setExams(unwrapItems<Exam>(examPayload as never));
       setCourses(courseItems);
@@ -62,7 +65,9 @@ export function GradingPage() {
       }
     } catch (caught) {
       setError(
-        caught instanceof Error ? caught.message : "Không thể tải hàng chờ chấm",
+        caught instanceof Error
+          ? caught.message
+          : "Không thể tải hàng chờ chấm",
       );
     } finally {
       setLoading(false);
@@ -123,7 +128,9 @@ export function GradingPage() {
     }
   }
 
-  async function submitAssignmentGrade(event: React.FormEvent<HTMLFormElement>) {
+  async function submitAssignmentGrade(
+    event: React.FormEvent<HTMLFormElement>,
+  ) {
     event.preventDefault();
     if (!selectedAssignment) return;
     const data = new FormData(event.currentTarget);
@@ -225,19 +232,23 @@ export function GradingPage() {
                       </div>
                       <p>
                         {learner?.fullName ??
-                          `Học viên ${grade.userId.slice(0, 8)}`} · Nộp bài cần
-                        chấm thủ công
+                          `Học viên ${grade.userId.slice(0, 8)}`}{" "}
+                        · Nộp bài cần chấm thủ công
                       </p>
                       <div className="grading-meta">
                         <span>
-                          {grade.details.filter((item) => item.requiresManual)
-                            .length} {" "}
+                          {
+                            grade.details.filter((item) => item.requiresManual)
+                              .length
+                          }{" "}
                           câu cần chấm
                         </span>
                         <span>
                           Điểm tự động: {grade.score}/{grade.maxScore}
                         </span>
-                        <span>Cập nhật {formatDate(grade.updatedAt, true)}</span>
+                        <span>
+                          Cập nhật {formatDate(grade.updatedAt, true)}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -279,8 +290,8 @@ export function GradingPage() {
                     </div>
                     <p>
                       {learner?.fullName ??
-                        `Học viên ${item.userId.slice(0, 8)}`} · Lần nộp #
-                      {item.attemptNumber}
+                        `Học viên ${item.userId.slice(0, 8)}`}{" "}
+                      · Lần nộp #{item.attemptNumber}
                       {item.late ? " · nộp muộn" : ""}
                     </p>
                     <div className="grading-meta">
@@ -337,7 +348,10 @@ export function GradingPage() {
               <div>
                 <span>Câu cần chấm</span>
                 <strong>
-                  {selected.details.filter((item) => item.requiresManual).length}
+                  {
+                    selected.details.filter((item) => item.requiresManual)
+                      .length
+                  }
                 </strong>
               </div>
             </section>
@@ -351,7 +365,7 @@ export function GradingPage() {
                         Câu {index + 1}: {item.prompt || item.type}
                       </strong>
                       <small>
-                        Câu trả lời: {" "}
+                        Câu trả lời:{" "}
                         {Array.isArray(item.answer)
                           ? item.answer.join(", ")
                           : String(item.answer ?? "Chưa trả lời")}

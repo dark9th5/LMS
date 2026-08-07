@@ -1,2 +1,35 @@
-package com.lmspilot.enrollment.domain; import jakarta.persistence.*; import java.time.*; import java.util.*;
-@Entity @Table(name="learning_path_items") public class LearningPathItemEntity { @Id public UUID id=UUID.randomUUID(); @Column(name="path_id",nullable=false) public UUID pathId; @Column(nullable=false) public UUID classId; @Column(nullable=false) public UUID courseId; @Column(nullable=false) public int courseVersion=1; @Column(nullable=false) public int sortOrder; @Column(nullable=false) public boolean required=true; @Enumerated(EnumType.STRING) @Column(nullable=false,length=30) public LearningPathUnlockMode unlockMode=LearningPathUnlockMode.AFTER_PREVIOUS; @Column(nullable=false) public int dueOffsetDays; @Column(nullable=false) public Instant createdAt=Instant.now(); public LearningPathItemEntity(){} }
+package com.lmspilot.enrollment.domain;
+
+import jakarta.persistence.*;
+
+import java.time.*;
+
+import java.util.*;
+@Entity
+@Table(name="learning_path_items")
+public class LearningPathItemEntity {
+    @Id
+    public UUID id=UUID.randomUUID();
+    @Column(name="path_id",nullable=false)
+    public UUID pathId;
+    @Column(nullable=false)
+    public UUID classId;
+    @Column(nullable=false)
+    public UUID courseId;
+    @Column(nullable=false)
+    public int courseVersion=1;
+    @Column(nullable=false)
+    public int sortOrder;
+    @Column(nullable=false)
+    public boolean required=true;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable=false,length=30)
+    public LearningPathUnlockMode unlockMode=LearningPathUnlockMode.AFTER_PREVIOUS;
+    @Column(nullable=false)
+    public int dueOffsetDays;
+    @Column(nullable=false)
+    public Instant createdAt=Instant.now();
+    public LearningPathItemEntity(){
+    }
+
+}

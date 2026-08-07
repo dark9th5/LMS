@@ -36,7 +36,8 @@ let cachedBranding: { value: PublicBranding; expiresAt: number } | null = null;
 let brandingInFlight: Promise<PublicBranding> | null = null;
 
 export async function getPublicBranding(): Promise<PublicBranding> {
-  if (cachedBranding && cachedBranding.expiresAt > Date.now()) return cachedBranding.value;
+  if (cachedBranding && cachedBranding.expiresAt > Date.now())
+    return cachedBranding.value;
   if (brandingInFlight) return brandingInFlight;
 
   brandingInFlight = (async () => {
@@ -49,9 +50,18 @@ export async function getPublicBranding(): Promise<PublicBranding> {
       return {
         ...defaultBranding,
         ...data,
-        primaryColor: normalizeHex(data.primaryColor ?? "", defaultBranding.primaryColor),
-        secondaryColor: normalizeHex(data.secondaryColor ?? "", defaultBranding.secondaryColor),
-        backgroundColor: normalizeHex(data.backgroundColor ?? "", defaultBranding.backgroundColor),
+        primaryColor: normalizeHex(
+          data.primaryColor ?? "",
+          defaultBranding.primaryColor,
+        ),
+        secondaryColor: normalizeHex(
+          data.secondaryColor ?? "",
+          defaultBranding.secondaryColor,
+        ),
+        backgroundColor: normalizeHex(
+          data.backgroundColor ?? "",
+          defaultBranding.backgroundColor,
+        ),
         logoUrl: browserAsset(data.logoUrl),
         faviconUrl: browserAsset(data.faviconUrl),
         backgroundUrl: browserAsset(data.backgroundUrl),
@@ -63,7 +73,10 @@ export async function getPublicBranding(): Promise<PublicBranding> {
 
   try {
     const value = await brandingInFlight;
-    cachedBranding = { value, expiresAt: Date.now() + (value === defaultBranding ? 5_000 : 30_000) };
+    cachedBranding = {
+      value,
+      expiresAt: Date.now() + (value === defaultBranding ? 5_000 : 30_000),
+    };
     return value;
   } finally {
     brandingInFlight = null;
@@ -73,11 +86,20 @@ export async function getPublicBranding(): Promise<PublicBranding> {
 export function brandingStyle(
   branding: PublicBranding,
 ): Record<string, string> {
-  const primary = normalizeHex(branding.primaryColor, defaultBranding.primaryColor);
-  const background = normalizeHex(branding.backgroundColor, defaultBranding.backgroundColor);
+  const primary = normalizeHex(
+    branding.primaryColor,
+    defaultBranding.primaryColor,
+  );
+  const background = normalizeHex(
+    branding.backgroundColor,
+    defaultBranding.backgroundColor,
+  );
   return {
     "--brand-primary": primary,
-    "--brand-secondary": normalizeHex(branding.secondaryColor, defaultBranding.secondaryColor),
+    "--brand-secondary": normalizeHex(
+      branding.secondaryColor,
+      defaultBranding.secondaryColor,
+    ),
     "--brand-background": background,
     // Text colours are calculated, never trusted from an arbitrary saved value.
     "--brand-on-primary": readableText(primary),

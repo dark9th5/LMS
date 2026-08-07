@@ -3,11 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type {
-  FormEvent,
-  MouseEventHandler,
-  ReactNode,
-} from "react";
+import type { FormEvent, MouseEventHandler, ReactNode } from "react";
 import { apiRequest, createIdempotencyKey, unwrapItems } from "@/lib/api";
 import { readableText } from "@/lib/color";
 import { normalizeThemeKey, type ThemeKey } from "@/lib/themes";
@@ -74,9 +70,12 @@ function useLoad<T>(loader: () => Promise<T>, dependencies: unknown[] = []) {
   const mounted = useRef(true);
   const hasData = useRef(false);
 
-  useEffect(() => () => {
-    mounted.current = false;
-  }, []);
+  useEffect(
+    () => () => {
+      mounted.current = false;
+    },
+    [],
+  );
 
   const refresh = useCallback(async () => {
     const currentRequest = ++requestId.current;
@@ -91,10 +90,13 @@ function useLoad<T>(loader: () => Promise<T>, dependencies: unknown[] = []) {
       }
     } catch (cause) {
       if (mounted.current && currentRequest === requestId.current) {
-        setError(cause instanceof Error ? cause.message : "Không thể tải dữ liệu");
+        setError(
+          cause instanceof Error ? cause.message : "Không thể tải dữ liệu",
+        );
       }
     } finally {
-      if (mounted.current && currentRequest === requestId.current) setLoading(false);
+      if (mounted.current && currentRequest === requestId.current)
+        setLoading(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, dependencies);
@@ -376,7 +378,9 @@ function UserAccessConsole({ user }: { user: PortalUser }) {
   const { data, loading, error, refresh } = useLoad(async () => {
     const [users, roles, catalog, units, courses, exams] = await Promise.all([
       canReadUsers
-        ? apiRequest<UserRow[] | { items: UserRow[] }>("/api/v1/users?size=1000")
+        ? apiRequest<UserRow[] | { items: UserRow[] }>(
+            "/api/v1/users?size=1000",
+          )
         : Promise.resolve([] as UserRow[]),
       canReadRoles
         ? apiRequest<RoleRow[]>("/api/v1/roles")
@@ -386,10 +390,14 @@ function UserAccessConsole({ user }: { user: PortalUser }) {
         ? apiRequest<Row[]>("/api/v1/organization/units/tree").catch(() => [])
         : Promise.resolve([] as Row[]),
       canGrant
-        ? apiRequest<Row[] | { items: Row[] }>("/api/v1/courses?size=500").catch(() => [])
+        ? apiRequest<Row[] | { items: Row[] }>(
+            "/api/v1/courses?size=500",
+          ).catch(() => [])
         : Promise.resolve([] as Row[]),
       canGrant
-        ? apiRequest<Row[] | { items: Row[] }>("/api/v1/exams?size=500").catch(() => [])
+        ? apiRequest<Row[] | { items: Row[] }>("/api/v1/exams?size=500").catch(
+            () => [],
+          )
         : Promise.resolve([] as Row[]),
     ]);
     return {
@@ -402,9 +410,9 @@ function UserAccessConsole({ user }: { user: PortalUser }) {
     };
   }, [canReadUsers, canReadRoles, canGrant]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [tab, setTab] = useState<
-    "accounts" | "grant" | "inspect" | "bulk"
-  >("accounts");
+  const [tab, setTab] = useState<"accounts" | "grant" | "inspect" | "bulk">(
+    "accounts",
+  );
   const [query, setQuery] = useState("");
   const [notice, setNotice] = useState<Notice>(null);
   const [working, setWorking] = useState(false);
@@ -428,7 +436,8 @@ function UserAccessConsole({ user }: { user: PortalUser }) {
   const [preview, setPreview] = useState<BulkGrantPreview | null>(null);
   const [inspectedUserId, setInspectedUserId] = useState("");
   const [assignments, setAssignments] = useState<AssignmentBundle | null>(null);
-  const [explanation, setExplanation] = useState<AuthorizationExplanation | null>(null);
+  const [explanation, setExplanation] =
+    useState<AuthorizationExplanation | null>(null);
   const [inspectionLoading, setInspectionLoading] = useState(false);
 
   const users = data?.users ?? [];
@@ -461,7 +470,8 @@ function UserAccessConsole({ user }: { user: PortalUser }) {
     return [...unitOptions, ...courseOptions, ...examOptions];
   }, [data?.units, data?.courses, data?.exams]);
   const permissionByCode = useMemo(
-    () => new Map((catalog?.definitions ?? []).map((item) => [item.code, item])),
+    () =>
+      new Map((catalog?.definitions ?? []).map((item) => [item.code, item])),
     [catalog],
   );
   const profileByCode = useMemo(
@@ -469,10 +479,12 @@ function UserAccessConsole({ user }: { user: PortalUser }) {
     [catalog],
   );
   const availableRoleCodes = useMemo(
-    () => ["ADMIN", "INSTRUCTOR", "STUDENT"].filter((code) =>
-      roles.some((item) => item.code === code) ||
-      (catalog?.profiles ?? []).some((item) => item.code === code),
-    ),
+    () =>
+      ["ADMIN", "INSTRUCTOR", "STUDENT"].filter(
+        (code) =>
+          roles.some((item) => item.code === code) ||
+          (catalog?.profiles ?? []).some((item) => item.code === code),
+      ),
     [catalog, roles],
   );
   const filtered = users.filter((item) =>
@@ -501,7 +513,11 @@ function UserAccessConsole({ user }: { user: PortalUser }) {
     return definition ? `${definition.label} (${code})` : code;
   }
   function roleLabel(code: string) {
-    return profileByCode.get(code)?.name ?? roles.find((item) => item.code === code)?.name ?? code;
+    return (
+      profileByCode.get(code)?.name ??
+      roles.find((item) => item.code === code)?.name ??
+      code
+    );
   }
   function riskTone(risk?: string) {
     if (risk === "CRITICAL") return "danger";
@@ -516,8 +532,12 @@ function UserAccessConsole({ user }: { user: PortalUser }) {
       scopeType: grant.scopeType,
       scopeId: grant.scopeType === "SYSTEM" ? null : grant.scopeId,
       effect: grant.effect,
-      validFrom: grant.validFrom ? new Date(grant.validFrom).toISOString() : null,
-      validUntil: grant.validUntil ? new Date(grant.validUntil).toISOString() : null,
+      validFrom: grant.validFrom
+        ? new Date(grant.validFrom).toISOString()
+        : null,
+      validUntil: grant.validUntil
+        ? new Date(grant.validUntil).toISOString()
+        : null,
     };
   }
 
@@ -539,7 +559,10 @@ function UserAccessConsole({ user }: { user: PortalUser }) {
           roleCodes: [create.roleCode],
         }),
       });
-      setNotice({ tone: "success", message: `Đã tạo tài khoản ${create.username}.` });
+      setNotice({
+        tone: "success",
+        message: `Đã tạo tài khoản ${create.username}.`,
+      });
       setCreate({
         code: "",
         username: "",
@@ -552,7 +575,8 @@ function UserAccessConsole({ user }: { user: PortalUser }) {
     } catch (cause) {
       setNotice({
         tone: "error",
-        message: cause instanceof Error ? cause.message : "Không thể tạo tài khoản",
+        message:
+          cause instanceof Error ? cause.message : "Không thể tạo tài khoản",
       });
     } finally {
       setWorking(false);
@@ -567,11 +591,21 @@ function UserAccessConsole({ user }: { user: PortalUser }) {
       return;
     }
     if (grant.scopeType !== "SYSTEM" && !grant.scopeId) {
-      setNotice({ tone: "error", message: "Cần nhập ID của đối tượng phạm vi." });
+      setNotice({
+        tone: "error",
+        message: "Cần nhập ID của đối tượng phạm vi.",
+      });
       return;
     }
-    if (grant.validFrom && grant.validUntil && grant.validFrom >= grant.validUntil) {
-      setNotice({ tone: "error", message: "Thời điểm kết thúc phải sau thời điểm bắt đầu." });
+    if (
+      grant.validFrom &&
+      grant.validUntil &&
+      grant.validFrom >= grant.validUntil
+    ) {
+      setNotice({
+        tone: "error",
+        message: "Thời điểm kết thúc phải sau thời điểm bắt đầu.",
+      });
       return;
     }
     setWorking(true);
@@ -588,12 +622,16 @@ function UserAccessConsole({ user }: { user: PortalUser }) {
         },
       );
       setPreview(result);
-      setNotice({ tone: "info", message: "Đã tính toán tác động. Hãy kiểm tra trước khi xác nhận." });
+      setNotice({
+        tone: "info",
+        message: "Đã tính toán tác động. Hãy kiểm tra trước khi xác nhận.",
+      });
     } catch (cause) {
       setPreview(null);
       setNotice({
         tone: "error",
-        message: cause instanceof Error ? cause.message : "Không thể xem trước quyền",
+        message:
+          cause instanceof Error ? cause.message : "Không thể xem trước quyền",
       });
     } finally {
       setWorking(false);
@@ -641,7 +679,9 @@ function UserAccessConsole({ user }: { user: PortalUser }) {
     setNotice(null);
     try {
       const [bundle, explained] = await Promise.all([
-        apiRequest<AssignmentBundle>(`/api/v1/authorization/users/${userId}/assignments`),
+        apiRequest<AssignmentBundle>(
+          `/api/v1/authorization/users/${userId}/assignments`,
+        ),
         apiRequest<AuthorizationExplanation>(
           `/api/v1/authorization/explain?userId=${encodeURIComponent(userId)}&scopeType=SYSTEM`,
         ),
@@ -653,7 +693,8 @@ function UserAccessConsole({ user }: { user: PortalUser }) {
       setExplanation(null);
       setNotice({
         tone: "error",
-        message: cause instanceof Error ? cause.message : "Không thể kiểm tra quyền",
+        message:
+          cause instanceof Error ? cause.message : "Không thể kiểm tra quyền",
       });
     } finally {
       setInspectionLoading(false);
@@ -673,19 +714,22 @@ function UserAccessConsole({ user }: { user: PortalUser }) {
           roleAssignmentIds: kind === "role" ? [id] : [],
         }),
       });
-      setNotice({ tone: "success", message: "Đã thu hồi lần cấp quyền đã chọn." });
+      setNotice({
+        tone: "success",
+        message: "Đã thu hồi lần cấp quyền đã chọn.",
+      });
       await loadInspection(inspectedUserId, false);
       await refresh();
     } catch (cause) {
       setNotice({
         tone: "error",
-        message: cause instanceof Error ? cause.message : "Không thể thu hồi quyền",
+        message:
+          cause instanceof Error ? cause.message : "Không thể thu hồi quyền",
       });
     } finally {
       setWorking(false);
     }
   }
-
 
   return (
     <>
@@ -697,7 +741,11 @@ function UserAccessConsole({ user }: { user: PortalUser }) {
         stats={[
           { value: users.length, label: "Tài khoản" },
           { value: 3, label: "Vai trò cố định" },
-          { value: users.filter((item) => item.status === "ACTIVE").length, label: "Đang hoạt động", tone: "violet" },
+          {
+            value: users.filter((item) => item.status === "ACTIVE").length,
+            label: "Đang hoạt động",
+            tone: "violet",
+          },
         ]}
         actions={
           <>
@@ -715,7 +763,11 @@ function UserAccessConsole({ user }: { user: PortalUser }) {
       <NoticeBar notice={notice} onClose={() => setNotice(null)} />
       <nav className="workspace-tabs">
         {tabs.map(({ key, label }) => (
-          <button key={key} className={tab === key ? "active" : ""} onClick={() => setTab(key)}>
+          <button
+            key={key}
+            className={tab === key ? "active" : ""}
+            onClick={() => setTab(key)}
+          >
             {label}
           </button>
         ))}
@@ -723,7 +775,10 @@ function UserAccessConsole({ user }: { user: PortalUser }) {
       {loading ? (
         <Busy />
       ) : error ? (
-        <NoticeBar notice={{ tone: "error", message: error }} onClose={() => void refresh()} />
+        <NoticeBar
+          notice={{ tone: "error", message: error }}
+          onClose={() => void refresh()}
+        />
       ) : (
         <>
           {tab === "accounts" && (
@@ -734,7 +789,11 @@ function UserAccessConsole({ user }: { user: PortalUser }) {
                 action={
                   <div className="workspace-search">
                     <Icon name="search" size={16} />
-                    <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Tìm tên, mã, tài khoản…" />
+                    <input
+                      value={query}
+                      onChange={(event) => setQuery(event.target.value)}
+                      placeholder="Tìm tên, mã, tài khoản…"
+                    />
                   </div>
                 }
               >
@@ -753,7 +812,9 @@ function UserAccessConsole({ user }: { user: PortalUser }) {
                         <tr key={item.id}>
                           <td>
                             <div className="workspace-primary-cell">
-                              <span className="mini-avatar">{item.fullName.slice(0, 1).toUpperCase()}</span>
+                              <span className="mini-avatar">
+                                {item.fullName.slice(0, 1).toUpperCase()}
+                              </span>
                               <div>
                                 <strong>{item.fullName}</strong>
                                 <small>
@@ -766,14 +827,33 @@ function UserAccessConsole({ user }: { user: PortalUser }) {
                           <td>
                             <div className="workspace-tags">
                               {item.roles.map((value) => (
-                                <Tag key={value} tone={riskTone(profileByCode.get(value)?.risk)}>
+                                <Tag
+                                  key={value}
+                                  tone={riskTone(
+                                    profileByCode.get(value)?.risk,
+                                  )}
+                                >
                                   {roleLabel(value)}
                                 </Tag>
                               ))}
                             </div>
                           </td>
-                          <td>{item.protectedAccount ? <Tag tone="gold">Tài khoản gốc</Tag> : <Tag>Tiêu chuẩn</Tag>}</td>
-                          <td><Tag tone={item.status === "ACTIVE" ? "teal" : "danger"}>{item.status}</Tag></td>
+                          <td>
+                            {item.protectedAccount ? (
+                              <Tag tone="gold">Tài khoản gốc</Tag>
+                            ) : (
+                              <Tag>Tiêu chuẩn</Tag>
+                            )}
+                          </td>
+                          <td>
+                            <Tag
+                              tone={
+                                item.status === "ACTIVE" ? "teal" : "danger"
+                              }
+                            >
+                              {item.status}
+                            </Tag>
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -781,30 +861,91 @@ function UserAccessConsole({ user }: { user: PortalUser }) {
                 </div>
               </Panel>
               {canWrite && (
-                <Panel title="Tạo tài khoản" subtitle="Không có đăng ký công khai. Quản trị tạo tài khoản và chọn đúng một vai trò." className="sticky-panel">
+                <Panel
+                  title="Tạo tài khoản"
+                  subtitle="Không có đăng ký công khai. Quản trị tạo tài khoản và chọn đúng một vai trò."
+                  className="sticky-panel"
+                >
                   <form className="workspace-form" onSubmit={createAccount}>
                     <Field label="Mã người dùng">
-                      <input required maxLength={80} value={create.code} onChange={(event) => setCreate({ ...create, code: event.target.value.toUpperCase() })} placeholder="NV001" />
+                      <input
+                        required
+                        maxLength={80}
+                        value={create.code}
+                        onChange={(event) =>
+                          setCreate({
+                            ...create,
+                            code: event.target.value.toUpperCase(),
+                          })
+                        }
+                        placeholder="NV001"
+                      />
                     </Field>
                     <Field label="Tên đăng nhập">
-                      <input required minLength={3} value={create.username} onChange={(event) => setCreate({ ...create, username: event.target.value })} placeholder="nguyen.an" />
+                      <input
+                        required
+                        minLength={3}
+                        value={create.username}
+                        onChange={(event) =>
+                          setCreate({ ...create, username: event.target.value })
+                        }
+                        placeholder="nguyen.an"
+                      />
                     </Field>
                     <Field label="Họ và tên" wide>
-                      <input required value={create.fullName} onChange={(event) => setCreate({ ...create, fullName: event.target.value })} />
+                      <input
+                        required
+                        value={create.fullName}
+                        onChange={(event) =>
+                          setCreate({ ...create, fullName: event.target.value })
+                        }
+                      />
                     </Field>
                     <Field label="Email" wide>
-                      <input type="email" value={create.email} onChange={(event) => setCreate({ ...create, email: event.target.value })} />
+                      <input
+                        type="email"
+                        value={create.email}
+                        onChange={(event) =>
+                          setCreate({ ...create, email: event.target.value })
+                        }
+                      />
                     </Field>
-                    <Field label="Mật khẩu tạm" wide hint="Tối thiểu 12 ký tự; người dùng đổi ở lần đăng nhập đầu.">
-                      <input required minLength={12} type="password" value={create.password} onChange={(event) => setCreate({ ...create, password: event.target.value })} />
+                    <Field
+                      label="Mật khẩu tạm"
+                      wide
+                      hint="Tối thiểu 12 ký tự; người dùng đổi ở lần đăng nhập đầu."
+                    >
+                      <input
+                        required
+                        minLength={12}
+                        type="password"
+                        value={create.password}
+                        onChange={(event) =>
+                          setCreate({ ...create, password: event.target.value })
+                        }
+                      />
                     </Field>
-                    <Field label="Vai trò" wide hint="Một tài khoản chỉ có một vai trò và không được ghép chức năng chéo.">
-                      <select value={create.roleCode} onChange={(event) => setCreate({ ...create, roleCode: event.target.value })}>
-                        {availableRoleCodes.map((code) => <option key={code} value={code}>{roleLabel(code)}</option>)}
+                    <Field
+                      label="Vai trò"
+                      wide
+                      hint="Một tài khoản chỉ có một vai trò và không được ghép chức năng chéo."
+                    >
+                      <select
+                        value={create.roleCode}
+                        onChange={(event) =>
+                          setCreate({ ...create, roleCode: event.target.value })
+                        }
+                      >
+                        {availableRoleCodes.map((code) => (
+                          <option key={code} value={code}>
+                            {roleLabel(code)}
+                          </option>
+                        ))}
                       </select>
                     </Field>
                     <Button type="submit" disabled={working || !canWrite}>
-                      <Icon name="plus" size={16} /> {working ? "Đang tạo…" : "Tạo tài khoản"}
+                      <Icon name="plus" size={16} />{" "}
+                      {working ? "Đang tạo…" : "Tạo tài khoản"}
                     </Button>
                   </form>
                 </Panel>
@@ -814,21 +955,34 @@ function UserAccessConsole({ user }: { user: PortalUser }) {
 
           {tab === "grant" && (
             <div className="workspace-two-column">
-              <Panel title={`Tài khoản nhận quyền (${selected.size})`} subtitle="Chọn nhiều tài khoản ở thẻ Tài khoản. Một lần xác nhận có thể áp dụng cho tối đa 1.000 người.">
+              <Panel
+                title={`Tài khoản nhận quyền (${selected.size})`}
+                subtitle="Chọn nhiều tài khoản ở thẻ Tài khoản. Một lần xác nhận có thể áp dụng cho tối đa 1.000 người."
+              >
                 {selected.size ? (
                   <div className="selection-cloud">
-                    {users.filter((item) => selected.has(item.id)).map((item) => (
-                      <button key={item.id} onClick={() => setSelected((current) => {
-                        const next = new Set(current);
-                        next.delete(item.id);
-                        setPreview(null);
-                        return next;
-                      })}>
-                        <span>{item.fullName}</span><Icon name="close" size={13} />
-                      </button>
-                    ))}
+                    {users
+                      .filter((item) => selected.has(item.id))
+                      .map((item) => (
+                        <button
+                          key={item.id}
+                          onClick={() =>
+                            setSelected((current) => {
+                              const next = new Set(current);
+                              next.delete(item.id);
+                              setPreview(null);
+                              return next;
+                            })
+                          }
+                        >
+                          <span>{item.fullName}</span>
+                          <Icon name="close" size={13} />
+                        </button>
+                      ))}
                   </div>
-                ) : <Empty text="Chưa chọn tài khoản. Quay lại thẻ Tài khoản để chọn người nhận quyền." />}
+                ) : (
+                  <Empty text="Chưa chọn tài khoản. Quay lại thẻ Tài khoản để chọn người nhận quyền." />
+                )}
                 <div className="role-card-grid">
                   {(catalog?.profiles ?? []).map((profile) => (
                     <button
@@ -836,14 +990,29 @@ function UserAccessConsole({ user }: { user: PortalUser }) {
                       className="role-card"
                       key={profile.code}
                       onClick={() => {
-                        const scopeType = profile.recommendedScopes.includes("SYSTEM") ? "SYSTEM" : (profile.recommendedScopes[0] ?? "SYSTEM");
-                        setGrant({ ...grant, kind: "ROLE", value: profile.code, scopeType, scopeId: "" });
+                        const scopeType = profile.recommendedScopes.includes(
+                          "SYSTEM",
+                        )
+                          ? "SYSTEM"
+                          : (profile.recommendedScopes[0] ?? "SYSTEM");
+                        setGrant({
+                          ...grant,
+                          kind: "ROLE",
+                          value: profile.code,
+                          scopeType,
+                          scopeId: "",
+                        });
                         setPreview(null);
                       }}
                     >
                       <div>
-                        <span className="role-symbol">{profile.name.slice(0, 1)}</span>
-                        <div><strong>{profile.name}</strong><small>{profile.code}</small></div>
+                        <span className="role-symbol">
+                          {profile.name.slice(0, 1)}
+                        </span>
+                        <div>
+                          <strong>{profile.name}</strong>
+                          <small>{profile.code}</small>
+                        </div>
                         <Tag tone={riskTone(profile.risk)}>{profile.risk}</Tag>
                       </div>
                       <p>{profile.description}</p>
@@ -852,15 +1021,45 @@ function UserAccessConsole({ user }: { user: PortalUser }) {
                 </div>
               </Panel>
               <div>
-                <Panel title="Thiết lập lần cấp" subtitle="Chọn một gói công việc, phạm vi áp dụng và thời hạn nếu cần.">
+                <Panel
+                  title="Thiết lập lần cấp"
+                  subtitle="Chọn một gói công việc, phạm vi áp dụng và thời hạn nếu cần."
+                >
                   <form className="workspace-form" onSubmit={previewAccess}>
                     <Field label="Gói công việc">
-                      <select value={grant.value} onChange={(event) => { setGrant({ ...grant, kind: "ROLE", value: event.target.value }); setPreview(null); }}>
-                        {availableRoleCodes.map((code) => <option key={code} value={code}>{roleLabel(code)}</option>)}
+                      <select
+                        value={grant.value}
+                        onChange={(event) => {
+                          setGrant({
+                            ...grant,
+                            kind: "ROLE",
+                            value: event.target.value,
+                          });
+                          setPreview(null);
+                        }}
+                      >
+                        {availableRoleCodes.map((code) => (
+                          <option key={code} value={code}>
+                            {roleLabel(code)}
+                          </option>
+                        ))}
                       </select>
                     </Field>
                     <Field label="Phạm vi">
-                      <select value={grant.scopeType} onChange={(event) => { setGrant({ ...grant, scopeType: event.target.value, scopeId: event.target.value === "SYSTEM" ? "" : grant.scopeId }); setPreview(null); }}>
+                      <select
+                        value={grant.scopeType}
+                        onChange={(event) => {
+                          setGrant({
+                            ...grant,
+                            scopeType: event.target.value,
+                            scopeId:
+                              event.target.value === "SYSTEM"
+                                ? ""
+                                : grant.scopeId,
+                          });
+                          setPreview(null);
+                        }}
+                      >
                         <option value="SYSTEM">Toàn hệ thống</option>
                         <option value="BRANCH">Chi nhánh</option>
                         <option value="DEPARTMENT">Phòng ban</option>
@@ -870,7 +1069,11 @@ function UserAccessConsole({ user }: { user: PortalUser }) {
                       </select>
                     </Field>
                     {grant.scopeType !== "SYSTEM" && (
-                      <Field label="Đối tượng áp dụng" wide hint="Tìm theo tên; mã kỹ thuật được hệ thống tự xử lý.">
+                      <Field
+                        label="Đối tượng áp dụng"
+                        wide
+                        hint="Tìm theo tên; mã kỹ thuật được hệ thống tự xử lý."
+                      >
                         <select
                           required
                           value={grant.scopeId}
@@ -883,42 +1086,92 @@ function UserAccessConsole({ user }: { user: PortalUser }) {
                           {scopeOptions
                             .filter((option) => option.type === grant.scopeType)
                             .map((option) => (
-                              <option key={option.id} value={option.id}>{option.label}</option>
+                              <option key={option.id} value={option.id}>
+                                {option.label}
+                              </option>
                             ))}
                         </select>
                       </Field>
                     )}
                     <Field label="Bắt đầu" hint="Để trống để có hiệu lực ngay.">
-                      <input type="datetime-local" value={grant.validFrom} onChange={(event) => { setGrant({ ...grant, validFrom: event.target.value }); setPreview(null); }} />
+                      <input
+                        type="datetime-local"
+                        value={grant.validFrom}
+                        onChange={(event) => {
+                          setGrant({ ...grant, validFrom: event.target.value });
+                          setPreview(null);
+                        }}
+                      />
                     </Field>
                     <Field label="Kết thúc" hint="Để trống nếu không hết hạn.">
-                      <input type="datetime-local" value={grant.validUntil} onChange={(event) => { setGrant({ ...grant, validUntil: event.target.value }); setPreview(null); }} />
+                      <input
+                        type="datetime-local"
+                        value={grant.validUntil}
+                        onChange={(event) => {
+                          setGrant({
+                            ...grant,
+                            validUntil: event.target.value,
+                          });
+                          setPreview(null);
+                        }}
+                      />
                     </Field>
-                    <Button type="submit" disabled={working || selected.size === 0}>
-                      <Icon name="search" size={16} /> {working ? "Đang tính…" : "Xem trước tác động"}
+                    <Button
+                      type="submit"
+                      disabled={working || selected.size === 0}
+                    >
+                      <Icon name="search" size={16} />{" "}
+                      {working ? "Đang tính…" : "Xem trước tác động"}
                     </Button>
                   </form>
                 </Panel>
                 {preview && (
-                  <Panel title="Kết quả xem trước" subtitle="Chưa có thay đổi nào được ghi cho tới khi bấm xác nhận.">
+                  <Panel
+                    title="Kết quả xem trước"
+                    subtitle="Chưa có thay đổi nào được ghi cho tới khi bấm xác nhận."
+                  >
                     <div className="workspace-tags">
-                      <Tag tone="teal">{preview.assignmentsToCreate} lần cấp mới</Tag>
+                      <Tag tone="teal">
+                        {preview.assignmentsToCreate} lần cấp mới
+                      </Tag>
                       <Tag>{preview.duplicateAssignments} lần cấp trùng</Tag>
-                      <Tag tone={preview.criticalPermissions.length ? "danger" : "teal"}>{preview.criticalPermissions.length} quyền cực nhạy cảm</Tag>
+                      <Tag
+                        tone={
+                          preview.criticalPermissions.length ? "danger" : "teal"
+                        }
+                      >
+                        {preview.criticalPermissions.length} quyền cực nhạy cảm
+                      </Tag>
                     </div>
                     {preview.criticalPermissions.length > 0 && (
                       <div className="workspace-callout">
                         <Icon name="warning" size={18} />
-                        <p>Thao tác chứa quyền mức CRITICAL: {preview.criticalPermissions.map(permissionLabel).join(", ")}.</p>
+                        <p>
+                          Thao tác chứa quyền mức CRITICAL:{" "}
+                          {preview.criticalPermissions
+                            .map(permissionLabel)
+                            .join(", ")}
+                          .
+                        </p>
                       </div>
                     )}
                     <div className="workspace-table-wrap">
                       <table className="workspace-table">
-                        <thead><tr><th>Người dùng</th><th>Quyền mới</th><th>Đã có</th><th>Bị từ chối</th><th>Không áp dụng ở phạm vi</th></tr></thead>
+                        <thead>
+                          <tr>
+                            <th>Người dùng</th>
+                            <th>Quyền mới</th>
+                            <th>Đã có</th>
+                            <th>Bị từ chối</th>
+                            <th>Không áp dụng ở phạm vi</th>
+                          </tr>
+                        </thead>
                         <tbody>
                           {preview.users.map((item) => (
                             <tr key={item.userId}>
-                              <td><strong>{item.fullName}</strong></td>
+                              <td>
+                                <strong>{item.fullName}</strong>
+                              </td>
                               <td>{item.addedPermissions.length}</td>
                               <td>{item.alreadyAllowed.length}</td>
                               <td>{item.deniedPermissions.length}</td>
@@ -928,8 +1181,12 @@ function UserAccessConsole({ user }: { user: PortalUser }) {
                         </tbody>
                       </table>
                     </div>
-                    <Button onClick={() => void grantAccess()} disabled={working || preview.assignmentsToCreate === 0}>
-                      <Icon name="lock" size={16} /> {working ? "Đang áp dụng…" : "Xác nhận cấp quyền"}
+                    <Button
+                      onClick={() => void grantAccess()}
+                      disabled={working || preview.assignmentsToCreate === 0}
+                    >
+                      <Icon name="lock" size={16} />{" "}
+                      {working ? "Đang áp dụng…" : "Xác nhận cấp quyền"}
                     </Button>
                   </Panel>
                 )}
@@ -939,50 +1196,161 @@ function UserAccessConsole({ user }: { user: PortalUser }) {
 
           {tab === "inspect" && (
             <div className="workspace-two-column wide-left">
-              <Panel title="Chọn người cần kiểm tra" subtitle="Hiển thị gói quyền, quyền đơn lẻ và kết quả hiệu lực ở phạm vi SYSTEM.">
+              <Panel
+                title="Chọn người cần kiểm tra"
+                subtitle="Hiển thị gói quyền, quyền đơn lẻ và kết quả hiệu lực ở phạm vi SYSTEM."
+              >
                 <div className="workspace-search">
                   <Icon name="search" size={16} />
-                  <select value={inspectedUserId} onChange={(event) => void loadInspection(event.target.value, false)}>
+                  <select
+                    value={inspectedUserId}
+                    onChange={(event) =>
+                      void loadInspection(event.target.value, false)
+                    }
+                  >
                     <option value="">Chọn tài khoản…</option>
-                    {users.map((item) => <option key={item.id} value={item.id}>{item.fullName} · {item.code}</option>)}
+                    {users.map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {item.fullName} · {item.code}
+                      </option>
+                    ))}
                   </select>
                 </div>
-                {inspectionLoading ? <Busy label="Đang phân tích nguồn quyền…" /> : !inspectedUser ? <Empty text="Chọn một tài khoản để xem quyền hiệu lực và nguồn phát sinh." /> : (
+                {inspectionLoading ? (
+                  <Busy label="Đang phân tích nguồn quyền…" />
+                ) : !inspectedUser ? (
+                  <Empty text="Chọn một tài khoản để xem quyền hiệu lực và nguồn phát sinh." />
+                ) : (
                   <>
                     <div className="workspace-primary-cell">
-                      <span className="mini-avatar">{inspectedUser.fullName.slice(0, 1).toUpperCase()}</span>
-                      <div><strong>{inspectedUser.fullName}</strong><small>{inspectedUser.code} · @{inspectedUser.username}</small></div>
+                      <span className="mini-avatar">
+                        {inspectedUser.fullName.slice(0, 1).toUpperCase()}
+                      </span>
+                      <div>
+                        <strong>{inspectedUser.fullName}</strong>
+                        <small>
+                          {inspectedUser.code} · @{inspectedUser.username}
+                        </small>
+                      </div>
                     </div>
                     <div className="workspace-tags">
-                      {(explanation?.effective.allowed ?? []).map((code) => <Tag key={code} tone="teal">{permissionByCode.get(code)?.label ?? code}</Tag>)}
+                      {(explanation?.effective.allowed ?? []).map((code) => (
+                        <Tag key={code} tone="teal">
+                          {permissionByCode.get(code)?.label ?? code}
+                        </Tag>
+                      ))}
                     </div>
                     {(explanation?.effective.denied.length ?? 0) > 0 && (
-                      <div className="workspace-callout"><Icon name="warning" size={18} /><p>Quyền bị từ chối ưu tiên: {explanation?.effective.denied.map(permissionLabel).join(", ")}</p></div>
+                      <div className="workspace-callout">
+                        <Icon name="warning" size={18} />
+                        <p>
+                          Quyền bị từ chối ưu tiên:{" "}
+                          {explanation?.effective.denied
+                            .map(permissionLabel)
+                            .join(", ")}
+                        </p>
+                      </div>
                     )}
                   </>
                 )}
               </Panel>
               <div>
-                <Panel title="Các lần cấp đang lưu" subtitle="Thu hồi đúng bản ghi, không ảnh hưởng những nguồn quyền khác.">
-                  {!assignments || (!assignments.roleAssignments.length && !assignments.permissionGrants.length) ? <Empty text="Tài khoản chưa có lần cấp theo phạm vi." /> : (
+                <Panel
+                  title="Các lần cấp đang lưu"
+                  subtitle="Thu hồi đúng bản ghi, không ảnh hưởng những nguồn quyền khác."
+                >
+                  {!assignments ||
+                  (!assignments.roleAssignments.length &&
+                    !assignments.permissionGrants.length) ? (
+                    <Empty text="Tài khoản chưa có lần cấp theo phạm vi." />
+                  ) : (
                     <div className="workspace-table-wrap">
                       <table className="workspace-table">
-                        <thead><tr><th>Nguồn</th><th>Phạm vi</th><th>Hiệu lực</th><th></th></tr></thead>
+                        <thead>
+                          <tr>
+                            <th>Nguồn</th>
+                            <th>Phạm vi</th>
+                            <th>Hiệu lực</th>
+                            <th></th>
+                          </tr>
+                        </thead>
                         <tbody>
                           {assignments.roleAssignments.map((item) => (
                             <tr key={item.id}>
-                              <td><strong>{roleLabel(item.roleCode)}</strong><small className="block">Gói quyền · {item.roleCode}</small></td>
-                              <td>{item.scopeType}{item.scopeId ? ` · ${item.scopeId}` : ""}</td>
-                              <td><Tag tone={item.effect === "DENY" ? "danger" : "teal"}>{item.effect}</Tag></td>
-                              <td>{canRevoke && <Button tone="secondary" disabled={working} onClick={() => void revokeAssignment("role", item.id)}>Thu hồi</Button>}</td>
+                              <td>
+                                <strong>{roleLabel(item.roleCode)}</strong>
+                                <small className="block">
+                                  Gói quyền · {item.roleCode}
+                                </small>
+                              </td>
+                              <td>
+                                {item.scopeType}
+                                {item.scopeId ? ` · ${item.scopeId}` : ""}
+                              </td>
+                              <td>
+                                <Tag
+                                  tone={
+                                    item.effect === "DENY" ? "danger" : "teal"
+                                  }
+                                >
+                                  {item.effect}
+                                </Tag>
+                              </td>
+                              <td>
+                                {canRevoke && (
+                                  <Button
+                                    tone="secondary"
+                                    disabled={working}
+                                    onClick={() =>
+                                      void revokeAssignment("role", item.id)
+                                    }
+                                  >
+                                    Thu hồi
+                                  </Button>
+                                )}
+                              </td>
                             </tr>
                           ))}
                           {assignments.permissionGrants.map((item) => (
                             <tr key={item.id}>
-                              <td><strong>{permissionByCode.get(item.permissionCode)?.label ?? item.permissionCode}</strong><small className="block">Quyền đơn lẻ · {item.permissionCode}</small></td>
-                              <td>{item.scopeType}{item.scopeId ? ` · ${item.scopeId}` : ""}</td>
-                              <td><Tag tone={item.effect === "DENY" ? "danger" : "teal"}>{item.effect}</Tag></td>
-                              <td>{canRevoke && <Button tone="secondary" disabled={working} onClick={() => void revokeAssignment("permission", item.id)}>Thu hồi</Button>}</td>
+                              <td>
+                                <strong>
+                                  {permissionByCode.get(item.permissionCode)
+                                    ?.label ?? item.permissionCode}
+                                </strong>
+                                <small className="block">
+                                  Quyền đơn lẻ · {item.permissionCode}
+                                </small>
+                              </td>
+                              <td>
+                                {item.scopeType}
+                                {item.scopeId ? ` · ${item.scopeId}` : ""}
+                              </td>
+                              <td>
+                                <Tag
+                                  tone={
+                                    item.effect === "DENY" ? "danger" : "teal"
+                                  }
+                                >
+                                  {item.effect}
+                                </Tag>
+                              </td>
+                              <td>
+                                {canRevoke && (
+                                  <Button
+                                    tone="secondary"
+                                    disabled={working}
+                                    onClick={() =>
+                                      void revokeAssignment(
+                                        "permission",
+                                        item.id,
+                                      )
+                                    }
+                                  >
+                                    Thu hồi
+                                  </Button>
+                                )}
+                              </td>
                             </tr>
                           ))}
                         </tbody>
@@ -990,17 +1358,57 @@ function UserAccessConsole({ user }: { user: PortalUser }) {
                     </div>
                   )}
                 </Panel>
-                <Panel title="Giải thích nguồn quyền" subtitle="Mỗi quyền cho biết đến từ gói nào hoặc lần cấp trực tiếp nào.">
-                  {!explanation?.sources.length ? <Empty text="Không có nguồn quyền áp dụng ở phạm vi SYSTEM." /> : (
+                <Panel
+                  title="Giải thích nguồn quyền"
+                  subtitle="Mỗi quyền cho biết đến từ gói nào hoặc lần cấp trực tiếp nào."
+                >
+                  {!explanation?.sources.length ? (
+                    <Empty text="Không có nguồn quyền áp dụng ở phạm vi SYSTEM." />
+                  ) : (
                     <div className="workspace-table-wrap">
                       <table className="workspace-table">
-                        <thead><tr><th>Quyền</th><th>Nguồn</th><th>Kết quả</th></tr></thead>
+                        <thead>
+                          <tr>
+                            <th>Quyền</th>
+                            <th>Nguồn</th>
+                            <th>Kết quả</th>
+                          </tr>
+                        </thead>
                         <tbody>
                           {explanation.sources.map((source, index) => (
-                            <tr key={`${source.permissionCode}-${source.sourceId ?? index}`}>
-                              <td>{permissionByCode.get(source.permissionCode)?.label ?? source.permissionCode}<small className="block">{source.permissionCode}</small></td>
-                              <td>{source.sourceLabel}<small className="block">{source.sourceType} · {source.scopeType}</small></td>
-                              <td><Tag tone={!source.active || !source.applicable ? "" : source.effect === "DENY" ? "danger" : "teal"}>{!source.active ? "Hết hiệu lực" : !source.applicable ? "Ngoài phạm vi" : source.effect}</Tag></td>
+                            <tr
+                              key={`${source.permissionCode}-${source.sourceId ?? index}`}
+                            >
+                              <td>
+                                {permissionByCode.get(source.permissionCode)
+                                  ?.label ?? source.permissionCode}
+                                <small className="block">
+                                  {source.permissionCode}
+                                </small>
+                              </td>
+                              <td>
+                                {source.sourceLabel}
+                                <small className="block">
+                                  {source.sourceType} · {source.scopeType}
+                                </small>
+                              </td>
+                              <td>
+                                <Tag
+                                  tone={
+                                    !source.active || !source.applicable
+                                      ? ""
+                                      : source.effect === "DENY"
+                                        ? "danger"
+                                        : "teal"
+                                  }
+                                >
+                                  {!source.active
+                                    ? "Hết hiệu lực"
+                                    : !source.applicable
+                                      ? "Ngoài phạm vi"
+                                      : source.effect}
+                                </Tag>
+                              </td>
                             </tr>
                           ))}
                         </tbody>
@@ -1012,17 +1420,21 @@ function UserAccessConsole({ user }: { user: PortalUser }) {
             </div>
           )}
 
-
           {tab === "bulk" && (
             <Panel
               title="Nhập tài khoản từ tệp"
               subtitle="Dùng trình nhập có hướng dẫn để chọn tệp, ánh xạ từng cột, xem trước lỗi và xác nhận."
             >
               <div className="workspace-import-actions">
-                <Link className="workspace-button primary" href="/admin/users/import">
+                <Link
+                  className="workspace-button primary"
+                  href="/admin/users/import"
+                >
                   <Icon name="upload" size={16} /> Mở trình nhập CSV/XLSX
                 </Link>
-                <span>Không cần dán dữ liệu nhiều người vào một ô văn bản.</span>
+                <span>
+                  Không cần dán dữ liệu nhiều người vào một ô văn bản.
+                </span>
               </div>
             </Panel>
           )}
@@ -1031,7 +1443,6 @@ function UserAccessConsole({ user }: { user: PortalUser }) {
     </>
   );
 }
-
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Organization
@@ -1072,19 +1483,21 @@ function unitTypeLabel(type: string) {
 }
 
 function OrganizationConsole({ user }: { user: PortalUser }) {
-  const canManageUnits =
-    user.permissions.some((permission) =>
-      ["organization:manage", "organization:write"].includes(permission),
-    );
+  const canManageUnits = user.permissions.some((permission) =>
+    ["organization:manage", "organization:write"].includes(permission),
+  );
   const canManageMembers =
-    canManageUnits || user.permissions.includes("organization:membership:manage");
+    canManageUnits ||
+    user.permissions.includes("organization:membership:manage");
   const canReadUsers = user.permissions.includes("users:read");
   const { data, loading, error, refresh } = useLoad(async () => {
     const [units, flat, users] = await Promise.all([
       apiRequest<UnitRow[]>("/api/v1/organization/units/tree"),
       apiRequest<UnitRow[]>("/api/v1/organization/units"),
       canReadUsers
-        ? apiRequest<UserRow[] | { items: UserRow[] }>("/api/v1/users?size=1000")
+        ? apiRequest<UserRow[] | { items: UserRow[] }>(
+            "/api/v1/users?size=1000",
+          )
             .then(unwrapItems)
             .catch(() => [] as UserRow[])
         : Promise.resolve([] as UserRow[]),
@@ -1131,10 +1544,16 @@ function OrganizationConsole({ user }: { user: PortalUser }) {
 
   useEffect(() => {
     if (!flat.length) return;
-    const remembered = window.localStorage.getItem("lmspilot-organization-unit");
+    const remembered = window.localStorage.getItem(
+      "lmspilot-organization-unit",
+    );
     const next =
-      (remembered && flat.some((item) => item.id === remembered) && remembered) ||
-      (selectedUnit && flat.some((item) => item.id === selectedUnit) && selectedUnit) ||
+      (remembered &&
+        flat.some((item) => item.id === remembered) &&
+        remembered) ||
+      (selectedUnit &&
+        flat.some((item) => item.id === selectedUnit) &&
+        selectedUnit) ||
       flat[0].id;
     if (next !== selectedUnit) setSelectedUnitState(next);
   }, [flat, selectedUnit]);
@@ -1174,7 +1593,8 @@ function OrganizationConsole({ user }: { user: PortalUser }) {
     } catch (cause) {
       setNotice({
         tone: "error",
-        message: cause instanceof Error ? cause.message : "Không thể tạo đơn vị",
+        message:
+          cause instanceof Error ? cause.message : "Không thể tạo đơn vị",
       });
     } finally {
       setWorking(false);
@@ -1219,7 +1639,8 @@ function OrganizationConsole({ user }: { user: PortalUser }) {
     } catch (cause) {
       setNotice({
         tone: "error",
-        message: cause instanceof Error ? cause.message : "Không thể gán thành viên",
+        message:
+          cause instanceof Error ? cause.message : "Không thể gán thành viên",
       });
     } finally {
       setWorking(false);
@@ -1266,9 +1687,11 @@ function OrganizationConsole({ user }: { user: PortalUser }) {
                   type="button"
                   className="workspace-button ghost"
                   onClick={() =>
-                    document.getElementById("create-organization-unit")?.scrollIntoView({
-                      behavior: "smooth",
-                    })
+                    document
+                      .getElementById("create-organization-unit")
+                      ?.scrollIntoView({
+                        behavior: "smooth",
+                      })
                   }
                 >
                   <Icon name="plus" size={15} /> Thêm
@@ -1291,7 +1714,11 @@ function OrganizationConsole({ user }: { user: PortalUser }) {
                   ? `${unitTypeLabel(currentUnit.type)} · ${currentUnit.code}`
                   : "Chọn một đơn vị trong cây"
               }
-              action={currentUnit ? <Tag tone="teal">{members.length} người</Tag> : undefined}
+              action={
+                currentUnit ? (
+                  <Tag tone="teal">{members.length} người</Tag>
+                ) : undefined
+              }
             >
               {members.length ? (
                 <div className="member-list">
@@ -1300,10 +1727,16 @@ function OrganizationConsole({ user }: { user: PortalUser }) {
                     return (
                       <div key={item.id}>
                         <span className="mini-avatar">
-                          {(member?.fullName || member?.username || "N").slice(0, 1).toUpperCase()}
+                          {(member?.fullName || member?.username || "N")
+                            .slice(0, 1)
+                            .toUpperCase()}
                         </span>
                         <div>
-                          <strong>{member?.fullName || member?.username || item.userId}</strong>
+                          <strong>
+                            {member?.fullName ||
+                              member?.username ||
+                              item.userId}
+                          </strong>
                           <small>
                             {member?.email || item.membershipType}
                             {item.primaryMembership ? " · Đơn vị chính" : ""}
@@ -1355,7 +1788,9 @@ function OrganizationConsole({ user }: { user: PortalUser }) {
                             }}
                           />
                           <span className="mini-avatar">
-                            {(item.fullName || item.username).slice(0, 1).toUpperCase()}
+                            {(item.fullName || item.username)
+                              .slice(0, 1)
+                              .toUpperCase()}
                           </span>
                           <span>
                             <strong>{item.fullName || item.username}</strong>
@@ -1363,13 +1798,18 @@ function OrganizationConsole({ user }: { user: PortalUser }) {
                           </span>
                         </label>
                       ))}
-                      {!filteredUsers.length && <Empty text="Không tìm thấy người dùng phù hợp." />}
+                      {!filteredUsers.length && (
+                        <Empty text="Không tìm thấy người dùng phù hợp." />
+                      )}
                     </div>
                     <Field label="Vai trò trong đơn vị">
                       <select
                         value={membership.membershipType}
                         onChange={(event) =>
-                          setMembership({ ...membership, membershipType: event.target.value })
+                          setMembership({
+                            ...membership,
+                            membershipType: event.target.value,
+                          })
                         }
                       >
                         <option value="MEMBER">Thành viên</option>
@@ -1393,10 +1833,15 @@ function OrganizationConsole({ user }: { user: PortalUser }) {
                     </label>
                     <Button
                       type="submit"
-                      disabled={working || !selectedUnit || selectedUsers.size === 0}
+                      disabled={
+                        working || !selectedUnit || selectedUsers.size === 0
+                      }
                     >
                       <Icon name="users" size={16} />
-                      Gán {selectedUsers.size ? `${selectedUsers.size} người` : "thành viên"}
+                      Gán{" "}
+                      {selectedUsers.size
+                        ? `${selectedUsers.size} người`
+                        : "thành viên"}
                     </Button>
                   </form>
                 ) : (
@@ -1411,12 +1856,18 @@ function OrganizationConsole({ user }: { user: PortalUser }) {
                 subtitle="Chỉ giữ các trường cần thiết; thông tin ít dùng được đặt cuối biểu mẫu."
                 className="compact-form-panel"
               >
-                <form className="workspace-form" onSubmit={createUnit} id="create-organization-unit">
+                <form
+                  className="workspace-form"
+                  onSubmit={createUnit}
+                  id="create-organization-unit"
+                >
                   <Field label="Tên đơn vị" wide>
                     <input
                       required
                       value={unit.name}
-                      onChange={(event) => setUnit({ ...unit, name: event.target.value })}
+                      onChange={(event) =>
+                        setUnit({ ...unit, name: event.target.value })
+                      }
                       placeholder="Ví dụ: Phòng Phát triển"
                     />
                   </Field>
@@ -1425,7 +1876,10 @@ function OrganizationConsole({ user }: { user: PortalUser }) {
                       required
                       value={unit.code}
                       onChange={(event) =>
-                        setUnit({ ...unit, code: event.target.value.toUpperCase() })
+                        setUnit({
+                          ...unit,
+                          code: event.target.value.toUpperCase(),
+                        })
                       }
                       placeholder="DEV"
                     />
@@ -1433,21 +1887,30 @@ function OrganizationConsole({ user }: { user: PortalUser }) {
                   <Field label="Loại">
                     <select
                       value={unit.type}
-                      onChange={(event) => setUnit({ ...unit, type: event.target.value })}
+                      onChange={(event) =>
+                        setUnit({ ...unit, type: event.target.value })
+                      }
                     >
-                      {["ORGANIZATION", "BRANCH", "DIVISION", "DEPARTMENT", "TEAM", "GROUP"].map(
-                        (value) => (
-                          <option value={value} key={value}>
-                            {unitTypeLabel(value)}
-                          </option>
-                        ),
-                      )}
+                      {[
+                        "ORGANIZATION",
+                        "BRANCH",
+                        "DIVISION",
+                        "DEPARTMENT",
+                        "TEAM",
+                        "GROUP",
+                      ].map((value) => (
+                        <option value={value} key={value}>
+                          {unitTypeLabel(value)}
+                        </option>
+                      ))}
                     </select>
                   </Field>
                   <Field label="Đơn vị cha" wide>
                     <select
                       value={unit.parentId}
-                      onChange={(event) => setUnit({ ...unit, parentId: event.target.value })}
+                      onChange={(event) =>
+                        setUnit({ ...unit, parentId: event.target.value })
+                      }
                     >
                       <option value="">Cấp gốc</option>
                       {flat.map((item) => (
@@ -1504,7 +1967,11 @@ function OrganizationTree({
               <span className="org-node-kind">{unitTypeLabel(item.type)}</span>
               <span
                 className={`org-status-dot ${item.status === "ACTIVE" ? "" : "inactive"}`}
-                title={item.status === "ACTIVE" ? "Đang hoạt động" : "Ngừng hoạt động"}
+                title={
+                  item.status === "ACTIVE"
+                    ? "Đang hoạt động"
+                    : "Ngừng hoạt động"
+                }
               />
             </span>
           </button>
@@ -1601,7 +2068,13 @@ const BRAND_COLORS = [
 
 const SERVICE_META: Record<
   ServiceType,
-  { label: string; short: string; icon: string; docs: string; secretLabel: string }
+  {
+    label: string;
+    short: string;
+    icon: string;
+    docs: string;
+    secretLabel: string;
+  }
 > = {
   REDIS: {
     label: "Redis",
@@ -1653,7 +2126,8 @@ function defaultServiceDraft(serviceType: ServiceType = "REDIS"): ServiceDraft {
     configKey: "default",
     enabled: true,
     host: serviceType === "REDIS" ? "redis" : "",
-    port: serviceType === "REDIS" ? "6379" : serviceType === "SMTP" ? "587" : "",
+    port:
+      serviceType === "REDIS" ? "6379" : serviceType === "SMTP" ? "587" : "",
     username: "",
     database: "0",
     endpoint: "",
@@ -1682,7 +2156,10 @@ function browserBrandAsset(path?: string) {
 function applyBrandingPreview(branding: BrandingRow) {
   document.body.style.setProperty("--brand-primary", branding.primaryColor);
   document.body.style.setProperty("--brand-secondary", branding.secondaryColor);
-  document.body.style.setProperty("--brand-on-primary", readableText(branding.primaryColor));
+  document.body.style.setProperty(
+    "--brand-on-primary",
+    readableText(branding.primaryColor),
+  );
 }
 
 function serviceStatusLabel(status: string) {
@@ -1699,13 +2176,14 @@ function serviceStatusLabel(status: string) {
 function WorldSettingsConsole({ user }: { user: PortalUser }) {
   const router = useRouter();
   const canBrand = user.permissions.includes("branding:manage");
-  const canServices =
-    user.permissions.some((permission) =>
-      ["configuration:manage", "integrations:manage"].includes(permission),
-    );
+  const canServices = user.permissions.some((permission) =>
+    ["configuration:manage", "integrations:manage"].includes(permission),
+  );
   const { data, loading, error, refresh } = useLoad(
     async () => ({
-      branding: canBrand ? await apiRequest<BrandingRow>("/api/v1/branding") : null,
+      branding: canBrand
+        ? await apiRequest<BrandingRow>("/api/v1/branding")
+        : null,
       services: canServices
         ? await apiRequest<ServiceRow[]>("/api/v1/external-services")
         : [],
@@ -1751,13 +2229,15 @@ function WorldSettingsConsole({ user }: { user: PortalUser }) {
   useEffect(
     () => () => {
       if (logoPreview.startsWith("blob:")) URL.revokeObjectURL(logoPreview);
-      if (backgroundPreview.startsWith("blob:")) URL.revokeObjectURL(backgroundPreview);
+      if (backgroundPreview.startsWith("blob:"))
+        URL.revokeObjectURL(backgroundPreview);
     },
     [logoPreview, backgroundPreview],
   );
   useEffect(
     () => () => {
-      if (committedBrandRef.current) applyBrandingPreview(committedBrandRef.current);
+      if (committedBrandRef.current)
+        applyBrandingPreview(committedBrandRef.current);
     },
     [],
   );
@@ -1800,7 +2280,10 @@ function WorldSettingsConsole({ user }: { user: PortalUser }) {
       if (logoPreview.startsWith("blob:")) URL.revokeObjectURL(logoPreview);
       setLogoPreview(URL.createObjectURL(file));
       updateBrand({ logoFileId: uploaded.id });
-      setNotice({ tone: "success", message: "Đã tải logo lên. Nhấn Lưu thay đổi để áp dụng." });
+      setNotice({
+        tone: "success",
+        message: "Đã tải logo lên. Nhấn Lưu thay đổi để áp dụng.",
+      });
     } catch (cause) {
       setNotice({
         tone: "error",
@@ -1814,11 +2297,17 @@ function WorldSettingsConsole({ user }: { user: PortalUser }) {
   async function uploadLoginBackground(file?: File) {
     if (!file) return;
     if (!new Set(["image/png", "image/jpeg", "image/webp"]).has(file.type)) {
-      setNotice({ tone: "error", message: "Ảnh nền phải là PNG, JPG hoặc WebP." });
+      setNotice({
+        tone: "error",
+        message: "Ảnh nền phải là PNG, JPG hoặc WebP.",
+      });
       return;
     }
     if (file.size > 12 * 1024 * 1024) {
-      setNotice({ tone: "error", message: "Ảnh nền không được vượt quá 12 MB." });
+      setNotice({
+        tone: "error",
+        message: "Ảnh nền không được vượt quá 12 MB.",
+      });
       return;
     }
     setWorking(true);
@@ -1830,12 +2319,20 @@ function WorldSettingsConsole({ user }: { user: PortalUser }) {
         "/api/v1/files?purpose=BRANDING_BACKGROUND",
         { method: "POST", body: form },
       );
-      if (backgroundPreview.startsWith("blob:")) URL.revokeObjectURL(backgroundPreview);
+      if (backgroundPreview.startsWith("blob:"))
+        URL.revokeObjectURL(backgroundPreview);
       setBackgroundPreview(URL.createObjectURL(file));
       updateBrand({ backgroundFileId: uploaded.id });
-      setNotice({ tone: "success", message: "Đã tải ảnh nền đăng nhập. Nhấn Lưu thay đổi để áp dụng." });
+      setNotice({
+        tone: "success",
+        message: "Đã tải ảnh nền đăng nhập. Nhấn Lưu thay đổi để áp dụng.",
+      });
     } catch (cause) {
-      setNotice({ tone: "error", message: cause instanceof Error ? cause.message : "Không thể tải ảnh nền" });
+      setNotice({
+        tone: "error",
+        message:
+          cause instanceof Error ? cause.message : "Không thể tải ảnh nền",
+      });
     } finally {
       setWorking(false);
     }
@@ -1856,7 +2353,9 @@ function WorldSettingsConsole({ user }: { user: PortalUser }) {
           faviconFileId: brand.faviconFileId || brand.logoFileId || null,
           backgroundFileId: brand.backgroundFileId || null,
           // Chế độ sáng/tối thuộc lựa chọn cá nhân trên thanh trên cùng.
-          themeKey: normalizeThemeKey(committedBrandRef.current?.themeKey ?? brand.themeKey),
+          themeKey: normalizeThemeKey(
+            committedBrandRef.current?.themeKey ?? brand.themeKey,
+          ),
           primaryColor: brand.primaryColor,
           secondaryColor: brand.secondaryColor,
           backgroundColor: brand.backgroundColor,
@@ -1864,17 +2363,24 @@ function WorldSettingsConsole({ user }: { user: PortalUser }) {
           customDomain: brand.customDomain?.trim() || null,
         }),
       });
-      const normalized = { ...saved, themeKey: normalizeThemeKey(saved.themeKey) };
+      const normalized = {
+        ...saved,
+        themeKey: normalizeThemeKey(saved.themeKey),
+      };
       setBrand(normalized);
       committedBrandRef.current = normalized;
       applyBrandingPreview(normalized);
-      setNotice({ tone: "success", message: "Đã cập nhật cấu hình thông tin và màu thương hiệu." });
+      setNotice({
+        tone: "success",
+        message: "Đã cập nhật cấu hình thông tin và màu thương hiệu.",
+      });
       await refresh();
       router.refresh();
     } catch (cause) {
       setNotice({
         tone: "error",
-        message: cause instanceof Error ? cause.message : "Không thể lưu cấu hình",
+        message:
+          cause instanceof Error ? cause.message : "Không thể lưu cấu hình",
       });
     } finally {
       setWorking(false);
@@ -1907,8 +2413,13 @@ function WorldSettingsConsole({ user }: { user: PortalUser }) {
       secret: "",
       secretConfigured: item.secretConfigured,
     });
-    setNotice({ tone: "info", message: `Đang chỉnh sửa ${SERVICE_META[item.serviceType].label}.` });
-    document.getElementById("service-editor")?.scrollIntoView({ behavior: "smooth" });
+    setNotice({
+      tone: "info",
+      message: `Đang chỉnh sửa ${SERVICE_META[item.serviceType].label}.`,
+    });
+    document
+      .getElementById("service-editor")
+      ?.scrollIntoView({ behavior: "smooth" });
   }
 
   function buildServiceConfig(draft: ServiceDraft): Record<string, unknown> {
@@ -1987,7 +2498,8 @@ function WorldSettingsConsole({ user }: { user: PortalUser }) {
     } catch (cause) {
       setNotice({
         tone: "error",
-        message: cause instanceof Error ? cause.message : "Không thể lưu dịch vụ",
+        message:
+          cause instanceof Error ? cause.message : "Không thể lưu dịch vụ",
       });
     } finally {
       setWorking(false);
@@ -1998,9 +2510,12 @@ function WorldSettingsConsole({ user }: { user: PortalUser }) {
     setWorking(true);
     setNotice(null);
     try {
-      const result = await apiRequest<ServiceRow>(`/api/v1/external-services/${id}/test`, {
-        method: "POST",
-      });
+      const result = await apiRequest<ServiceRow>(
+        `/api/v1/external-services/${id}/test`,
+        {
+          method: "POST",
+        },
+      );
       setNotice({
         tone: result.healthStatus === "HEALTHY" ? "success" : "error",
         message: `${SERVICE_META[result.serviceType].label}: ${serviceStatusLabel(result.healthStatus)}${
@@ -2011,7 +2526,8 @@ function WorldSettingsConsole({ user }: { user: PortalUser }) {
     } catch (cause) {
       setNotice({
         tone: "error",
-        message: cause instanceof Error ? cause.message : "Không thể kiểm tra kết nối",
+        message:
+          cause instanceof Error ? cause.message : "Không thể kiểm tra kết nối",
       });
     } finally {
       setWorking(false);
@@ -2027,7 +2543,11 @@ function WorldSettingsConsole({ user }: { user: PortalUser }) {
         icon={<Icon name="settings" size={29} />}
         stats={[
           { value: brand?.systemName || "—", label: "Thương hiệu" },
-          { value: services.filter((item) => item.enabled).length, label: "Dịch vụ bật", tone: "teal" },
+          {
+            value: services.filter((item) => item.enabled).length,
+            label: "Dịch vụ bật",
+            tone: "teal",
+          },
         ]}
       />
       <NoticeBar notice={notice} onClose={() => setNotice(null)} />
@@ -2064,7 +2584,10 @@ function WorldSettingsConsole({ user }: { user: PortalUser }) {
       {loading ? (
         <Busy />
       ) : error ? (
-        <NoticeBar notice={{ tone: "error", message: error }} onClose={() => void refresh()} />
+        <NoticeBar
+          notice={{ tone: "error", message: error }}
+          onClose={() => void refresh()}
+        />
       ) : null}
 
       {!loading && tab === "brand" && canBrand && brand && (
@@ -2092,7 +2615,9 @@ function WorldSettingsConsole({ user }: { user: PortalUser }) {
                     ref={logoInputRef}
                     type="file"
                     accept="image/png,image/jpeg"
-                    onChange={(event) => void uploadLogo(event.target.files?.[0])}
+                    onChange={(event) =>
+                      void uploadLogo(event.target.files?.[0])
+                    }
                   />
                   <button
                     type="button"
@@ -2110,7 +2635,9 @@ function WorldSettingsConsole({ user }: { user: PortalUser }) {
                   className="brand-background-preview"
                   style={{
                     backgroundImage: `linear-gradient(135deg, rgba(20,27,64,.58), rgba(77,58,168,.38)), url(${
-                      backgroundPreview || browserBrandAsset(brand.backgroundUrl) || ""
+                      backgroundPreview ||
+                      browserBrandAsset(brand.backgroundUrl) ||
+                      ""
                     })`,
                   }}
                 >
@@ -2118,19 +2645,38 @@ function WorldSettingsConsole({ user }: { user: PortalUser }) {
                 </div>
                 <div className="brand-logo-actions">
                   <strong>Nền đăng nhập</strong>
-                  <p>PNG, JPG hoặc WebP · tối đa 12 MB · khuyến nghị 1920×1080.</p>
+                  <p>
+                    PNG, JPG hoặc WebP · tối đa 12 MB · khuyến nghị 1920×1080.
+                  </p>
                   <input
                     ref={backgroundInputRef}
                     type="file"
                     accept="image/png,image/jpeg,image/webp"
-                    onChange={(event) => void uploadLoginBackground(event.target.files?.[0])}
+                    onChange={(event) =>
+                      void uploadLoginBackground(event.target.files?.[0])
+                    }
                   />
                   <div className="page-actions">
-                    <button type="button" className="workspace-button secondary brand-file-button" onClick={() => backgroundInputRef.current?.click()} disabled={working}>
+                    <button
+                      type="button"
+                      className="workspace-button secondary brand-file-button"
+                      onClick={() => backgroundInputRef.current?.click()}
+                      disabled={working}
+                    >
                       <Icon name="upload" size={16} /> Chọn ảnh nền
                     </button>
                     {brand.backgroundFileId && (
-                      <button type="button" className="workspace-button ghost" onClick={() => { setBackgroundPreview(""); updateBrand({ backgroundFileId: undefined, backgroundUrl: undefined }); }}>
+                      <button
+                        type="button"
+                        className="workspace-button ghost"
+                        onClick={() => {
+                          setBackgroundPreview("");
+                          updateBrand({
+                            backgroundFileId: undefined,
+                            backgroundUrl: undefined,
+                          });
+                        }}
+                      >
                         Bỏ ảnh nền
                       </button>
                     )}
@@ -2143,7 +2689,9 @@ function WorldSettingsConsole({ user }: { user: PortalUser }) {
                   required
                   maxLength={240}
                   value={brand.systemName}
-                  onChange={(event) => updateBrand({ systemName: event.target.value })}
+                  onChange={(event) =>
+                    updateBrand({ systemName: event.target.value })
+                  }
                   placeholder="Tên hiển thị trong hệ thống"
                 />
               </Field>
@@ -2153,7 +2701,9 @@ function WorldSettingsConsole({ user }: { user: PortalUser }) {
                   rows={4}
                   maxLength={500}
                   value={brand.introduction ?? ""}
-                  onChange={(event) => updateBrand({ introduction: event.target.value })}
+                  onChange={(event) =>
+                    updateBrand({ introduction: event.target.value })
+                  }
                   placeholder="Một câu giới thiệu ngắn dành cho người dùng"
                 />
                 <span className="brand-description-counter">
@@ -2163,13 +2713,19 @@ function WorldSettingsConsole({ user }: { user: PortalUser }) {
 
               <div className="workspace-field wide">
                 <span className="workspace-field-label">Màu chủ đạo</span>
-                <div className="brand-color-presets" role="group" aria-label="Màu thương hiệu">
+                <div
+                  className="brand-color-presets"
+                  role="group"
+                  aria-label="Màu thương hiệu"
+                >
                   {BRAND_COLORS.map((preset) => (
                     <button
                       key={preset.primary}
                       type="button"
                       className={`brand-color-swatch ${
-                        brand.primaryColor.toUpperCase() === preset.primary ? "selected" : ""
+                        brand.primaryColor.toUpperCase() === preset.primary
+                          ? "selected"
+                          : ""
                       }`}
                       style={{ background: preset.primary }}
                       title={preset.name}
@@ -2191,13 +2747,21 @@ function WorldSettingsConsole({ user }: { user: PortalUser }) {
                   <input
                     type="color"
                     value={brand.primaryColor.slice(0, 7)}
-                    onChange={(event) => updateBrand({ primaryColor: event.target.value.toUpperCase() })}
+                    onChange={(event) =>
+                      updateBrand({
+                        primaryColor: event.target.value.toUpperCase(),
+                      })
+                    }
                     aria-label="Chọn màu chủ đạo"
                   />
                   <input
                     value={brand.primaryColor}
                     pattern="^#[0-9A-Fa-f]{6}$"
-                    onChange={(event) => updateBrand({ primaryColor: event.target.value.toUpperCase() })}
+                    onChange={(event) =>
+                      updateBrand({
+                        primaryColor: event.target.value.toUpperCase(),
+                      })
+                    }
                     aria-label="Mã màu chủ đạo"
                   />
                 </div>
@@ -2208,15 +2772,21 @@ function WorldSettingsConsole({ user }: { user: PortalUser }) {
                 <Field label="Tên miền" wide hint="Ví dụ: academy.example.com">
                   <input
                     value={brand.customDomain ?? ""}
-                    onChange={(event) => updateBrand({ customDomain: event.target.value })}
+                    onChange={(event) =>
+                      updateBrand({ customDomain: event.target.value })
+                    }
                     placeholder="academy.example.com"
                   />
                 </Field>
               </details>
             </div>
             <div className="brand-save-row">
-              <Button type="submit" disabled={working || !brand.systemName.trim()}>
-                <Icon name="save" size={16} /> {working ? "Đang lưu…" : "Lưu thay đổi"}
+              <Button
+                type="submit"
+                disabled={working || !brand.systemName.trim()}
+              >
+                <Icon name="save" size={16} />{" "}
+                {working ? "Đang lưu…" : "Lưu thay đổi"}
               </Button>
             </div>
           </Panel>
@@ -2236,7 +2806,10 @@ function WorldSettingsConsole({ user }: { user: PortalUser }) {
               <header>
                 <span>
                   {logoPreview || brand.logoUrl ? (
-                    <img src={logoPreview || browserBrandAsset(brand.logoUrl)} alt="" />
+                    <img
+                      src={logoPreview || browserBrandAsset(brand.logoUrl)}
+                      alt=""
+                    />
                   ) : (
                     brand.systemName.slice(0, 1).toUpperCase()
                   )}
@@ -2246,7 +2819,10 @@ function WorldSettingsConsole({ user }: { user: PortalUser }) {
               <div className="branding-preview-content">
                 <small>KHÔNG GIAN HỌC TẬP</small>
                 <h3>Chào mừng trở lại</h3>
-                <p>{brand.introduction || "Nội dung giới thiệu sẽ hiển thị tại đây."}</p>
+                <p>
+                  {brand.introduction ||
+                    "Nội dung giới thiệu sẽ hiển thị tại đây."}
+                </p>
                 <button
                   type="button"
                   style={{
@@ -2256,7 +2832,11 @@ function WorldSettingsConsole({ user }: { user: PortalUser }) {
                 >
                   Tiếp tục học
                 </button>
-                <div className="preview-cards"><i /><i /><i /></div>
+                <div className="preview-cards">
+                  <i />
+                  <i />
+                  <i />
+                </div>
               </div>
             </div>
           </Panel>
@@ -2273,13 +2853,22 @@ function WorldSettingsConsole({ user }: { user: PortalUser }) {
             className="sticky-panel"
             action={
               service.id ? (
-                <Button tone="ghost" onClick={() => setService(defaultServiceDraft(service.serviceType))}>
+                <Button
+                  tone="ghost"
+                  onClick={() =>
+                    setService(defaultServiceDraft(service.serviceType))
+                  }
+                >
                   Tạo mới
                 </Button>
               ) : undefined
             }
           >
-            <form className="workspace-form" onSubmit={saveService} id="service-editor">
+            <form
+              className="workspace-form"
+              onSubmit={saveService}
+              id="service-editor"
+            >
               <div className="service-type-grid wide">
                 {(Object.keys(SERVICE_META) as ServiceType[]).map((type) => {
                   const meta = SERVICE_META[type];
@@ -2291,7 +2880,10 @@ function WorldSettingsConsole({ user }: { user: PortalUser }) {
                       onClick={() => setService(defaultServiceDraft(type))}
                     >
                       <span>{meta.icon}</span>
-                      <span><strong>{meta.label}</strong><small>{meta.short}</small></span>
+                      <span>
+                        <strong>{meta.label}</strong>
+                        <small>{meta.short}</small>
+                      </span>
                     </button>
                   );
                 })}
@@ -2301,7 +2893,16 @@ function WorldSettingsConsole({ user }: { user: PortalUser }) {
                 <Icon name="question" size={18} />
                 <div>
                   <strong>{selectedMeta.label}</strong>
-                  <p>{selectedMeta.short}. <a href={selectedMeta.docs} target="_blank" rel="noreferrer">Mở tài liệu chính thức</a></p>
+                  <p>
+                    {selectedMeta.short}.{" "}
+                    <a
+                      href={selectedMeta.docs}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Mở tài liệu chính thức
+                    </a>
+                  </p>
                 </div>
               </div>
 
@@ -2309,87 +2910,322 @@ function WorldSettingsConsole({ user }: { user: PortalUser }) {
                 <input
                   required
                   value={service.configKey}
-                  onChange={(event) => setService({ ...service, configKey: event.target.value })}
+                  onChange={(event) =>
+                    setService({ ...service, configKey: event.target.value })
+                  }
                   placeholder="default"
                 />
               </Field>
 
               {service.serviceType === "REDIS" && (
                 <>
-                  <Field label="Máy chủ"><input required value={service.host} onChange={(event) => setService({ ...service, host: event.target.value })} placeholder="redis.example.com" /></Field>
-                  <Field label="Cổng"><input required inputMode="numeric" value={service.port} onChange={(event) => setService({ ...service, port: event.target.value })} /></Field>
-                  <Field label="Tên người dùng"><input value={service.username} onChange={(event) => setService({ ...service, username: event.target.value })} placeholder="default" /></Field>
-                  <Field label="Database"><input inputMode="numeric" value={service.database} onChange={(event) => setService({ ...service, database: event.target.value })} /></Field>
+                  <Field label="Máy chủ">
+                    <input
+                      required
+                      value={service.host}
+                      onChange={(event) =>
+                        setService({ ...service, host: event.target.value })
+                      }
+                      placeholder="redis.example.com"
+                    />
+                  </Field>
+                  <Field label="Cổng">
+                    <input
+                      required
+                      inputMode="numeric"
+                      value={service.port}
+                      onChange={(event) =>
+                        setService({ ...service, port: event.target.value })
+                      }
+                    />
+                  </Field>
+                  <Field label="Tên người dùng">
+                    <input
+                      value={service.username}
+                      onChange={(event) =>
+                        setService({ ...service, username: event.target.value })
+                      }
+                      placeholder="default"
+                    />
+                  </Field>
+                  <Field label="Database">
+                    <input
+                      inputMode="numeric"
+                      value={service.database}
+                      onChange={(event) =>
+                        setService({ ...service, database: event.target.value })
+                      }
+                    />
+                  </Field>
                 </>
               )}
 
               {service.serviceType === "SMTP" && (
                 <>
-                  <Field label="Máy chủ SMTP"><input required value={service.host} onChange={(event) => setService({ ...service, host: event.target.value })} placeholder="smtp.example.com" /></Field>
-                  <Field label="Cổng"><input required inputMode="numeric" value={service.port} onChange={(event) => setService({ ...service, port: event.target.value })} /></Field>
-                  <Field label="Tên đăng nhập"><input value={service.username} onChange={(event) => setService({ ...service, username: event.target.value })} /></Field>
-                  <Field label="Bảo mật"><select value={service.security} onChange={(event) => setService({ ...service, security: event.target.value })}><option>STARTTLS</option><option>TLS</option><option>NONE</option></select></Field>
-                  <Field label="Email gửi" wide><input required type="email" value={service.fromEmail} onChange={(event) => setService({ ...service, fromEmail: event.target.value })} placeholder="noreply@example.com" /></Field>
-                  <Field label="Tên người gửi" wide><input value={service.fromName} onChange={(event) => setService({ ...service, fromName: event.target.value })} /></Field>
+                  <Field label="Máy chủ SMTP">
+                    <input
+                      required
+                      value={service.host}
+                      onChange={(event) =>
+                        setService({ ...service, host: event.target.value })
+                      }
+                      placeholder="smtp.example.com"
+                    />
+                  </Field>
+                  <Field label="Cổng">
+                    <input
+                      required
+                      inputMode="numeric"
+                      value={service.port}
+                      onChange={(event) =>
+                        setService({ ...service, port: event.target.value })
+                      }
+                    />
+                  </Field>
+                  <Field label="Tên đăng nhập">
+                    <input
+                      value={service.username}
+                      onChange={(event) =>
+                        setService({ ...service, username: event.target.value })
+                      }
+                    />
+                  </Field>
+                  <Field label="Bảo mật">
+                    <select
+                      value={service.security}
+                      onChange={(event) =>
+                        setService({ ...service, security: event.target.value })
+                      }
+                    >
+                      <option>STARTTLS</option>
+                      <option>TLS</option>
+                      <option>NONE</option>
+                    </select>
+                  </Field>
+                  <Field label="Email gửi" wide>
+                    <input
+                      required
+                      type="email"
+                      value={service.fromEmail}
+                      onChange={(event) =>
+                        setService({
+                          ...service,
+                          fromEmail: event.target.value,
+                        })
+                      }
+                      placeholder="noreply@example.com"
+                    />
+                  </Field>
+                  <Field label="Tên người gửi" wide>
+                    <input
+                      value={service.fromName}
+                      onChange={(event) =>
+                        setService({ ...service, fromName: event.target.value })
+                      }
+                    />
+                  </Field>
                 </>
               )}
 
               {service.serviceType === "AI_PROVIDER" && (
                 <>
-                  <Field label="API endpoint" wide><input required type="url" value={service.endpoint} onChange={(event) => setService({ ...service, endpoint: event.target.value })} placeholder="https://api.openai.com/v1" /></Field>
-                  <Field label="Model" wide><input required value={service.model} onChange={(event) => setService({ ...service, model: event.target.value })} placeholder="Tên model theo nhà cung cấp" /></Field>
+                  <Field label="API endpoint" wide>
+                    <input
+                      required
+                      type="url"
+                      value={service.endpoint}
+                      onChange={(event) =>
+                        setService({ ...service, endpoint: event.target.value })
+                      }
+                      placeholder="https://api.openai.com/v1"
+                    />
+                  </Field>
+                  <Field label="Model" wide>
+                    <input
+                      required
+                      value={service.model}
+                      onChange={(event) =>
+                        setService({ ...service, model: event.target.value })
+                      }
+                      placeholder="Tên model theo nhà cung cấp"
+                    />
+                  </Field>
                 </>
               )}
 
               {service.serviceType === "OBJECT_STORAGE" && (
                 <>
-                  <Field label="Endpoint" wide><input required type="url" value={service.endpoint} onChange={(event) => setService({ ...service, endpoint: event.target.value })} placeholder="https://s3.example.com" /></Field>
-                  <Field label="Bucket"><input required value={service.bucket} onChange={(event) => setService({ ...service, bucket: event.target.value })} /></Field>
-                  <Field label="Region"><input required value={service.region} onChange={(event) => setService({ ...service, region: event.target.value })} placeholder="ap-southeast-1" /></Field>
-                  <Field label="Access key"><input required value={service.accessKey} onChange={(event) => setService({ ...service, accessKey: event.target.value })} /></Field>
-                  <label className="workspace-check"><input type="checkbox" checked={service.pathStyle} onChange={(event) => setService({ ...service, pathStyle: event.target.checked })} /><span>Dùng path-style URL (MinIO/S3 tương thích)</span></label>
+                  <Field label="Endpoint" wide>
+                    <input
+                      required
+                      type="url"
+                      value={service.endpoint}
+                      onChange={(event) =>
+                        setService({ ...service, endpoint: event.target.value })
+                      }
+                      placeholder="https://s3.example.com"
+                    />
+                  </Field>
+                  <Field label="Bucket">
+                    <input
+                      required
+                      value={service.bucket}
+                      onChange={(event) =>
+                        setService({ ...service, bucket: event.target.value })
+                      }
+                    />
+                  </Field>
+                  <Field label="Region">
+                    <input
+                      required
+                      value={service.region}
+                      onChange={(event) =>
+                        setService({ ...service, region: event.target.value })
+                      }
+                      placeholder="ap-southeast-1"
+                    />
+                  </Field>
+                  <Field label="Access key">
+                    <input
+                      required
+                      value={service.accessKey}
+                      onChange={(event) =>
+                        setService({
+                          ...service,
+                          accessKey: event.target.value,
+                        })
+                      }
+                    />
+                  </Field>
+                  <label className="workspace-check">
+                    <input
+                      type="checkbox"
+                      checked={service.pathStyle}
+                      onChange={(event) =>
+                        setService({
+                          ...service,
+                          pathStyle: event.target.checked,
+                        })
+                      }
+                    />
+                    <span>Dùng path-style URL (MinIO/S3 tương thích)</span>
+                  </label>
                 </>
               )}
 
               {service.serviceType === "DOCUMENT_EDITOR" && (
                 <>
-                  <Field label="ONLYOFFICE Docs URL" wide><input required type="url" value={service.endpoint} onChange={(event) => setService({ ...service, endpoint: event.target.value })} placeholder="https://docs.example.com" /></Field>
-                  <Field label="Callback URL công khai" wide hint="ONLYOFFICE phải truy cập được URL này để trả trạng thái lưu tài liệu."><input required type="url" value={service.callbackUrl} onChange={(event) => setService({ ...service, callbackUrl: event.target.value })} placeholder="https://lms.example.com/api/..." /></Field>
+                  <Field label="ONLYOFFICE Docs URL" wide>
+                    <input
+                      required
+                      type="url"
+                      value={service.endpoint}
+                      onChange={(event) =>
+                        setService({ ...service, endpoint: event.target.value })
+                      }
+                      placeholder="https://docs.example.com"
+                    />
+                  </Field>
+                  <Field
+                    label="Callback URL công khai"
+                    wide
+                    hint="ONLYOFFICE phải truy cập được URL này để trả trạng thái lưu tài liệu."
+                  >
+                    <input
+                      required
+                      type="url"
+                      value={service.callbackUrl}
+                      onChange={(event) =>
+                        setService({
+                          ...service,
+                          callbackUrl: event.target.value,
+                        })
+                      }
+                      placeholder="https://lms.example.com/api/..."
+                    />
+                  </Field>
                 </>
               )}
 
               {service.serviceType === "VIDEO_CONFERENCE" && (
                 <>
-                  <Field label="Nhà cung cấp"><select value={service.provider} onChange={(event) => setService({ ...service, provider: event.target.value })}><option value="JITSI">Jitsi</option><option value="ZOOM">Zoom</option><option value="TEAMS">Microsoft Teams</option><option value="CUSTOM">Tùy chỉnh</option></select></Field>
-                  <Field label="Endpoint" wide><input required type="url" value={service.endpoint} onChange={(event) => setService({ ...service, endpoint: event.target.value })} placeholder="https://meet.example.com" /></Field>
+                  <Field label="Nhà cung cấp">
+                    <select
+                      value={service.provider}
+                      onChange={(event) =>
+                        setService({ ...service, provider: event.target.value })
+                      }
+                    >
+                      <option value="JITSI">Jitsi</option>
+                      <option value="ZOOM">Zoom</option>
+                      <option value="TEAMS">Microsoft Teams</option>
+                      <option value="CUSTOM">Tùy chỉnh</option>
+                    </select>
+                  </Field>
+                  <Field label="Endpoint" wide>
+                    <input
+                      required
+                      type="url"
+                      value={service.endpoint}
+                      onChange={(event) =>
+                        setService({ ...service, endpoint: event.target.value })
+                      }
+                      placeholder="https://meet.example.com"
+                    />
+                  </Field>
                 </>
               )}
 
               <Field
                 label={selectedMeta.secretLabel}
                 wide
-                hint={service.id ? "Để trống để giữ bí mật hiện tại." : "Bí mật được mã hóa AES-GCM trước khi lưu."}
+                hint={
+                  service.id
+                    ? "Để trống để giữ bí mật hiện tại."
+                    : "Bí mật được mã hóa AES-GCM trước khi lưu."
+                }
               >
                 <input
                   type="password"
                   autoComplete="new-password"
                   value={service.secret}
-                  onChange={(event) => setService({ ...service, secret: event.target.value })}
+                  onChange={(event) =>
+                    setService({ ...service, secret: event.target.value })
+                  }
                 />
               </Field>
 
-              {(["REDIS", "OBJECT_STORAGE"] as ServiceType[]).includes(service.serviceType) && (
+              {(["REDIS", "OBJECT_STORAGE"] as ServiceType[]).includes(
+                service.serviceType,
+              ) && (
                 <label className="workspace-check">
-                  <input type="checkbox" checked={service.secure} onChange={(event) => setService({ ...service, secure: event.target.checked })} />
+                  <input
+                    type="checkbox"
+                    checked={service.secure}
+                    onChange={(event) =>
+                      setService({ ...service, secure: event.target.checked })
+                    }
+                  />
                   <span>Dùng kết nối mã hóa TLS/HTTPS</span>
                 </label>
               )}
               <label className="workspace-check">
-                <input type="checkbox" checked={service.enabled} onChange={(event) => setService({ ...service, enabled: event.target.checked })} />
+                <input
+                  type="checkbox"
+                  checked={service.enabled}
+                  onChange={(event) =>
+                    setService({ ...service, enabled: event.target.checked })
+                  }
+                />
                 <span>Bật dịch vụ sau khi lưu</span>
               </label>
               <Button type="submit" disabled={working}>
-                <Icon name="save" size={16} /> {working ? "Đang lưu…" : service.id ? "Cập nhật dịch vụ" : "Lưu dịch vụ"}
+                <Icon name="save" size={16} />{" "}
+                {working
+                  ? "Đang lưu…"
+                  : service.id
+                    ? "Cập nhật dịch vụ"
+                    : "Lưu dịch vụ"}
               </Button>
             </form>
           </Panel>
@@ -2403,32 +3239,70 @@ function WorldSettingsConsole({ user }: { user: PortalUser }) {
                 {services.map((item) => {
                   const meta = SERVICE_META[item.serviceType];
                   const visibleEntries = Object.entries(item.config ?? {})
-                    .filter(([, value]) => value !== undefined && value !== null && value !== "")
+                    .filter(
+                      ([, value]) =>
+                        value !== undefined && value !== null && value !== "",
+                    )
                     .slice(0, 4);
                   return (
-                    <article className="workspace-mini-card service-card" key={item.id}>
+                    <article
+                      className="workspace-mini-card service-card"
+                      key={item.id}
+                    >
                       <div>
                         <span className="service-card-icon">{meta.icon}</span>
-                        <div><strong>{meta.label}</strong><small>{item.configKey}</small></div>
-                        <Tag tone={item.healthStatus === "HEALTHY" ? "teal" : item.healthStatus === "UNREACHABLE" || item.healthStatus === "MISCONFIGURED" ? "danger" : ""}>
+                        <div>
+                          <strong>{meta.label}</strong>
+                          <small>{item.configKey}</small>
+                        </div>
+                        <Tag
+                          tone={
+                            item.healthStatus === "HEALTHY"
+                              ? "teal"
+                              : item.healthStatus === "UNREACHABLE" ||
+                                  item.healthStatus === "MISCONFIGURED"
+                                ? "danger"
+                                : ""
+                          }
+                        >
                           {serviceStatusLabel(item.healthStatus)}
                         </Tag>
                       </div>
                       <dl>
                         {visibleEntries.map(([key, value]) => (
-                          <div key={key}><dt>{key}</dt><dd>{String(value)}</dd></div>
+                          <div key={key}>
+                            <dt>{key}</dt>
+                            <dd>{String(value)}</dd>
+                          </div>
                         ))}
                       </dl>
                       <footer>
                         <span className="service-secret-note">
-                          {item.secretConfigured ? "Đã lưu bí mật" : "Chưa có bí mật"} · {item.enabled ? "Đang bật" : "Đang tắt"}
+                          {item.secretConfigured
+                            ? "Đã lưu bí mật"
+                            : "Chưa có bí mật"}{" "}
+                          · {item.enabled ? "Đang bật" : "Đang tắt"}
                         </span>
                         <span className="service-card-actions">
-                          <Button tone="ghost" onClick={() => editService(item)} title="Chỉnh sửa"><Icon name="edit" size={15} /></Button>
-                          <Button tone="secondary" onClick={() => void testService(item.id)} disabled={working}><Icon name="refresh" size={15} /> Kiểm tra</Button>
+                          <Button
+                            tone="ghost"
+                            onClick={() => editService(item)}
+                            title="Chỉnh sửa"
+                          >
+                            <Icon name="edit" size={15} />
+                          </Button>
+                          <Button
+                            tone="secondary"
+                            onClick={() => void testService(item.id)}
+                            disabled={working}
+                          >
+                            <Icon name="refresh" size={15} /> Kiểm tra
+                          </Button>
                         </span>
                       </footer>
-                      {item.lastError && <p className="service-error">{item.lastError}</p>}
+                      {item.lastError && (
+                        <p className="service-error">{item.lastError}</p>
+                      )}
                     </article>
                   );
                 })}

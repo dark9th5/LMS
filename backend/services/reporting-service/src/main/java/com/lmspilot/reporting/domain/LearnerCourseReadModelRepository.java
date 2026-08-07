@@ -1,1 +1,15 @@
-package com.lmspilot.reporting.domain;import org.springframework.data.jpa.repository.JpaRepository;import java.time.Instant;import java.util.*;public interface LearnerCourseReadModelRepository extends JpaRepository<LearnerCourseReadModel,UUID>{LearnerCourseReadModel findByEnrollmentId(UUID id);List<LearnerCourseReadModel>findAllByUserId(UUID id);List<LearnerCourseReadModel>findAllByClassIdIn(Collection<UUID>ids);long countByCompleted(boolean v);long countByDueAtBeforeAndCompletedFalse(Instant n);List<LearnerCourseReadModel>findAllByCompletedFalseAndDueAtGreaterThanEqualAndDueAtLessThanOrderByDueAtAsc(Instant f,Instant t);}
+package com.lmspilot.reporting.domain;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.time.Instant;
+
+import java.util.*;
+public interface LearnerCourseReadModelRepository extends JpaRepository<LearnerCourseReadModel,UUID>{
+    LearnerCourseReadModel findByEnrollmentId(UUID id);
+    List<LearnerCourseReadModel>findAllByUserId(UUID id);
+    List<LearnerCourseReadModel>findAllByClassIdIn(Collection<UUID>ids);
+    long countByCompleted(boolean v);
+    long countByDueAtBeforeAndCompletedFalse(Instant n);
+    List<LearnerCourseReadModel>findAllByCompletedFalseAndDueAtGreaterThanEqualAndDueAtLessThanOrderByDueAtAsc(Instant f,Instant t);
+}

@@ -36,13 +36,19 @@ const definitions: Record<string, SectionDefinition> = {
     icon: "book",
     columns: ["Khóa học", "Mã", "Thời lượng", "Phiên bản", "Trạng thái"],
     endpoint: () => "/api/v1/courses?size=100",
-    accessPermissions: ["courses:read", "courses:create", "courses:update", "courses:learn"],
+    accessPermissions: [
+      "courses:read",
+      "courses:create",
+      "courses:update",
+      "courses:learn",
+    ],
     actionPermissions: ["courses:create", "courses:write"],
     actionLabel: "Tạo khóa học",
   },
   users: {
     title: "Người dùng",
-    description: "Quản lý vòng đời tài khoản, trạng thái và các gói quyền được ghép theo công việc.",
+    description:
+      "Quản lý vòng đời tài khoản, trạng thái và các gói quyền được ghép theo công việc.",
     icon: "users",
     columns: [
       "Họ và tên",
@@ -95,7 +101,14 @@ const definitions: Record<string, SectionDefinition> = {
       "Trạng thái",
     ],
     endpoint: () => "/api/v1/exams",
-    accessPermissions: ["assessments:read", "assessments:take", "assessment:take", "assessments:create", "assessments:update", "exams:manage"],
+    accessPermissions: [
+      "assessments:read",
+      "assessments:take",
+      "assessment:take",
+      "assessments:create",
+      "assessments:update",
+      "exams:manage",
+    ],
   },
   grading: {
     title: "Chấm điểm",
@@ -104,10 +117,15 @@ const definitions: Record<string, SectionDefinition> = {
     icon: "grade",
     columns: ["Kết quả", "Bài thi", "Điểm", "Tỷ lệ", "Trạng thái"],
     endpoint: (user) =>
-      user.permissions.includes("grading:manage") || user.permissions.includes("assessments:grade")
+      user.permissions.includes("grading:manage") ||
+      user.permissions.includes("assessments:grade")
         ? "/api/v1/grades/queue"
         : "/api/v1/grades/me",
-    accessPermissions: ["assessments:grade", "grading:manage", "grades:read:self"],
+    accessPermissions: [
+      "assessments:grade",
+      "grading:manage",
+      "grades:read:self",
+    ],
   },
   reports: {
     title: "Dashboard & báo cáo",
@@ -116,7 +134,11 @@ const definitions: Record<string, SectionDefinition> = {
     icon: "report",
     columns: ["Ghi danh", "Khóa học", "Tiến độ", "Kết quả"],
     endpoint: () => "/api/v1/reports/learning",
-    accessPermissions: ["reports:read:self", "reports:read:scope", "reports:kpi:read"],
+    accessPermissions: [
+      "reports:read:self",
+      "reports:read:scope",
+      "reports:kpi:read",
+    ],
     actionPermissions: ["reports:export"],
     actionLabel: "Xuất CSV",
   },
@@ -150,7 +172,11 @@ const definitions: Record<string, SectionDefinition> = {
     icon: "settings",
     columns: ["Nhóm cấu hình", "Giá trị", "Nguồn", "Cập nhật", "Trạng thái"],
     endpoint: () => "/api/v1/configuration",
-    accessPermissions: ["branding:manage", "configuration:manage", "integrations:manage"],
+    accessPermissions: [
+      "branding:manage",
+      "configuration:manage",
+      "integrations:manage",
+    ],
   },
 };
 
@@ -179,7 +205,6 @@ const statusLabels: Record<string, string> = {
   UP: "Hoạt động",
   DOWN: "Gián đoạn",
 };
-
 
 function record(value: unknown): UnknownRecord {
   return typeof value === "object" && value !== null
@@ -290,9 +315,7 @@ function normalize(
     switch (section) {
       case "users": {
         const roles = Array.isArray(item.roles)
-          ? item.roles
-              .map((role) => text(role).replaceAll("_", " "))
-              .join(", ")
+          ? item.roles.map((role) => text(role).replaceAll("_", " ")).join(", ")
           : "—";
         return {
           id,
@@ -536,9 +559,9 @@ function LegacySectionPage({
   const definition = definitions[section];
   const canAccess = Boolean(
     definition &&
-      definition.accessPermissions.some((permission) =>
-        user.permissions.includes(permission),
-      ),
+    definition.accessPermissions.some((permission) =>
+      user.permissions.includes(permission),
+    ),
   );
   const [payload, setPayload] = useState<unknown>(null);
   const [references, setReferences] = useState<References>({
@@ -555,11 +578,11 @@ function LegacySectionPage({
 
   const canUseAction = Boolean(
     canAccess &&
-      definition?.actionLabel &&
-      (!definition.actionPermissions?.length ||
-        definition.actionPermissions.some((permission) =>
-          user.permissions.includes(permission),
-        )),
+    definition?.actionLabel &&
+    (!definition.actionPermissions?.length ||
+      definition.actionPermissions.some((permission) =>
+        user.permissions.includes(permission),
+      )),
   );
 
   const load = useCallback(async () => {

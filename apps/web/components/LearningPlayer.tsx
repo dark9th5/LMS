@@ -308,7 +308,11 @@ export function LearningPlayer({
     <div className="learning-player">
       <header className="player-header">
         <div className="player-title">
-          <Link className="icon-button" href={studentCoursePath()} aria-label="Quay lại">
+          <Link
+            className="icon-button"
+            href={studentCoursePath()}
+            aria-label="Quay lại"
+          >
             <Icon name="back" />
           </Link>
           <div>
@@ -415,12 +419,15 @@ export function LearningPlayer({
                       {selectedExam ? (
                         <>
                           <p>
-                            Phiên làm bài được gắn với đúng khóa học này; kết quả
-                            đạt mới tự động hoàn thành bài học.
+                            Phiên làm bài được gắn với đúng khóa học này; kết
+                            quả đạt mới tự động hoàn thành bài học.
                           </p>
                           <Link
                             className="button primary"
-                            href={studentCourseQuizPath(progress.enrollmentId, selectedExam.id)}
+                            href={studentCourseQuizPath(
+                              progress.enrollmentId,
+                              selectedExam.id,
+                            )}
                           >
                             Mở bài kiểm tra
                           </Link>
@@ -431,7 +438,10 @@ export function LearningPlayer({
                             Chưa có bài kiểm tra đang hoạt động gắn với bài học
                             này.
                           </p>
-                          <p className="form-alert info">Giảng viên cần xuất bản đề trong tab Bài kiểm tra của khóa học.</p>
+                          <p className="form-alert info">
+                            Giảng viên cần xuất bản đề trong tab Bài kiểm tra
+                            của khóa học.
+                          </p>
                         </>
                       )}
                     </div>

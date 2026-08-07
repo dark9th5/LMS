@@ -57,8 +57,8 @@ export function CourseDetail({
 
   const canEdit = Boolean(
     course &&
-      (user.permissions.includes("courses:update") ||
-        user.permissions.includes("courses:write")),
+    (user.permissions.includes("courses:update") ||
+      user.permissions.includes("courses:write")),
   );
   const canPublish = Boolean(
     course && user.permissions.includes("courses:publish"),

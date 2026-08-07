@@ -1,1 +1,9 @@
-package com.lmspilot.reporting.api;import com.lmspilot.reporting.domain.ReportScope;public record CreateReportExportRequest(ReportScope scope){public CreateReportExportRequest{if(scope==null)scope=ReportScope.SELF;}}
+package com.lmspilot.reporting.api;
+
+import com.lmspilot.reporting.domain.ReportScope;
+public record CreateReportExportRequest(ReportScope scope){
+    public CreateReportExportRequest{
+        if(scope==null)scope=ReportScope.SELF;
+    }
+
+}

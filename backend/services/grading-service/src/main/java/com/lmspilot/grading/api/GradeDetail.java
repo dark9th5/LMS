@@ -1,1 +1,7 @@
-package com.lmspilot.grading.api;import com.fasterxml.jackson.databind.JsonNode;import java.util.UUID;public record GradeDetail(UUID questionId,String type,double awarded,double maximum,boolean requiresManual,String prompt,JsonNode answer){}
+package com.lmspilot.grading.api;
+
+import com.fasterxml.jackson.databind.JsonNode;
+
+import java.util.UUID;
+public record GradeDetail(UUID questionId,String type,double awarded,double maximum,boolean requiresManual,String prompt,JsonNode answer){
+}

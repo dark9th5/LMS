@@ -1,1 +1,15 @@
-package com.lmspilot.assessment.domain; import java.util.*; import org.springframework.data.jpa.repository.*; import org.springframework.data.repository.query.Param; import jakarta.persistence.LockModeType; public interface ExamRepository extends JpaRepository<ExamEntity,UUID> { List<ExamEntity> findAllByOwnerIdOrderByUpdatedAtDesc(UUID ownerId); List<ExamEntity> findAllByStatusOrderByUpdatedAtDesc(ExamStatus status); @Lock(LockModeType.PESSIMISTIC_READ) @Query("select e from ExamEntity e where e.id=:id") Optional<ExamEntity> findStartSnapshotById(@Param("id") UUID id); }
+package com.lmspilot.assessment.domain;
+
+import java.util.*;
+
+import org.springframework.data.jpa.repository.*;
+
+import org.springframework.data.repository.query.Param;
+
+import jakarta.persistence.LockModeType;
+public interface ExamRepository extends JpaRepository<ExamEntity,UUID> {
+    List<ExamEntity> findAllByOwnerIdOrderByUpdatedAtDesc(UUID ownerId);
+    List<ExamEntity> findAllByStatusOrderByUpdatedAtDesc(ExamStatus status);
+    @Lock(LockModeType.PESSIMISTIC_READ)
+    @Query("select e from ExamEntity e where e.id=:id") Optional<ExamEntity> findStartSnapshotById(@Param("id") UUID id);
+}

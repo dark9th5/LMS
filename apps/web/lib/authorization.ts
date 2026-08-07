@@ -12,12 +12,21 @@ export function hasRole(
   return Boolean(user && resolvePortalRole(user) === role);
 }
 
-export function hasPermission(user: PortalUser | null | undefined, permission: string): boolean {
+export function hasPermission(
+  user: PortalUser | null | undefined,
+  permission: string,
+): boolean {
   return Boolean(user && user.permissions.includes(permission));
 }
 
-export function hasAnyPermission(user: PortalUser | null | undefined, permissions: string[]): boolean {
-  return Boolean(user && permissions.some((permission) => user.permissions.includes(permission)));
+export function hasAnyPermission(
+  user: PortalUser | null | undefined,
+  permissions: string[],
+): boolean {
+  return Boolean(
+    user &&
+    permissions.some((permission) => user.permissions.includes(permission)),
+  );
 }
 
 export function landingForUser(user: PortalUser | null | undefined): string {

@@ -6,7 +6,10 @@ import { fetchGateway } from "@/lib/upstream-fetch";
 export async function POST(request: NextRequest) {
   if (!isSameOriginMutation(request)) {
     return NextResponse.json(
-      { code: "CROSS_SITE_REQUEST", message: "Yêu cầu khác nguồn đã bị từ chối" },
+      {
+        code: "CROSS_SITE_REQUEST",
+        message: "Yêu cầu khác nguồn đã bị từ chối",
+      },
       { status: 403, headers: { "Cache-Control": "no-store" } },
     );
   }
@@ -22,9 +25,12 @@ export async function POST(request: NextRequest) {
   }
 
   // Preserve the LAN hostname/IP used by the browser without trusting a client-supplied redirect origin.
-  const host = request.headers.get("x-forwarded-host") ?? request.headers.get("host");
+  const host =
+    request.headers.get("x-forwarded-host") ?? request.headers.get("host");
   const proto = request.headers.get("x-forwarded-proto") ?? "http";
-  const baseUrl = host ? `${proto}://${host}` : (process.env.LMSPILOT_PUBLIC_URL ?? request.nextUrl.origin);
+  const baseUrl = host
+    ? `${proto}://${host}`
+    : (process.env.LMSPILOT_PUBLIC_URL ?? request.nextUrl.origin);
   const response = NextResponse.redirect(new URL("/login", baseUrl), 303);
   response.cookies.set("lmspilot_access", "", { path: "/", maxAge: 0 });
   response.cookies.set("lmspilot_user", "", { path: "/", maxAge: 0 });

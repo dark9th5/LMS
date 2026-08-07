@@ -1,1 +1,16 @@
-package com.lmspilot.certificate.api;import org.springframework.web.bind.annotation.*;@RestController @RequestMapping("/public/v1/certificates")public class PublicCertificateController{private final CertificateService service;public PublicCertificateController(CertificateService s){service=s;}@GetMapping("/{code}")public CertificateResponse verify(@PathVariable String code){return service.verify(code);}}
+package com.lmspilot.certificate.api;
+
+import org.springframework.web.bind.annotation.*;
+@RestController
+@RequestMapping("/public/v1/certificates")
+public class PublicCertificateController{
+    private final CertificateService service;
+    public PublicCertificateController(CertificateService s){
+        service=s;
+    }
+    @GetMapping("/{code}")
+    public CertificateResponse verify(@PathVariable String code){
+        return service.verify(code);
+    }
+
+}

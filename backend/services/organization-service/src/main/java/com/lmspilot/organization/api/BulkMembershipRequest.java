@@ -1,1 +1,15 @@
-package com.lmspilot.organization.api;import jakarta.validation.Valid;import jakarta.validation.constraints.Size;import java.util.List;public record BulkMembershipRequest(@Valid @Size(min=1,max=5000)List<MembershipInput> memberships){public BulkMembershipRequest{memberships=memberships==null?List.of():List.copyOf(memberships);}}
+package com.lmspilot.organization.api;
+
+import jakarta.validation.Valid;
+
+import jakarta.validation.constraints.Size;
+
+import java.util.List;
+public record BulkMembershipRequest(@Valid
+@Size(min=1,max=5000)
+List<MembershipInput> memberships){
+    public BulkMembershipRequest{
+        memberships=memberships==null?List.of():List.copyOf(memberships);
+    }
+
+}

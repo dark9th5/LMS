@@ -1,2 +1,18 @@
-package com.lmspilot.enrollment.platform; import com.lmspilot.enrollment.domain.AssignmentTargetType; import java.time.*; import java.util.*;
-public final class CourseAssignmentPolicy { private CourseAssignmentPolicy(){} public static void validate(AssignmentTargetType type,UUID target,Instant available,Instant due,int grace){Objects.requireNonNull(type);Objects.requireNonNull(target);if(available!=null&&due!=null&&!due.isAfter(available))throw new IllegalArgumentException("dueAt must be after availableFrom");if(grace<0||grace>10080)throw new IllegalArgumentException("gracePeriodMinutes out of range");} }
+package com.lmspilot.enrollment.platform;
+
+import com.lmspilot.enrollment.domain.AssignmentTargetType;
+
+import java.time.*;
+
+import java.util.*;
+public final class CourseAssignmentPolicy {
+    private CourseAssignmentPolicy(){
+    }
+    public static void validate(AssignmentTargetType type,UUID target,Instant available,Instant due,int grace){
+        Objects.requireNonNull(type);
+        Objects.requireNonNull(target);
+        if(available!=null&&due!=null&&!due.isAfter(available))throw new IllegalArgumentException("dueAt must be after availableFrom");
+        if(grace<0||grace>10080)throw new IllegalArgumentException("gracePeriodMinutes out of range");
+    }
+
+}

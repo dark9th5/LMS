@@ -1,1 +1,29 @@
-package com.lmspilot.license.api;import com.lmspilot.contracts.Permissions;import jakarta.validation.Valid;import org.springframework.security.access.prepost.PreAuthorize;import org.springframework.web.bind.annotation.*;@RestController @RequestMapping("/api/v1/license")public class LicenseController{private final LicenseManagementService service;public LicenseController(LicenseManagementService s){service=s;}@GetMapping @PreAuthorize("hasAuthority('"+Permissions.LICENSE_MANAGE+"')")public LicenseResponse current(){return service.current();}@PostMapping("/activate")@PreAuthorize("hasAuthority('"+Permissions.LICENSE_MANAGE+"')")public LicenseResponse activate(@Valid @RequestBody ActivateLicenseRequest in){return service.activate(in);}}
+package com.lmspilot.license.api;
+
+import com.lmspilot.contracts.Permissions;
+
+import jakarta.validation.Valid;
+
+import org.springframework.security.access.prepost.PreAuthorize;
+
+import org.springframework.web.bind.annotation.*;
+@RestController
+@RequestMapping("/api/v1/license")
+public class LicenseController{
+    private final LicenseManagementService service;
+    public LicenseController(LicenseManagementService s){
+        service=s;
+    }
+    @GetMapping
+    @PreAuthorize("hasAuthority('"+Permissions.LICENSE_MANAGE+"')")
+    public LicenseResponse current(){
+        return service.current();
+    }
+    @PostMapping("/activate")
+    @PreAuthorize("hasAuthority('"+Permissions.LICENSE_MANAGE+"')")
+    public LicenseResponse activate(@Valid
+    @RequestBody ActivateLicenseRequest in){
+        return service.activate(in);
+    }
+
+}

@@ -1,1 +1,16 @@
-package com.lmspilot.license.api;import jakarta.validation.constraints.*;import java.time.Instant;import java.util.Set;public record LicensePayload(String licenseId,String organization,String edition,@Min(1)int maxUsers,Set<String> features,Instant issuedAt,Instant expiresAt,@Min(0)@Max(3650)int gracePeriodDays,String machineFingerprint){public LicensePayload{edition=edition==null?"STANDARD":edition;maxUsers=maxUsers<=0?100:maxUsers;features=features==null?Set.of():Set.copyOf(features);}}
+package com.lmspilot.license.api;
+
+import jakarta.validation.constraints.*;
+
+import java.time.Instant;
+
+import java.util.Set;
+public record LicensePayload(String licenseId,String organization,String edition,@Min(1)int maxUsers,Set<String> features,Instant issuedAt,Instant expiresAt,@Min(0)
+@Max(3650)int gracePeriodDays,String machineFingerprint){
+    public LicensePayload{
+        edition=edition==null?"STANDARD":edition;
+        maxUsers=maxUsers<=0?100:maxUsers;
+        features=features==null?Set.of():Set.copyOf(features);
+    }
+
+}

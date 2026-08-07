@@ -10,7 +10,9 @@ export const PORTAL_ROLES: readonly PortalRole[] = [
 ] as const;
 
 export function isPortalRole(value: unknown): value is PortalRole {
-  return typeof value === "string" && PORTAL_ROLES.includes(value as PortalRole);
+  return (
+    typeof value === "string" && PORTAL_ROLES.includes(value as PortalRole)
+  );
 }
 
 /**

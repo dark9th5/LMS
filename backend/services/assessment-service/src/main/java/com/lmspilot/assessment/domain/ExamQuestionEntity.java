@@ -1,3 +1,37 @@
 package com.lmspilot.assessment.domain;
-import jakarta.persistence.*; import java.time.Instant; import java.util.UUID;
-@Entity @Table(name="exam_questions",uniqueConstraints=@UniqueConstraint(name="uq_exam_question",columnNames={"exam_id","question_id"})) public class ExamQuestionEntity { @Id public UUID id=UUID.randomUUID(); @Column(name="exam_id",nullable=false) public UUID examId; @Column(name="question_id",nullable=false) public UUID questionId; @Column(nullable=false) public int questionVersion=1; @Enumerated(EnumType.STRING) @Column(nullable=false,length=30) public QuestionType type; @Column(nullable=false,columnDefinition="text") public String promptSnapshot=""; @Column(nullable=false,columnDefinition="text") public String optionsSnapshotJson="[]"; @Column(nullable=false,columnDefinition="text") public String correctAnswersSnapshotJson="[]"; @Column(nullable=false) public double points=1; @Column(nullable=false) public int sortOrder; public ExamQuestionEntity(){} }
+
+import jakarta.persistence.*;
+
+import java.time.Instant;
+
+import java.util.UUID;
+@Entity
+@Table(name="exam_questions",uniqueConstraints=@UniqueConstraint(name="uq_exam_question",columnNames={
+    "exam_id","question_id"
+}
+)) public class ExamQuestionEntity {
+    @Id
+    public UUID id=UUID.randomUUID();
+    @Column(name="exam_id",nullable=false)
+    public UUID examId;
+    @Column(name="question_id",nullable=false)
+    public UUID questionId;
+    @Column(nullable=false)
+    public int questionVersion=1;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable=false,length=30)
+    public QuestionType type;
+    @Column(nullable=false,columnDefinition="text")
+    public String promptSnapshot="";
+    @Column(nullable=false,columnDefinition="text")
+    public String optionsSnapshotJson="[]";
+    @Column(nullable=false,columnDefinition="text")
+    public String correctAnswersSnapshotJson="[]";
+    @Column(nullable=false)
+    public double points=1;
+    @Column(nullable=false)
+    public int sortOrder;
+    public ExamQuestionEntity(){
+    }
+
+}

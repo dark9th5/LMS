@@ -1,5 +1,6 @@
 export type CourseStatus = "DRAFT" | "PUBLISHED" | "HIDDEN" | "ARCHIVED";
-export type LessonType = "TEXT" | "PDF" | "DOCX" | "VIDEO" | "AUDIO" | "FILE" | "ASSIGNMENT" | "EXAM";
+export type LessonType =
+  "TEXT" | "PDF" | "DOCX" | "VIDEO" | "AUDIO" | "FILE" | "ASSIGNMENT" | "EXAM";
 
 export type Lesson = {
   id: string;
@@ -86,7 +87,8 @@ export type UserAccount = {
 
 export type Question = {
   id: string;
-  type: "SINGLE_CHOICE" | "MULTIPLE_CHOICE" | "TRUE_FALSE" | "SHORT_TEXT" | "ESSAY";
+  type:
+    "SINGLE_CHOICE" | "MULTIPLE_CHOICE" | "TRUE_FALSE" | "SHORT_TEXT" | "ESSAY";
   prompt: string;
   options: string[];
   correctAnswers: string[];
@@ -112,7 +114,8 @@ export type Exam = {
   title: string;
   courseId?: string | null;
   lessonId?: string | null;
-  contextType?: "COURSE_QUIZ" | "COURSE_ASSIGNMENT" | "STANDALONE_EXAM" | "COMPETITION";
+  contextType?:
+    "COURSE_QUIZ" | "COURSE_ASSIGNMENT" | "STANDALONE_EXAM" | "COMPETITION";
   cohortId?: string | null;
   autoGrade?: boolean;
   durationMinutes: number;
@@ -161,11 +164,18 @@ export type Grade = {
   percentage: number;
   passed: boolean;
   status: "PENDING_MANUAL" | "COMPLETED";
-  details: Array<{ questionId: string; type: string; prompt?: string; answer?: unknown; awarded: number; maximum: number; requiresManual: boolean }>;
+  details: Array<{
+    questionId: string;
+    type: string;
+    prompt?: string;
+    answer?: unknown;
+    awarded: number;
+    maximum: number;
+    requiresManual: boolean;
+  }>;
   feedback?: string | null;
   updatedAt: string;
 };
-
 
 export type AssignmentSubmission = {
   id: string;
@@ -200,16 +210,25 @@ export type StoredFile = {
 
 export type NotificationSummary = {
   unread: number;
-  items: Array<{ id: string; title: string; body: string; read: boolean; createdAt: string }>;
+  items: Array<{
+    id: string;
+    title: string;
+    body: string;
+    read: boolean;
+    createdAt: string;
+  }>;
 };
 
 export function formatDate(value?: string | null, includeTime = false): string {
   if (!value) return "Chưa xác định";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "Chưa xác định";
-  return new Intl.DateTimeFormat("vi-VN", includeTime
-    ? { dateStyle: "medium", timeStyle: "short" }
-    : { dateStyle: "medium" }).format(date);
+  return new Intl.DateTimeFormat(
+    "vi-VN",
+    includeTime
+      ? { dateStyle: "medium", timeStyle: "short" }
+      : { dateStyle: "medium" },
+  ).format(date);
 }
 
 export function formatDuration(minutes?: number | null): string {

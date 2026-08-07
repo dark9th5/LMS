@@ -1,1 +1,15 @@
-package com.lmspilot.reporting.api;import com.lmspilot.reporting.domain.*;import jakarta.validation.constraints.*;public record ReportScheduleRequest(@NotBlank@Size(max=180)String name,ReportScope scope,ReportFrequency frequency,@Min(1)@Max(7)Integer dayOfWeek,@Min(0)@Max(23)int hourUtc,boolean enabled){public ReportScheduleRequest{if(scope==null)scope=ReportScope.SELF;if(frequency==null)frequency=ReportFrequency.DAILY;}}
+package com.lmspilot.reporting.api;
+
+import com.lmspilot.reporting.domain.*;
+
+import jakarta.validation.constraints.*;
+public record ReportScheduleRequest(@NotBlank
+@Size(max=180)String name,ReportScope scope,ReportFrequency frequency,@Min(1)
+@Max(7)Integer dayOfWeek,@Min(0)
+@Max(23)int hourUtc,boolean enabled){
+    public ReportScheduleRequest{
+        if(scope==null)scope=ReportScope.SELF;
+        if(frequency==null)frequency=ReportFrequency.DAILY;
+    }
+
+}

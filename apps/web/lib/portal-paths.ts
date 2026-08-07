@@ -56,8 +56,9 @@ export function studentCourseQuizPath(
 }
 
 export function standaloneExamPath(role: PortalRole, examId?: string): string {
-  const base = role === "INSTRUCTOR"
-    ? PORTAL_PATHS.INSTRUCTOR.exams
-    : PORTAL_PATHS.STUDENT.exams;
+  const base =
+    role === "INSTRUCTOR"
+      ? PORTAL_PATHS.INSTRUCTOR.exams
+      : PORTAL_PATHS.STUDENT.exams;
   return examId ? `${base}/${examId}` : base;
 }

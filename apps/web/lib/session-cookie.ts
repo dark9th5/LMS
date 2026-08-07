@@ -15,7 +15,9 @@ function validUser(value: unknown): value is PortalUser {
     typeof user.fullName === "string" &&
     Array.isArray(user.roles) &&
     user.roles.length >= 1 &&
-    user.roles.every((role) => ["ADMIN", "INSTRUCTOR", "STUDENT"].includes(String(role))) &&
+    user.roles.every((role) =>
+      ["ADMIN", "INSTRUCTOR", "STUDENT"].includes(String(role)),
+    ) &&
     typeof user.primaryRole === "string" &&
     ["ADMIN", "INSTRUCTOR", "STUDENT"].includes(user.primaryRole) &&
     Array.isArray(user.permissions) &&
@@ -52,13 +54,20 @@ export function encodeUserCookie(user: PortalUser): string {
     throw new TypeError("Cannot encode an invalid portal user");
   }
 
-  const payload = Buffer.from(JSON.stringify(user), "utf8").toString("base64url");
+  const payload = Buffer.from(JSON.stringify(user), "utf8").toString(
+    "base64url",
+  );
   return `${COOKIE_VERSION}.${payload}.${sign(`${COOKIE_VERSION}.${payload}`)}`;
 }
 
 export function decodeUserCookie(value: string): PortalUser | null {
   const [version, payload, signature, extra] = value.split(".");
-  if (extra !== undefined || version !== COOKIE_VERSION || !payload || !signature) {
+  if (
+    extra !== undefined ||
+    version !== COOKIE_VERSION ||
+    !payload ||
+    !signature
+  ) {
     return null;
   }
 

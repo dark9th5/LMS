@@ -1,1 +1,50 @@
-package com.lmspilot.identity.domain; import jakarta.persistence.*; import java.time.Instant; import java.util.*; @Entity @Table(name="user_accounts") public class UserAccountEntity { @Id public UUID id=UUID.randomUUID(); @Column(nullable=false,unique=true,length=80) public String code=""; @Column(nullable=false,unique=true,length=120) public String username=""; @Column(nullable=false,length=255) public String passwordHash=""; @Column(nullable=false,length=180) public String fullName=""; @Column(length=180) public String email; public UUID organizationUnitId; @Enumerated(EnumType.STRING) @Column(nullable=false,length=30) public AccountStatus status=AccountStatus.ACTIVE; @Enumerated(EnumType.STRING) @Column(nullable=false,length=30) public AccountType accountType=AccountType.USER; @Column(nullable=false) public boolean protectedAccount; @ManyToMany(fetch=FetchType.EAGER) @JoinTable(name="user_roles",joinColumns=@JoinColumn(name="user_id"),inverseJoinColumns=@JoinColumn(name="role_id")) public Set<RoleEntity> roles=new LinkedHashSet<>(); @Column(nullable=false) public int failedLoginCount; public Instant lockedUntil; public Instant lastLoginAt; @Column(nullable=false) public boolean mustChangePassword=true; public Instant passwordChangedAt; @Column(nullable=false) public Instant createdAt=Instant.now(); @Column(nullable=false) public Instant updatedAt=Instant.now(); @Version public long version; public UserAccountEntity(){} }
+package com.lmspilot.identity.domain;
+
+import jakarta.persistence.*;
+
+import java.time.Instant;
+
+import java.util.*;
+@Entity
+@Table(name="user_accounts")
+public class UserAccountEntity {
+    @Id
+    public UUID id=UUID.randomUUID();
+    @Column(nullable=false,unique=true,length=80)
+    public String code="";
+    @Column(nullable=false,unique=true,length=120)
+    public String username="";
+    @Column(nullable=false,length=255)
+    public String passwordHash="";
+    @Column(nullable=false,length=180)
+    public String fullName="";
+    @Column(length=180)
+    public String email;
+    public UUID organizationUnitId;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable=false,length=30)
+    public AccountStatus status=AccountStatus.ACTIVE;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable=false,length=30)
+    public AccountType accountType=AccountType.USER;
+    @Column(nullable=false)
+    public boolean protectedAccount;
+    @ManyToMany(fetch=FetchType.EAGER)
+    @JoinTable(name="user_roles",joinColumns=@JoinColumn(name="user_id"),inverseJoinColumns=@JoinColumn(name="role_id")) public Set<RoleEntity> roles=new LinkedHashSet<>();
+    @Column(nullable=false)
+    public int failedLoginCount;
+    public Instant lockedUntil;
+    public Instant lastLoginAt;
+    @Column(nullable=false)
+    public boolean mustChangePassword=true;
+    public Instant passwordChangedAt;
+    @Column(nullable=false)
+    public Instant createdAt=Instant.now();
+    @Column(nullable=false)
+    public Instant updatedAt=Instant.now();
+    @Version
+    public long version;
+    public UserAccountEntity(){
+    }
+
+}

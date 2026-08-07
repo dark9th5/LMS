@@ -1,1 +1,9 @@
-package com.lmspilot.competency.domain; import org.springframework.data.jpa.repository.JpaRepository; import java.util.*; public interface CompetencyProfileRepository extends JpaRepository<CompetencyProfileEntity,UUID>{ boolean existsByCodeIgnoreCase(String code); List<CompetencyProfileEntity> findAllByActiveTrueOrderByNameAsc(); }
+package com.lmspilot.competency.domain;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.*;
+public interface CompetencyProfileRepository extends JpaRepository<CompetencyProfileEntity,UUID>{
+    boolean existsByCodeIgnoreCase(String code);
+    List<CompetencyProfileEntity> findAllByActiveTrueOrderByNameAsc();
+}

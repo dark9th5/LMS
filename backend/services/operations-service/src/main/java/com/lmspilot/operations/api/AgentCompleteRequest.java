@@ -1,1 +1,11 @@
-package com.lmspilot.operations.api;import jakarta.validation.constraints.NotBlank;import java.util.Map;public record AgentCompleteRequest(@NotBlank String claimToken,boolean success,Map<String,Object> result){public AgentCompleteRequest{result=result==null?Map.of():Map.copyOf(result);}}
+package com.lmspilot.operations.api;
+
+import jakarta.validation.constraints.NotBlank;
+
+import java.util.Map;
+public record AgentCompleteRequest(@NotBlank String claimToken,boolean success,Map<String,Object> result){
+    public AgentCompleteRequest{
+        result=result==null?Map.of():Map.copyOf(result);
+    }
+
+}

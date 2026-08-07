@@ -1,1 +1,15 @@
-package com.lmspilot.integration.api;import com.lmspilot.integration.domain.*;import jakarta.validation.constraints.NotBlank;import java.util.Map;public record AdapterRequest(@NotBlank String code,@NotBlank String name,AdapterType type,@NotBlank String endpoint,Map<String,String> mapping,String secretReference,AdapterStatus status){public AdapterRequest{mapping=mapping==null?Map.of():Map.copyOf(mapping);secretReference=secretReference==null?"":secretReference;status=status==null?AdapterStatus.DRAFT:status;}}
+package com.lmspilot.integration.api;
+
+import com.lmspilot.integration.domain.*;
+
+import jakarta.validation.constraints.NotBlank;
+
+import java.util.Map;
+public record AdapterRequest(@NotBlank String code,@NotBlank String name,AdapterType type,@NotBlank String endpoint,Map<String,String> mapping,String secretReference,AdapterStatus status){
+    public AdapterRequest{
+        mapping=mapping==null?Map.of():Map.copyOf(mapping);
+        secretReference=secretReference==null?"":secretReference;
+        status=status==null?AdapterStatus.DRAFT:status;
+    }
+
+}

@@ -1,1 +1,12 @@
-package com.lmspilot.assessment.domain; import java.util.*; import org.springframework.data.jpa.repository.*; import org.springframework.data.repository.query.Param; import jakarta.persistence.LockModeType; public interface QuestionProvenanceRepository extends JpaRepository<QuestionProvenanceEntity,UUID> { Optional<QuestionProvenanceEntity> findByQuestionId(UUID id); }
+package com.lmspilot.assessment.domain;
+
+import java.util.*;
+
+import org.springframework.data.jpa.repository.*;
+
+import org.springframework.data.repository.query.Param;
+
+import jakarta.persistence.LockModeType;
+public interface QuestionProvenanceRepository extends JpaRepository<QuestionProvenanceEntity,UUID> {
+    Optional<QuestionProvenanceEntity> findByQuestionId(UUID id);
+}

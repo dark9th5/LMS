@@ -1,1 +1,78 @@
-package com.lmspilot.configuration.api;import com.fasterxml.jackson.core.type.TypeReference;import com.fasterxml.jackson.databind.ObjectMapper;import com.lmspilot.configuration.domain.*;import com.lmspilot.support.security.*;import org.springframework.stereotype.Service;import org.springframework.transaction.annotation.Transactional;import java.time.Instant;import java.util.*;@Service public class ProductConfigurationService{private static final Set<String>GOVERNED=Set.of("AI","LDAP","REPORT_EXPORT","CUSTOM_THEME","INTEGRATIONS","GAMIFICATION");private final ProductConfigurationRepository repo;private final ObjectMapper mapper;private final LicenseGuard license;private final UUID singleton=new UUID(0,1);public ProductConfigurationService(ProductConfigurationRepository r,ObjectMapper m,LicenseGuard l){repo=r;mapper=m;license=l;}@Transactional(readOnly=true)public ProductConfigurationResponse get(){return response(repo.findById(singleton).orElse(new ProductConfigurationEntity()));}@Transactional public ProductConfigurationResponse update(ProductConfigurationRequest i){license.requireWritable();Set<String>g=new HashSet<>();i.featureFlags().forEach((k,v)->{if(Boolean.TRUE.equals(v)&&GOVERNED.contains(k.toUpperCase()))g.add(k.toUpperCase());});license.validateEnabledFeatures(g);var e=repo.findById(singleton).orElse(new ProductConfigurationEntity());e.setProductName(i.productName().trim());e.setLogoUrl(i.logoUrl().trim());e.setPrimaryColor(i.primaryColor());e.setAccentColor(i.accentColor());e.setDefaultLocale(i.defaultLocale());e.setFeatureFlagsJson(write(i.featureFlags()));e.setTerminologyJson(write(i.terminology()));e.setUpdatedAt(Instant.now());e.setUpdatedBy(CurrentUser.id());return response(repo.save(e));}private ProductConfigurationResponse response(ProductConfigurationEntity e){try{return new ProductConfigurationResponse(e.getProductName(),e.getLogoUrl(),e.getPrimaryColor(),e.getAccentColor(),e.getDefaultLocale(),mapper.readValue(e.getFeatureFlagsJson(),new TypeReference<>(){}),mapper.readValue(e.getTerminologyJson(),new TypeReference<>(){}),e.getUpdatedAt());}catch(Exception x){throw new IllegalStateException(x);}}private String write(Object o){try{return mapper.writeValueAsString(o);}catch(Exception x){throw new IllegalStateException(x);}}}
+package com.lmspilot.configuration.api;
+
+import com.fasterxml.jackson.core.type.TypeReference;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import com.lmspilot.configuration.domain.*;
+
+import com.lmspilot.support.security.*;
+
+import org.springframework.stereotype.Service;
+
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.Instant;
+
+import java.util.*;
+@Service
+public class ProductConfigurationService{
+    private static final Set<String>GOVERNED=Set.of("AI","LDAP","REPORT_EXPORT","CUSTOM_THEME","INTEGRATIONS","GAMIFICATION");
+    private final ProductConfigurationRepository repo;
+    private final ObjectMapper mapper;
+    private final LicenseGuard license;
+    private final UUID singleton=new UUID(0,1);
+    public ProductConfigurationService(ProductConfigurationRepository r,ObjectMapper m,LicenseGuard l){
+        repo=r;
+        mapper=m;
+        license=l;
+    }
+    @Transactional(readOnly=true)
+    public ProductConfigurationResponse get(){
+        return response(repo.findById(singleton).orElse(new ProductConfigurationEntity()));
+    }
+    @Transactional
+    public ProductConfigurationResponse update(ProductConfigurationRequest i){
+        license.requireWritable();
+        Set<String>g=new HashSet<>();
+        i.featureFlags().forEach((k,v)->{
+            if(Boolean.TRUE.equals(v)&&GOVERNED.contains(k.toUpperCase()))g.add(k.toUpperCase());
+        }
+        );
+        license.validateEnabledFeatures(g);
+        var e=repo.findById(singleton).orElse(new ProductConfigurationEntity());
+        e.setProductName(i.productName().trim());
+        e.setLogoUrl(i.logoUrl().trim());
+        e.setPrimaryColor(i.primaryColor());
+        e.setAccentColor(i.accentColor());
+        e.setDefaultLocale(i.defaultLocale());
+        e.setFeatureFlagsJson(write(i.featureFlags()));
+        e.setTerminologyJson(write(i.terminology()));
+        e.setUpdatedAt(Instant.now());
+        e.setUpdatedBy(CurrentUser.id());
+        return response(repo.save(e));
+    }
+    private ProductConfigurationResponse response(ProductConfigurationEntity e){
+        try{
+            return new ProductConfigurationResponse(e.getProductName(),e.getLogoUrl(),e.getPrimaryColor(),e.getAccentColor(),e.getDefaultLocale(),mapper.readValue(e.getFeatureFlagsJson(),new TypeReference<>(){
+            }
+            ),mapper.readValue(e.getTerminologyJson(),new TypeReference<>(){
+            }
+            ),e.getUpdatedAt());
+        }
+        catch(Exception x){
+            throw new IllegalStateException(x);
+        }
+
+    }
+    private String write(Object o){
+        try{
+            return mapper.writeValueAsString(o);
+        }
+        catch(Exception x){
+            throw new IllegalStateException(x);
+        }
+
+    }
+
+}

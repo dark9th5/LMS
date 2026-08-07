@@ -1,2 +1,39 @@
-package com.lmspilot.course.api; import jakarta.validation.Valid; import java.util.*; import org.springframework.http.*; import org.springframework.web.bind.annotation.*; import static com.lmspilot.course.api.CourseModels.*;
-@RestController @RequestMapping("/api/v1/categories") public class CategoryController { private final CourseManagementService service; public CategoryController(CourseManagementService s){service=s;} @GetMapping public List<CategoryResponse> list(){return service.categories();} @PostMapping @ResponseStatus(HttpStatus.CREATED) public CategoryResponse create(@Valid @RequestBody CategoryRequest i){return service.createCategory(i);} @PutMapping("/{id}") public CategoryResponse update(@PathVariable UUID id,@Valid @RequestBody CategoryRequest i){return service.updateCategory(id,i);} @DeleteMapping("/{id}") public CategoryResponse deactivate(@PathVariable UUID id){return service.deactivateCategory(id);} }
+package com.lmspilot.course.api;
+
+import jakarta.validation.Valid;
+
+import java.util.*;
+
+import org.springframework.http.*;
+
+import org.springframework.web.bind.annotation.*;
+
+import static com.lmspilot.course.api.CourseModels.*;
+@RestController
+@RequestMapping("/api/v1/categories")
+public class CategoryController {
+    private final CourseManagementService service;
+    public CategoryController(CourseManagementService s){
+        service=s;
+    }
+    @GetMapping
+    public List<CategoryResponse> list(){
+        return service.categories();
+    }
+    @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
+    public CategoryResponse create(@Valid
+    @RequestBody CategoryRequest i){
+        return service.createCategory(i);
+    }
+    @PutMapping("/{id}")
+    public CategoryResponse update(@PathVariable UUID id,@Valid
+    @RequestBody CategoryRequest i){
+        return service.updateCategory(id,i);
+    }
+    @DeleteMapping("/{id}")
+    public CategoryResponse deactivate(@PathVariable UUID id){
+        return service.deactivateCategory(id);
+    }
+
+}

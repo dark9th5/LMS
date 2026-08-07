@@ -1,1 +1,21 @@
-package com.lmspilot.license.api;import com.lmspilot.support.security.InternalTokenAuthorizer;import org.springframework.web.bind.annotation.*;@RestController @RequestMapping("/internal/v1/license")public class InternalLicenseController{private final LicenseManagementService service;private final InternalTokenAuthorizer internal;public InternalLicenseController(LicenseManagementService s,InternalTokenAuthorizer i){service=s;internal=i;}@GetMapping("/entitlements")public LicenseEntitlementsResponse entitlements(@RequestHeader(value="X-Service-Token",required=false)String token){internal.require(token);return service.entitlements();}}
+package com.lmspilot.license.api;
+
+import com.lmspilot.support.security.InternalTokenAuthorizer;
+
+import org.springframework.web.bind.annotation.*;
+@RestController
+@RequestMapping("/internal/v1/license")
+public class InternalLicenseController{
+    private final LicenseManagementService service;
+    private final InternalTokenAuthorizer internal;
+    public InternalLicenseController(LicenseManagementService s,InternalTokenAuthorizer i){
+        service=s;
+        internal=i;
+    }
+    @GetMapping("/entitlements")
+    public LicenseEntitlementsResponse entitlements(@RequestHeader(value="X-Service-Token",required=false)String token){
+        internal.require(token);
+        return service.entitlements();
+    }
+
+}

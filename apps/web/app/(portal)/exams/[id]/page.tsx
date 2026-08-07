@@ -5,7 +5,11 @@ import { requireAuthenticatedUser } from "@/lib/route-access";
 
 export const dynamic = "force-dynamic";
 
-export default async function Page({ params }: { params: Promise<{ id: string }> }) {
+export default async function Page({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
   const user = await requireAuthenticatedUser();
   const role = resolvePortalRole(user);
   if (role === "ADMIN") redirect("/admin");

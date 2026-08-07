@@ -1,3 +1,34 @@
 package com.lmspilot.assessment.domain;
-import jakarta.persistence.*; import java.math.BigDecimal; import java.time.Instant; import java.util.UUID;
-@Entity @Table(name="competition_leaderboard") @IdClass(CompetitionLeaderboardId.class) public class CompetitionLeaderboardEntity { @Id @Column(name="competition_id") public UUID competitionId; @Id @Column(name="user_id") public UUID userId; @Column(name="attempt_id",nullable=false) public UUID attemptId; @Column(nullable=false, precision=10, scale=4) public BigDecimal score; @Column(name="duration_ms",nullable=false) public long durationMs; @Column(name="submitted_at",nullable=false) public Instant submittedAt; public Integer rank; @Column(name="calculated_at",nullable=false) public Instant calculatedAt=Instant.now(); public CompetitionLeaderboardEntity(){} }
+
+import jakarta.persistence.*;
+
+import java.math.BigDecimal;
+
+import java.time.Instant;
+
+import java.util.UUID;
+@Entity
+@Table(name="competition_leaderboard")
+@IdClass(CompetitionLeaderboardId.class)
+public class CompetitionLeaderboardEntity {
+    @Id
+    @Column(name="competition_id")
+    public UUID competitionId;
+    @Id
+    @Column(name="user_id")
+    public UUID userId;
+    @Column(name="attempt_id",nullable=false)
+    public UUID attemptId;
+    @Column(nullable=false, precision=10, scale=4)
+    public BigDecimal score;
+    @Column(name="duration_ms",nullable=false)
+    public long durationMs;
+    @Column(name="submitted_at",nullable=false)
+    public Instant submittedAt;
+    public Integer rank;
+    @Column(name="calculated_at",nullable=false)
+    public Instant calculatedAt=Instant.now();
+    public CompetitionLeaderboardEntity(){
+    }
+
+}

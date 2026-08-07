@@ -1,18 +1,28 @@
 package com.lmspilot.identity.service;
 
 import com.lmspilot.identity.api.IdentityModels.*;
-import com.lmspilot.identity.domain.*;
-import com.lmspilot.support.api.ApiException;
-import com.lmspilot.support.security.CurrentUser;
-import jakarta.servlet.http.HttpServletRequest;
-import java.time.*;
-import java.util.*;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
+import com.lmspilot.identity.domain.*;
+
+import com.lmspilot.support.api.ApiException;
+
+import com.lmspilot.support.security.CurrentUser;
+
+import jakarta.servlet.http.HttpServletRequest;
+
+import java.time.*;
+
+import java.util.*;
+
+import org.springframework.beans.factory.annotation.Value;
+
+import org.springframework.http.HttpStatus;
+
+import org.springframework.security.crypto.password.PasswordEncoder;
+
+import org.springframework.stereotype.Service;
+
+import org.springframework.transaction.annotation.Transactional;
 @Service
 public class AuthService {
     private final UserAccountRepository users;
@@ -24,31 +34,36 @@ public class AuthService {
     private final int maxFailed;
     private final Duration lockDuration;
     private final Duration refreshReuseGrace;
-
     public AuthService(UserAccountRepository users, RefreshTokenRepository tokens, PasswordEncoder encoder,
-        PasswordPolicyService passwordPolicy, TokenService tokenService, AuthorizationService authorization,
-        @Value("${identity.lockout.max-failed-attempts:5}") int maxFailed,
-        @Value("${identity.lockout.duration:PT15M}") Duration lockDuration,
-        @Value("${identity.refresh-reuse-grace:PT5S}") Duration refreshReuseGrace) {
-        this.users=users; this.tokens=tokens; this.encoder=encoder; this.passwordPolicy=passwordPolicy;
-        this.tokenService=tokenService; this.authorization=authorization; this.maxFailed=maxFailed;
-        this.lockDuration=lockDuration; this.refreshReuseGrace=refreshReuseGrace;
+    PasswordPolicyService passwordPolicy, TokenService tokenService, AuthorizationService authorization,
+    @Value("${identity.lockout.max-failed-attempts:5}") int maxFailed,
+    @Value("${identity.lockout.duration:PT15M}") Duration lockDuration,
+    @Value("${identity.refresh-reuse-grace:PT5S}") Duration refreshReuseGrace) {
+        this.users=users;
+        this.tokens=tokens;
+        this.encoder=encoder;
+        this.passwordPolicy=passwordPolicy;
+        this.tokenService=tokenService;
+        this.authorization=authorization;
+        this.maxFailed=maxFailed;
+        this.lockDuration=lockDuration;
+        this.refreshReuseGrace=refreshReuseGrace;
     }
-
-    private ApiException invalid(){return new ApiException(HttpStatus.UNAUTHORIZED,"INVALID_CREDENTIALS","Tên đăng nhập hoặc mật khẩu không đúng");}
-
+    private ApiException invalid(){
+        return new ApiException(HttpStatus.UNAUTHORIZED,"INVALID_CREDENTIALS","Tên đăng nhập hoặc mật khẩu không đúng");
+    }
     private UserSummary summary(UserAccountEntity u){
-        Set<String> rc=new LinkedHashSet<>(); u.roles.forEach(r->rc.add(r.code));
+        Set<String> rc=new LinkedHashSet<>();
+        u.roles.forEach(r->rc.add(r.code));
         String primary=rc.contains("ADMIN")?"ADMIN":rc.contains("INSTRUCTOR")?"INSTRUCTOR":"STUDENT";
         return new UserSummary(u.id,u.code,u.username,u.fullName,u.email,u.organizationUnitId,u.status,u.accountType,u.protectedAccount,rc,primary,authorization.permissionsForToken(u),u.lastLoginAt,u.mustChangePassword);
     }
-
     @Transactional(noRollbackFor=ApiException.class)
     public TokenResponse login(LoginRequest i,HttpServletRequest request){
         UserAccountEntity u=users.findByUsernameIgnoreCase(i.username().trim()).orElseThrow(this::invalid);
         Instant now=Instant.now();
         if(u.status!=AccountStatus.ACTIVE||u.lockedUntil!=null&&u.lockedUntil.isAfter(now))
-            throw new ApiException(HttpStatus.FORBIDDEN,"ACCOUNT_NOT_ACTIVE","Tài khoản đang bị khóa hoặc ngừng sử dụng");
+        throw new ApiException(HttpStatus.FORBIDDEN,"ACCOUNT_NOT_ACTIVE","Tài khoản đang bị khóa hoặc ngừng sử dụng");
         // Never accept a known/demo password when the stored hash does not match. Demo password
         // refresh is handled only by DevelopmentSeed when LMSPILOT_SEED_DEMO=true.
         if(!encoder.matches(i.password(),u.passwordHash)){
@@ -57,53 +72,116 @@ public class AuthService {
             u.updatedAt=now;
             throw invalid();
         }
-        u.failedLoginCount=0;u.lockedUntil=null;u.lastLoginAt=now;u.updatedAt=now;
+        u.failedLoginCount=0;
+        u.lockedUntil=null;
+        u.lastLoginAt=now;
+        u.updatedAt=now;
         String raw=tokenService.newRefreshToken();
         RefreshTokenEntity t=new RefreshTokenEntity();
-        t.userId=u.id;t.tokenHash=tokenService.hashRefreshToken(raw);t.expiresAt=now.plus(tokenService.refreshTtl);t.lastUsedAt=now;
-        t.userAgent=trim(request.getHeader("User-Agent"),255);t.ipAddress=trim(request.getRemoteAddr(),80);tokens.save(t);
+        t.userId=u.id;
+        t.tokenHash=tokenService.hashRefreshToken(raw);
+        t.expiresAt=now.plus(tokenService.refreshTtl);
+        t.lastUsedAt=now;
+        t.userAgent=trim(request.getHeader("User-Agent"),255);
+        t.ipAddress=trim(request.getRemoteAddr(),80);
+        tokens.save(t);
         TokenService.AccessToken access=tokenService.issueAccessToken(u,t.id);
         return new TokenResponse(access.value(),raw,access.expiresInSeconds(),summary(u));
     }
-
     @Transactional(noRollbackFor=ApiException.class)
     public TokenResponse refresh(String raw,HttpServletRequest request){
         String hash=tokenService.hashRefreshToken(raw);
         RefreshTokenEntity old=tokens.findByTokenHashForUpdate(hash)
-            .orElseThrow(()->new ApiException(HttpStatus.UNAUTHORIZED,"INVALID_REFRESH_TOKEN","Refresh token không hợp lệ"));
+        .orElseThrow(()->new ApiException(HttpStatus.UNAUTHORIZED,"INVALID_REFRESH_TOKEN","Refresh token không hợp lệ"));
         Instant now=Instant.now();
         if(old.revokedAt!=null){
             // A near-simultaneous retry of a token we just rotated is usually a legitimate race
             // between tabs/SSR requests/replicas. Do not destroy every session for that case.
             if("ROTATED".equals(old.revokedReason) && !refreshReuseGrace.isNegative()
-                && now.isBefore(old.revokedAt.plus(refreshReuseGrace))){
+            && now.isBefore(old.revokedAt.plus(refreshReuseGrace))){
                 throw new ApiException(HttpStatus.CONFLICT,"REFRESH_TOKEN_ROTATED","Phiên đăng nhập đang được làm mới; vui lòng thử lại");
             }
             tokens.revokeAllByUserId(old.userId,now,"REFRESH_TOKEN_REUSE_DETECTED");
             throw new ApiException(HttpStatus.UNAUTHORIZED,"REFRESH_TOKEN_REUSED","Phiên đăng nhập đã bị thu hồi do phát hiện token được sử dụng lại");
         }
         if(!old.expiresAt.isAfter(now)){
-            old.revokedAt=now;old.revokedReason="EXPIRED";
+            old.revokedAt=now;
+            old.revokedReason="EXPIRED";
             throw new ApiException(HttpStatus.UNAUTHORIZED,"EXPIRED_REFRESH_TOKEN","Refresh token đã hết hiệu lực");
         }
         UserAccountEntity u=users.findById(old.userId).orElseThrow(this::invalid);
         if(u.status!=AccountStatus.ACTIVE)throw new ApiException(HttpStatus.FORBIDDEN,"ACCOUNT_NOT_ACTIVE","Tài khoản không hoạt động");
-        old.revokedAt=now;old.revokedReason="ROTATED";old.lastUsedAt=now;
+        old.revokedAt=now;
+        old.revokedReason="ROTATED";
+        old.lastUsedAt=now;
         String next=tokenService.newRefreshToken();
         RefreshTokenEntity t=new RefreshTokenEntity();
-        t.userId=u.id;t.tokenHash=tokenService.hashRefreshToken(next);t.expiresAt=now.plus(tokenService.refreshTtl);t.lastUsedAt=now;
-        t.userAgent=trim(request.getHeader("User-Agent"),255);t.ipAddress=trim(request.getRemoteAddr(),80);tokens.save(t);
+        t.userId=u.id;
+        t.tokenHash=tokenService.hashRefreshToken(next);
+        t.expiresAt=now.plus(tokenService.refreshTtl);
+        t.lastUsedAt=now;
+        t.userAgent=trim(request.getHeader("User-Agent"),255);
+        t.ipAddress=trim(request.getRemoteAddr(),80);
+        tokens.save(t);
         TokenService.AccessToken access=tokenService.issueAccessToken(u,t.id);
         return new TokenResponse(access.value(),next,access.expiresInSeconds(),summary(u));
     }
+    @Transactional(readOnly=true)
+    public UserSummary me(UUID id){
+        return summary(users.findById(id).orElseThrow(this::invalid));
+    }
+    @Transactional
+    public void changePassword(UUID id,ChangePasswordRequest i){
+        UserAccountEntity u=users.findById(id).orElseThrow(this::invalid);
+        if(!encoder.matches(i.currentPassword(),u.passwordHash))throw new ApiException(HttpStatus.UNAUTHORIZED,"CURRENT_PASSWORD_INVALID","Mật khẩu hiện tại không đúng");
+        passwordPolicy.change(u,i.newPassword(),false,"PASSWORD_CHANGED");
+        tokens.revokeAllByUserId(id,Instant.now(),"PASSWORD_CHANGED");
+    }
+    @Transactional(readOnly=true)
+    public List<SessionView> sessions(UUID userId){
+        UUID current=null;
+        try{
+            String sid=CurrentUser.jwt().getClaimAsString("sid");
+            if(sid!=null)current=UUID.fromString(sid);
+        }
+        catch(Exception ignored){
+        }
+        final UUID c=current;
+        return tokens.findAllByUserIdOrderByIssuedAtDesc(userId).stream().map(t->new SessionView(t.id,t.issuedAt,t.expiresAt,t.revokedAt,t.revokedReason,t.lastUsedAt,t.userAgent,t.ipAddress,Objects.equals(t.id,c))).toList();
+    }
+    @Transactional
+    public void revokeSession(UUID userId,UUID sessionId,String reason){
+        RefreshTokenEntity t=tokens.findById(sessionId).orElseThrow(()->new ApiException(HttpStatus.NOT_FOUND,"SESSION_NOT_FOUND","Không tìm thấy phiên đăng nhập"));
+        if(!t.userId.equals(userId))throw new ApiException(HttpStatus.FORBIDDEN,"SESSION_SCOPE_DENIED","Không thể thu hồi phiên của người dùng khác");
+        if(t.revokedAt==null){
+            t.revokedAt=Instant.now();
+            t.revokedReason=reason;
+        }
 
-    @Transactional(readOnly=true) public UserSummary me(UUID id){return summary(users.findById(id).orElseThrow(this::invalid));}
-    @Transactional public void changePassword(UUID id,ChangePasswordRequest i){UserAccountEntity u=users.findById(id).orElseThrow(this::invalid);if(!encoder.matches(i.currentPassword(),u.passwordHash))throw new ApiException(HttpStatus.UNAUTHORIZED,"CURRENT_PASSWORD_INVALID","Mật khẩu hiện tại không đúng");passwordPolicy.change(u,i.newPassword(),false,"PASSWORD_CHANGED");tokens.revokeAllByUserId(id,Instant.now(),"PASSWORD_CHANGED");}
-    @Transactional(readOnly=true) public List<SessionView> sessions(UUID userId){UUID current=null;try{String sid=CurrentUser.jwt().getClaimAsString("sid");if(sid!=null)current=UUID.fromString(sid);}catch(Exception ignored){}final UUID c=current;return tokens.findAllByUserIdOrderByIssuedAtDesc(userId).stream().map(t->new SessionView(t.id,t.issuedAt,t.expiresAt,t.revokedAt,t.revokedReason,t.lastUsedAt,t.userAgent,t.ipAddress,Objects.equals(t.id,c))).toList();}
-    @Transactional public void revokeSession(UUID userId,UUID sessionId,String reason){RefreshTokenEntity t=tokens.findById(sessionId).orElseThrow(()->new ApiException(HttpStatus.NOT_FOUND,"SESSION_NOT_FOUND","Không tìm thấy phiên đăng nhập"));if(!t.userId.equals(userId))throw new ApiException(HttpStatus.FORBIDDEN,"SESSION_SCOPE_DENIED","Không thể thu hồi phiên của người dùng khác");if(t.revokedAt==null){t.revokedAt=Instant.now();t.revokedReason=reason;}}
-    public void revokeSession(UUID userId,UUID sessionId){revokeSession(userId,sessionId,"USER_REVOKED");}
-    @Transactional public int revokeAllSessions(UUID userId,String reason){return tokens.revokeAllByUserId(userId,Instant.now(),reason);}
-    public int revokeAllSessions(UUID userId){return revokeAllSessions(userId,"USER_REVOKED_ALL");}
-    @Transactional public void logout(String raw){tokens.findByTokenHash(tokenService.hashRefreshToken(raw)).ifPresent(t->{if(t.revokedAt==null){t.revokedAt=Instant.now();t.revokedReason="LOGOUT";}});}
-    private String trim(String s,int max){return s==null?null:s.substring(0,Math.min(max,s.length()));}
+    }
+    public void revokeSession(UUID userId,UUID sessionId){
+        revokeSession(userId,sessionId,"USER_REVOKED");
+    }
+    @Transactional
+    public int revokeAllSessions(UUID userId,String reason){
+        return tokens.revokeAllByUserId(userId,Instant.now(),reason);
+    }
+    public int revokeAllSessions(UUID userId){
+        return revokeAllSessions(userId,"USER_REVOKED_ALL");
+    }
+    @Transactional
+    public void logout(String raw){
+        tokens.findByTokenHash(tokenService.hashRefreshToken(raw)).ifPresent(t->{
+            if(t.revokedAt==null){
+                t.revokedAt=Instant.now();
+                t.revokedReason="LOGOUT";
+            }
+
+        }
+        );
+    }
+    private String trim(String s,int max){
+        return s==null?null:s.substring(0,Math.min(max,s.length()));
+    }
+
 }

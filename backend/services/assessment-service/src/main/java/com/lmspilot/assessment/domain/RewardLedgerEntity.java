@@ -1,3 +1,33 @@
 package com.lmspilot.assessment.domain;
-import jakarta.persistence.*; import java.time.Instant; import java.util.UUID;
-@Entity @Table(name="reward_ledger",uniqueConstraints=@UniqueConstraint(columnNames={"competition_id","user_id","reward_id"})) public class RewardLedgerEntity { @Id public UUID id=UUID.randomUUID(); @Column(name="competition_id",nullable=false) public UUID competitionId; @Column(name="user_id",nullable=false) public UUID userId; @Column(name="reward_id",nullable=false) public UUID rewardId; @Enumerated(EnumType.STRING) @Column(nullable=false,length=20) public RewardLedgerStatus status=RewardLedgerStatus.PENDING; @Column(name="issued_at") public Instant issuedAt; @Column(name="external_reference",length=160) public String externalReference; @Column(name="created_at",nullable=false) public Instant createdAt=Instant.now(); public RewardLedgerEntity(){} }
+
+import jakarta.persistence.*;
+
+import java.time.Instant;
+
+import java.util.UUID;
+@Entity
+@Table(name="reward_ledger",uniqueConstraints=@UniqueConstraint(columnNames={
+    "competition_id","user_id","reward_id"
+}
+)) public class RewardLedgerEntity {
+    @Id
+    public UUID id=UUID.randomUUID();
+    @Column(name="competition_id",nullable=false)
+    public UUID competitionId;
+    @Column(name="user_id",nullable=false)
+    public UUID userId;
+    @Column(name="reward_id",nullable=false)
+    public UUID rewardId;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable=false,length=20)
+    public RewardLedgerStatus status=RewardLedgerStatus.PENDING;
+    @Column(name="issued_at")
+    public Instant issuedAt;
+    @Column(name="external_reference",length=160)
+    public String externalReference;
+    @Column(name="created_at",nullable=false)
+    public Instant createdAt=Instant.now();
+    public RewardLedgerEntity(){
+    }
+
+}

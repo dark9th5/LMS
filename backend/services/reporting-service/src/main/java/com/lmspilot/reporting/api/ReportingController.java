@@ -1,1 +1,40 @@
-package com.lmspilot.reporting.api;import com.lmspilot.contracts.Permissions;import org.springframework.http.*;import org.springframework.security.access.prepost.PreAuthorize;import org.springframework.web.bind.annotation.*;import java.util.*;@RestController@RequestMapping("/api/v1/reports")public class ReportingController{private final ReportingProjectionService s;public ReportingController(ReportingProjectionService s){this.s=s;}@GetMapping("/dashboard")@PreAuthorize("hasAuthority('"+Permissions.REPORTS_READ+"')")public DashboardResponse dashboard(){return s.dashboard();}@GetMapping("/learning")@PreAuthorize("hasAuthority('"+Permissions.REPORTS_READ+"')")public List<LearnerCourseRow>learning(){return s.rows(false);}@GetMapping("/me")@PreAuthorize("isAuthenticated()")public List<LearnerCourseRow>me(){return s.rows(true);}@GetMapping("/learning/export.csv")@PreAuthorize("hasAuthority('"+Permissions.REPORTS_EXPORT+"')")public ResponseEntity<byte[]>export(){return ResponseEntity.ok().header(HttpHeaders.CONTENT_DISPOSITION,"attachment; filename=learning-report.csv").contentType(MediaType.parseMediaType("text/csv;charset=UTF-8")).body(s.exportCsv(s.rows(false)));}}
+package com.lmspilot.reporting.api;
+
+import com.lmspilot.contracts.Permissions;
+
+import org.springframework.http.*;
+
+import org.springframework.security.access.prepost.PreAuthorize;
+
+import org.springframework.web.bind.annotation.*;
+
+import java.util.*;
+@RestController
+@RequestMapping("/api/v1/reports")
+public class ReportingController{
+    private final ReportingProjectionService s;
+    public ReportingController(ReportingProjectionService s){
+        this.s=s;
+    }
+    @GetMapping("/dashboard")
+    @PreAuthorize("hasAuthority('"+Permissions.REPORTS_READ+"')")
+    public DashboardResponse dashboard(){
+        return s.dashboard();
+    }
+    @GetMapping("/learning")
+    @PreAuthorize("hasAuthority('"+Permissions.REPORTS_READ+"')")
+    public List<LearnerCourseRow>learning(){
+        return s.rows(false);
+    }
+    @GetMapping("/me")
+    @PreAuthorize("isAuthenticated()")
+    public List<LearnerCourseRow>me(){
+        return s.rows(true);
+    }
+    @GetMapping("/learning/export.csv")
+    @PreAuthorize("hasAuthority('"+Permissions.REPORTS_EXPORT+"')")
+    public ResponseEntity<byte[]>export(){
+        return ResponseEntity.ok().header(HttpHeaders.CONTENT_DISPOSITION,"attachment; filename=learning-report.csv").contentType(MediaType.parseMediaType("text/csv;charset=UTF-8")).body(s.exportCsv(s.rows(false)));
+    }
+
+}

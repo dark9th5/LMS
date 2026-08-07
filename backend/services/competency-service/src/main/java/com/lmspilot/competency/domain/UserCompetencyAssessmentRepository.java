@@ -1,1 +1,8 @@
-package com.lmspilot.competency.domain; import org.springframework.data.jpa.repository.JpaRepository; import java.util.*; public interface UserCompetencyAssessmentRepository extends JpaRepository<UserCompetencyAssessmentEntity,UUID>{ List<UserCompetencyAssessmentEntity> findAllByUserIdOrderByAssessedAtDesc(UUID userId); }
+package com.lmspilot.competency.domain;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.*;
+public interface UserCompetencyAssessmentRepository extends JpaRepository<UserCompetencyAssessmentEntity,UUID>{
+    List<UserCompetencyAssessmentEntity> findAllByUserIdOrderByAssessedAtDesc(UUID userId);
+}

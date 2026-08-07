@@ -90,20 +90,46 @@ export function LearningPage({ user }: { user: PortalUser }) {
       />
       <section className="learning-overview">
         <div className="learning-overview-copy">
-          <span className="learning-overview-label"><Icon name="learn" size={17} /> Tiến độ cá nhân</span>
+          <span className="learning-overview-label">
+            <Icon name="learn" size={17} /> Tiến độ cá nhân
+          </span>
           <h2>Mỗi bài học hoàn thành là một bước tiến mới.</h2>
-          <p>Tiếp tục đúng nơi bạn đã dừng và theo dõi toàn bộ khóa học trong một không gian tập trung.</p>
+          <p>
+            Tiếp tục đúng nơi bạn đã dừng và theo dõi toàn bộ khóa học trong một
+            không gian tập trung.
+          </p>
           <div className="learning-overview-stats">
-            <span><strong>{rows.length}</strong><small>Khóa được giao</small></span>
-            <span><strong>{completed}</strong><small>Đã hoàn thành</small></span>
-            <span><strong>{rows.length - completed}</strong><small>Đang tiếp tục</small></span>
+            <span>
+              <strong>{rows.length}</strong>
+              <small>Khóa được giao</small>
+            </span>
+            <span>
+              <strong>{completed}</strong>
+              <small>Đã hoàn thành</small>
+            </span>
+            <span>
+              <strong>{rows.length - completed}</strong>
+              <small>Đang tiếp tục</small>
+            </span>
           </div>
         </div>
-        <div className="learning-overview-progress" aria-label={`Tiến độ trung bình ${average}%`}>
-          <div className="learning-progress-ring" style={{ "--progress": `${average}%` } as React.CSSProperties}>
-            <span><strong>{average}%</strong><small>tiến độ trung bình</small></span>
+        <div
+          className="learning-overview-progress"
+          aria-label={`Tiến độ trung bình ${average}%`}
+        >
+          <div
+            className="learning-progress-ring"
+            style={{ "--progress": `${average}%` } as React.CSSProperties}
+          >
+            <span>
+              <strong>{average}%</strong>
+              <small>tiến độ trung bình</small>
+            </span>
           </div>
-          <div className="learning-progress-note"><Icon name="check" size={18} /><span>Tiến độ được lưu tự động trên mọi thiết bị.</span></div>
+          <div className="learning-progress-note">
+            <Icon name="check" size={18} />
+            <span>Tiến độ được lưu tự động trên mọi thiết bị.</span>
+          </div>
         </div>
       </section>
       <section className="toolbar-card">

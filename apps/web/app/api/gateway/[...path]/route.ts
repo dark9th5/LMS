@@ -84,7 +84,9 @@ function validUser(value: unknown): value is PortalUser {
     typeof user.fullName === "string" &&
     Array.isArray(user.roles) &&
     user.roles.length >= 1 &&
-    user.roles.every((role) => ["ADMIN", "INSTRUCTOR", "STUDENT"].includes(String(role))) &&
+    user.roles.every((role) =>
+      ["ADMIN", "INSTRUCTOR", "STUDENT"].includes(String(role)),
+    ) &&
     typeof user.primaryRole === "string" &&
     ["ADMIN", "INSTRUCTOR", "STUDENT"].includes(user.primaryRole) &&
     Array.isArray(user.permissions) &&
@@ -150,7 +152,10 @@ function clearSessionCookies(response: NextResponse) {
   });
 }
 
-async function fetchWithTimeout(input: string | URL, init: RequestInit): Promise<Response> {
+async function fetchWithTimeout(
+  input: string | URL,
+  init: RequestInit,
+): Promise<Response> {
   return fetchGateway(input, init);
 }
 
@@ -175,12 +180,19 @@ function refreshSession(refreshToken: string): Promise<RefreshResult> {
     }
 
     if (!response.ok) {
-      const problem = (await response.json().catch(() => null)) as { code?: unknown } | null;
+      const problem = (await response.json().catch(() => null)) as {
+        code?: unknown;
+      } | null;
       const code = typeof problem?.code === "string" ? problem.code : undefined;
-      if (response.status === 409 && code === "REFRESH_TOKEN_ROTATED") return { kind: "concurrent" };
+      if (response.status === 409 && code === "REFRESH_TOKEN_ROTATED")
+        return { kind: "concurrent" };
       // Only clear the browser session when Identity explicitly says the refresh
       // credential is terminal. A gateway/service 5xx or generic 401 is transient.
-      if ((response.status === 401 || response.status === 403) && code && terminalRefreshCodes.has(code)) {
+      if (
+        (response.status === 401 || response.status === 403) &&
+        code &&
+        terminalRefreshCodes.has(code)
+      ) {
         return { kind: "rejected", code };
       }
       return { kind: "unavailable" };
@@ -203,8 +215,13 @@ function accessTokenExpiresSoon(token: string, skewSeconds = 45): boolean {
   try {
     const payload = token.split(".")[1];
     if (!payload) return true;
-    const decoded = JSON.parse(Buffer.from(payload, "base64url").toString("utf8")) as { exp?: unknown };
-    return typeof decoded.exp !== "number" || decoded.exp * 1000 <= Date.now() + skewSeconds * 1000;
+    const decoded = JSON.parse(
+      Buffer.from(payload, "base64url").toString("utf8"),
+    ) as { exp?: unknown };
+    return (
+      typeof decoded.exp !== "number" ||
+      decoded.exp * 1000 <= Date.now() + skewSeconds * 1000
+    );
   } catch {
     return true;
   }
@@ -212,8 +229,15 @@ function accessTokenExpiresSoon(token: string, skewSeconds = 45): boolean {
 
 function refreshInProgress(): NextResponse {
   return NextResponse.json(
-    { ok: false, code: "SESSION_REFRESH_IN_PROGRESS", message: "Phiên đăng nhập đang được làm mới. Vui lòng thử lại yêu cầu." },
-    { status: 409, headers: { "Cache-Control": "no-store", "Retry-After": "1" } },
+    {
+      ok: false,
+      code: "SESSION_REFRESH_IN_PROGRESS",
+      message: "Phiên đăng nhập đang được làm mới. Vui lòng thử lại yêu cầu.",
+    },
+    {
+      status: 409,
+      headers: { "Cache-Control": "no-store", "Retry-After": "1" },
+    },
   );
 }
 
@@ -306,7 +330,12 @@ async function proxy(req: NextRequest, { params }: RouteContext) {
     access = refreshedSession.accessToken;
   }
 
-  if (access && refresh && !refreshedSession && accessTokenExpiresSoon(access)) {
+  if (
+    access &&
+    refresh &&
+    !refreshedSession &&
+    accessTokenExpiresSoon(access)
+  ) {
     const refreshResult = await refreshSession(refresh);
     if (refreshResult.kind === "ok") {
       refreshedSession = refreshResult.session;
@@ -333,7 +362,9 @@ async function proxy(req: NextRequest, { params }: RouteContext) {
     );
   }
 
-  const encodedPath = path.map((segment) => encodeURIComponent(segment)).join("/");
+  const encodedPath = path
+    .map((segment) => encodeURIComponent(segment))
+    .join("/");
   const url = new URL(encodedPath, `${gatewayBaseUrl()}/`);
   req.nextUrl.searchParams.forEach((value, key) => {
     url.searchParams.append(key, value);
@@ -342,8 +373,14 @@ async function proxy(req: NextRequest, { params }: RouteContext) {
   const hasBody = !["GET", "HEAD"].includes(req.method);
   const contentType = req.headers.get("content-type") ?? "";
   const contentLength = Number(req.headers.get("content-length") ?? "0");
-  const streamBody = hasBody && (contentType.includes("multipart/form-data") || contentLength > 1_048_576);
-  const body: BodyInit | null | undefined = !hasBody ? undefined : streamBody ? req.body : await req.arrayBuffer();
+  const streamBody =
+    hasBody &&
+    (contentType.includes("multipart/form-data") || contentLength > 1_048_576);
+  const body: BodyInit | null | undefined = !hasBody
+    ? undefined
+    : streamBody
+      ? req.body
+      : await req.arrayBuffer();
 
   let upstream: Response;
   try {

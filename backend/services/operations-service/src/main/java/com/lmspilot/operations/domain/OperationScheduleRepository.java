@@ -1,1 +1,11 @@
-package com.lmspilot.operations.domain; import org.springframework.data.jpa.repository.JpaRepository;import java.time.Instant;import java.util.*;public interface OperationScheduleRepository extends JpaRepository<OperationScheduleEntity,UUID>{List<OperationScheduleEntity> findAllByOrderByCreatedAtDesc();List<OperationScheduleEntity> findTop50ByEnabledTrueAndNextRunAtBeforeOrderByNextRunAtAsc(Instant now);}
+package com.lmspilot.operations.domain;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.time.Instant;
+
+import java.util.*;
+public interface OperationScheduleRepository extends JpaRepository<OperationScheduleEntity,UUID>{
+    List<OperationScheduleEntity> findAllByOrderByCreatedAtDesc();
+    List<OperationScheduleEntity> findTop50ByEnabledTrueAndNextRunAtBeforeOrderByNextRunAtAsc(Instant now);
+}

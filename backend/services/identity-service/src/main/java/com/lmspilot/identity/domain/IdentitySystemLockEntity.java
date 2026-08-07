@@ -1,1 +1,19 @@
-package com.lmspilot.identity.domain; import jakarta.persistence.*; import java.time.Instant; import java.util.*; @Entity @Table(name="identity_system_locks") public class IdentitySystemLockEntity { @Id @Column(name="lock_name",nullable=false,length=120) public String lockName=""; @Column(name="created_at",nullable=false) public Instant createdAt=Instant.now(); public IdentitySystemLockEntity(){} }
+package com.lmspilot.identity.domain;
+
+import jakarta.persistence.*;
+
+import java.time.Instant;
+
+import java.util.*;
+@Entity
+@Table(name="identity_system_locks")
+public class IdentitySystemLockEntity {
+    @Id
+    @Column(name="lock_name",nullable=false,length=120)
+    public String lockName="";
+    @Column(name="created_at",nullable=false)
+    public Instant createdAt=Instant.now();
+    public IdentitySystemLockEntity(){
+    }
+
+}

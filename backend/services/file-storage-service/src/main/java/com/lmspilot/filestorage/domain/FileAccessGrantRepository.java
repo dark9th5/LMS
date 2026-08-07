@@ -1,1 +1,8 @@
-package com.lmspilot.filestorage.domain; import java.util.*; import org.springframework.data.jpa.repository.JpaRepository; public interface FileAccessGrantRepository extends JpaRepository<FileAccessGrantEntity,UUID>{Optional<FileAccessGrantEntity> findByFileIdAndUserId(UUID fileId,UUID userId);}
+package com.lmspilot.filestorage.domain;
+
+import java.util.*;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+public interface FileAccessGrantRepository extends JpaRepository<FileAccessGrantEntity,UUID>{
+    Optional<FileAccessGrantEntity> findByFileIdAndUserId(UUID fileId,UUID userId);
+}

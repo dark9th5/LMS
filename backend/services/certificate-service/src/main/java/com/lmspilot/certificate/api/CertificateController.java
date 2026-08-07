@@ -1,1 +1,72 @@
-package com.lmspilot.certificate.api;import com.lmspilot.contracts.Permissions;import jakarta.validation.Valid;import java.util.*;import org.springframework.http.*;import org.springframework.security.access.prepost.PreAuthorize;import org.springframework.web.bind.annotation.*;@RestController @RequestMapping("/api/v1/certificates")public class CertificateController{private final CertificateService service;public CertificateController(CertificateService s){service=s;}@GetMapping @PreAuthorize("hasAuthority('"+Permissions.CERTIFICATES_MANAGE+"')")public List<CertificateResponse> all(){return service.all();}@GetMapping("/me")@PreAuthorize("hasAuthority('"+Permissions.CERTIFICATES_READ_SELF+"')")public List<CertificateResponse> mine(){return service.mine();}@GetMapping(value="/{id}/print",produces=MediaType.TEXT_HTML_VALUE)@PreAuthorize("isAuthenticated()")public String print(@PathVariable UUID id){return service.printable(id);}@PutMapping("/{id}/revoke")@PreAuthorize("hasAuthority('"+Permissions.CERTIFICATES_MANAGE+"')")public CertificateResponse revoke(@PathVariable UUID id,@Valid @RequestBody RevokeRequest in){return service.revoke(id,in);}@PostMapping("/{id}/reissue")@PreAuthorize("hasAuthority('"+Permissions.CERTIFICATES_MANAGE+"')")public CertificateResponse reissue(@PathVariable UUID id,@Valid @RequestBody RevokeRequest in){return service.reissue(id,in);}@GetMapping("/templates")@PreAuthorize("hasAuthority('"+Permissions.CERTIFICATE_TEMPLATES_MANAGE+"')")public List<CertificateTemplateResponse> templates(){return service.listTemplates();}@PostMapping("/templates")@PreAuthorize("hasAuthority('"+Permissions.CERTIFICATE_TEMPLATES_MANAGE+"')")public CertificateTemplateResponse createTemplate(@Valid @RequestBody CertificateTemplateRequest in){return service.createTemplate(in);}@PutMapping("/templates/{id}")@PreAuthorize("hasAuthority('"+Permissions.CERTIFICATE_TEMPLATES_MANAGE+"')")public CertificateTemplateResponse updateTemplate(@PathVariable UUID id,@Valid @RequestBody CertificateTemplateRequest in){return service.updateTemplate(id,in);}@DeleteMapping("/templates/{id}")@ResponseStatus(HttpStatus.NO_CONTENT)@PreAuthorize("hasAuthority('"+Permissions.CERTIFICATE_TEMPLATES_MANAGE+"')")public void disableTemplate(@PathVariable UUID id){service.disableTemplate(id);}}
+package com.lmspilot.certificate.api;
+
+import com.lmspilot.contracts.Permissions;
+
+import jakarta.validation.Valid;
+
+import java.util.*;
+
+import org.springframework.http.*;
+
+import org.springframework.security.access.prepost.PreAuthorize;
+
+import org.springframework.web.bind.annotation.*;
+@RestController
+@RequestMapping("/api/v1/certificates")
+public class CertificateController{
+    private final CertificateService service;
+    public CertificateController(CertificateService s){
+        service=s;
+    }
+    @GetMapping
+    @PreAuthorize("hasAuthority('"+Permissions.CERTIFICATES_MANAGE+"')")
+    public List<CertificateResponse> all(){
+        return service.all();
+    }
+    @GetMapping("/me")
+    @PreAuthorize("hasAuthority('"+Permissions.CERTIFICATES_READ_SELF+"')")
+    public List<CertificateResponse> mine(){
+        return service.mine();
+    }
+    @GetMapping(value="/{id}/print",produces=MediaType.TEXT_HTML_VALUE)
+    @PreAuthorize("isAuthenticated()")
+    public String print(@PathVariable UUID id){
+        return service.printable(id);
+    }
+    @PutMapping("/{id}/revoke")
+    @PreAuthorize("hasAuthority('"+Permissions.CERTIFICATES_MANAGE+"')")
+    public CertificateResponse revoke(@PathVariable UUID id,@Valid
+    @RequestBody RevokeRequest in){
+        return service.revoke(id,in);
+    }
+    @PostMapping("/{id}/reissue")
+    @PreAuthorize("hasAuthority('"+Permissions.CERTIFICATES_MANAGE+"')")
+    public CertificateResponse reissue(@PathVariable UUID id,@Valid
+    @RequestBody RevokeRequest in){
+        return service.reissue(id,in);
+    }
+    @GetMapping("/templates")
+    @PreAuthorize("hasAuthority('"+Permissions.CERTIFICATE_TEMPLATES_MANAGE+"')")
+    public List<CertificateTemplateResponse> templates(){
+        return service.listTemplates();
+    }
+    @PostMapping("/templates")
+    @PreAuthorize("hasAuthority('"+Permissions.CERTIFICATE_TEMPLATES_MANAGE+"')")
+    public CertificateTemplateResponse createTemplate(@Valid
+    @RequestBody CertificateTemplateRequest in){
+        return service.createTemplate(in);
+    }
+    @PutMapping("/templates/{id}")
+    @PreAuthorize("hasAuthority('"+Permissions.CERTIFICATE_TEMPLATES_MANAGE+"')")
+    public CertificateTemplateResponse updateTemplate(@PathVariable UUID id,@Valid
+    @RequestBody CertificateTemplateRequest in){
+        return service.updateTemplate(id,in);
+    }
+    @DeleteMapping("/templates/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PreAuthorize("hasAuthority('"+Permissions.CERTIFICATE_TEMPLATES_MANAGE+"')")
+    public void disableTemplate(@PathVariable UUID id){
+        service.disableTemplate(id);
+    }
+
+}

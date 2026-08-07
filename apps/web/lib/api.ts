@@ -31,17 +31,25 @@ const NO_CACHE_PATHS = [
 ];
 function isLongRunningRequest(path: string, method: string): boolean {
   const pathname = path.split("?", 1)[0];
-  if (method === "POST" && pathname === "/api/v1/ai/local-runtime/pull") return true;
-  if (method === "POST" && pathname === "/api/v1/ai/question-generation-jobs") return true;
+  if (method === "POST" && pathname === "/api/v1/ai/local-runtime/pull")
+    return true;
+  if (method === "POST" && pathname === "/api/v1/ai/question-generation-jobs")
+    return true;
   if (method === "POST" && pathname === "/api/v1/files") return true;
-  if (method === "POST" && /^\/api\/v1\/files\/edit-sessions\/[^/]+\/pdf$/.test(pathname)) return true;
-  if (method === "GET" && /^\/api\/v1\/files\/[^/]+\/content$/.test(pathname)) return true;
+  if (
+    method === "POST" &&
+    /^\/api\/v1\/files\/edit-sessions\/[^/]+\/pdf$/.test(pathname)
+  )
+    return true;
+  if (method === "GET" && /^\/api\/v1\/files\/[^/]+\/content$/.test(pathname))
+    return true;
   return false;
 }
 
 function cacheTtl(path: string): number {
   if (NO_CACHE_PATHS.some((item) => path.includes(item))) return 0;
-  if (path.includes("/branding") || path.includes("/configuration")) return 30_000;
+  if (path.includes("/branding") || path.includes("/configuration"))
+    return 30_000;
   if (path.includes("/courses") || path.includes("/exams")) return 15_000;
   return DEFAULT_GET_TTL_MS;
 }
@@ -68,15 +76,24 @@ function clearApiCache(prefix?: string) {
 
 function invalidateRelated(path: string) {
   const segments = path.split("?")[0].split("/").filter(Boolean);
-  const resource = segments.length >= 3 ? `/${segments.slice(0, 3).join("/")}` : undefined;
+  const resource =
+    segments.length >= 3 ? `/${segments.slice(0, 3).join("/")}` : undefined;
   if (resource) clearApiCache(resource);
   // Course, assessment and learning screens share derived data. Clear these small groups
   // after a mutation instead of retaining stale cross-service projections.
-  if (path.includes("exam") || path.includes("assessment") || path.includes("grade")) {
+  if (
+    path.includes("exam") ||
+    path.includes("assessment") ||
+    path.includes("grade")
+  ) {
     clearApiCache("/api/v1/exams");
     clearApiCache("/api/v1/grades");
   }
-  if (path.includes("course") || path.includes("learning") || path.includes("enrollment")) {
+  if (
+    path.includes("course") ||
+    path.includes("learning") ||
+    path.includes("enrollment")
+  ) {
     clearApiCache("/api/v1/courses");
     clearApiCache("/api/v1/learning");
     clearApiCache("/api/v1/enrollments");
@@ -113,7 +130,10 @@ async function performFetch(
       cache: "no-store",
     });
     if (attempt === 0 && method === "GET" && response.status === 409) {
-      const problem = (await response.clone().json().catch(() => undefined)) as ApiProblem | undefined;
+      const problem = (await response
+        .clone()
+        .json()
+        .catch(() => undefined)) as ApiProblem | undefined;
       if (problem?.code === "SESSION_REFRESH_IN_PROGRESS") {
         await delay(300 + Math.floor(Math.random() * 150));
         return performFetch(path, init, headers, 1);
@@ -156,11 +176,17 @@ async function performFetch(
 
 async function parseResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
-    const problem = (await response.json().catch(() => undefined)) as ApiProblem | undefined;
+    const problem = (await response.json().catch(() => undefined)) as
+      ApiProblem | undefined;
     if (
       response.status === 401 &&
       typeof window !== "undefined" &&
-      ["SESSION_EXPIRED", "EXPIRED_REFRESH_TOKEN", "INVALID_REFRESH_TOKEN", "REFRESH_TOKEN_REUSED"].includes(problem?.code ?? "")
+      [
+        "SESSION_EXPIRED",
+        "EXPIRED_REFRESH_TOKEN",
+        "INVALID_REFRESH_TOKEN",
+        "REFRESH_TOKEN_REUSED",
+      ].includes(problem?.code ?? "")
     ) {
       window.location.replace("/login");
     }
@@ -172,19 +198,29 @@ async function parseResponse<T>(response: Response): Promise<T> {
   }
   if (response.status === 204) return undefined as T;
   const contentType = response.headers.get("content-type") ?? "";
-  if (!contentType.includes("application/json")) return (await response.text()) as T;
+  if (!contentType.includes("application/json"))
+    return (await response.text()) as T;
   return (await response.json()) as T;
 }
 
-export async function apiRequest<T>(path: string, init: RequestInit = {}): Promise<T> {
+export async function apiRequest<T>(
+  path: string,
+  init: RequestInit = {},
+): Promise<T> {
   const headers = new Headers(init.headers);
-  if (init.body && !(init.body instanceof FormData) && !headers.has("Content-Type")) {
+  if (
+    init.body &&
+    !(init.body instanceof FormData) &&
+    !headers.has("Content-Type")
+  ) {
     headers.set("Content-Type", "application/json");
   }
 
   const method = (init.method ?? "GET").toUpperCase();
   if (method !== "GET") {
-    const value = await parseResponse<T>(await performFetch(path, { ...init, method }, headers, 0));
+    const value = await parseResponse<T>(
+      await performFetch(path, { ...init, method }, headers, 0),
+    );
     invalidateRelated(path);
     return value;
   }
@@ -192,13 +228,16 @@ export async function apiRequest<T>(path: string, init: RequestInit = {}): Promi
   const ttl = cacheTtl(path);
   const key = cacheKey(path, headers);
   const cached = responseCache.get(key);
-  if (ttl > 0 && cached && cached.expiresAt > Date.now()) return cached.value as T;
+  if (ttl > 0 && cached && cached.expiresAt > Date.now())
+    return cached.value as T;
 
   const active = requestsInFlight.get(key);
   if (active) return active as Promise<T>;
 
   const request = (async () => {
-    const value = await parseResponse<T>(await performFetch(path, { ...init, method }, headers, 0));
+    const value = await parseResponse<T>(
+      await performFetch(path, { ...init, method }, headers, 0),
+    );
     if (ttl > 0) responseCache.set(key, { value, expiresAt: Date.now() + ttl });
     return value;
   })();
@@ -212,7 +251,9 @@ export function invalidateApiCache(prefix?: string) {
   clearApiCache(prefix);
 }
 
-export function unwrapItems<T>(value: T[] | { items?: T[] } | null | undefined): T[] {
+export function unwrapItems<T>(
+  value: T[] | { items?: T[] } | null | undefined,
+): T[] {
   if (Array.isArray(value)) return value;
   return value?.items ?? [];
 }

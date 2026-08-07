@@ -7,7 +7,8 @@ export type FormOption = { label: string; value: string };
 export type FormField = {
   name: string;
   label: string;
-  type?: "text" | "password" | "email" | "number" | "date" | "select" | "textarea";
+  type?:
+    "text" | "password" | "email" | "number" | "date" | "select" | "textarea";
   required?: boolean;
   placeholder?: string;
   defaultValue?: string;
@@ -40,7 +41,10 @@ export function EntityDialog({
   onSubmit,
 }: Props) {
   const initialValues = useMemo(
-    () => Object.fromEntries(fields.map((field) => [field.name, field.defaultValue ?? ""])),
+    () =>
+      Object.fromEntries(
+        fields.map((field) => [field.name, field.defaultValue ?? ""]),
+      ),
     [fields],
   );
   const [values, setValues] = useState<Record<string, string>>(initialValues);
@@ -55,21 +59,41 @@ export function EntityDialog({
   }
 
   return (
-    <Modal open={open} title={title} description={description} onClose={onClose}>
+    <Modal
+      open={open}
+      title={title}
+      description={description}
+      onClose={onClose}
+    >
       <form onSubmit={submit} className="entity-form">
         <div className="form-grid">
           {fields.map((field, index) => (
-            <label key={field.name} className={field.type === "textarea" ? "field-wide" : undefined}>
-              <span>{field.label}{field.required && <b> *</b>}</span>
+            <label
+              key={field.name}
+              className={field.type === "textarea" ? "field-wide" : undefined}
+            >
+              <span>
+                {field.label}
+                {field.required && <b> *</b>}
+              </span>
               {field.type === "select" ? (
                 <select
                   data-autofocus={index === 0 ? "true" : undefined}
                   required={field.required}
                   value={values[field.name] ?? ""}
-                  onChange={(event) => setValues((current) => ({ ...current, [field.name]: event.target.value }))}
+                  onChange={(event) =>
+                    setValues((current) => ({
+                      ...current,
+                      [field.name]: event.target.value,
+                    }))
+                  }
                 >
                   <option value="">Chọn giá trị</option>
-                  {field.options?.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                  {field.options?.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
                 </select>
               ) : field.type === "textarea" ? (
                 <textarea
@@ -77,7 +101,12 @@ export function EntityDialog({
                   required={field.required}
                   placeholder={field.placeholder}
                   value={values[field.name] ?? ""}
-                  onChange={(event) => setValues((current) => ({ ...current, [field.name]: event.target.value }))}
+                  onChange={(event) =>
+                    setValues((current) => ({
+                      ...current,
+                      [field.name]: event.target.value,
+                    }))
+                  }
                 />
               ) : (
                 <input
@@ -88,16 +117,34 @@ export function EntityDialog({
                   min={field.min}
                   max={field.max}
                   value={values[field.name] ?? ""}
-                  onChange={(event) => setValues((current) => ({ ...current, [field.name]: event.target.value }))}
+                  onChange={(event) =>
+                    setValues((current) => ({
+                      ...current,
+                      [field.name]: event.target.value,
+                    }))
+                  }
                 />
               )}
             </label>
           ))}
         </div>
-        {error && <div className="form-error" role="alert">{error}</div>}
+        {error && (
+          <div className="form-error" role="alert">
+            {error}
+          </div>
+        )}
         <footer className="modal-actions entity-form-actions">
-          <button type="button" className="soft-button" onClick={onClose} disabled={busy}>Hủy</button>
-          <button type="submit" className="primary-button" disabled={busy}>{busy ? "Đang lưu..." : submitLabel}</button>
+          <button
+            type="button"
+            className="soft-button"
+            onClick={onClose}
+            disabled={busy}
+          >
+            Hủy
+          </button>
+          <button type="submit" className="primary-button" disabled={busy}>
+            {busy ? "Đang lưu..." : submitLabel}
+          </button>
         </footer>
       </form>
     </Modal>

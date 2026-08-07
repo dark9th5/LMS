@@ -1,1 +1,5 @@
-package com.lmspilot.reporting.api;import java.time.Instant;public record DashboardResponse(long enrolled,long inProgress,long completed,long overdue,double averageProgress,Instant lastSynchronizedAt){}
+package com.lmspilot.reporting.api;
+
+import java.time.Instant;
+public record DashboardResponse(long enrolled,long inProgress,long completed,long overdue,double averageProgress,Instant lastSynchronizedAt){
+}

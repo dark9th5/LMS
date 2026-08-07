@@ -37,9 +37,32 @@ export function NumberStepper({
 
   return (
     <div className="number-stepper">
-      <button type="button" onClick={() => update(value - step)} disabled={value <= min} aria-label={`Giảm ${ariaLabel}`}>−</button>
-      <input name={name} type="number" min={min} max={max} step={step} value={value} onChange={(event) => update(Number(event.target.value) || min)} aria-label={ariaLabel} />
-      <button type="button" onClick={() => update(value + step)} disabled={value >= max} aria-label={`Tăng ${ariaLabel}`}>+</button>
+      <button
+        type="button"
+        onClick={() => update(value - step)}
+        disabled={value <= min}
+        aria-label={`Giảm ${ariaLabel}`}
+      >
+        −
+      </button>
+      <input
+        name={name}
+        type="number"
+        min={min}
+        max={max}
+        step={step}
+        value={value}
+        onChange={(event) => update(Number(event.target.value) || min)}
+        aria-label={ariaLabel}
+      />
+      <button
+        type="button"
+        onClick={() => update(value + step)}
+        disabled={value >= max}
+        aria-label={`Tăng ${ariaLabel}`}
+      >
+        +
+      </button>
     </div>
   );
 }

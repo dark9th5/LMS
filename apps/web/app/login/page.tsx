@@ -29,13 +29,21 @@ export default async function Login({
       <section
         className={`auth-showcase ${branding.backgroundUrl ? "has-custom-background" : ""}`}
         aria-labelledby="login-system-name"
-        style={branding.backgroundUrl ? { backgroundImage: `linear-gradient(145deg, rgba(18, 25, 60, .84), rgba(62, 49, 151, .72)), url(${branding.backgroundUrl})` } : undefined}
+        style={
+          branding.backgroundUrl
+            ? {
+                backgroundImage: `linear-gradient(145deg, rgba(18, 25, 60, .84), rgba(62, 49, 151, .72)), url(${branding.backgroundUrl})`,
+              }
+            : undefined
+        }
       >
         <div className="auth-brand">
           {branding.logoUrl ? (
             <img className="auth-logo" src={branding.logoUrl} alt="" />
           ) : (
-            <span className="auth-brand-mark" aria-hidden="true">L</span>
+            <span className="auth-brand-mark" aria-hidden="true">
+              L
+            </span>
           )}
           <div>
             <strong id="login-system-name">{branding.systemName}</strong>
@@ -44,7 +52,9 @@ export default async function Login({
         </div>
 
         <div className="auth-showcase-copy">
-          <span className="auth-pill"><Icon name="learn" size={16} /> Học tập liền mạch</span>
+          <span className="auth-pill">
+            <Icon name="learn" size={16} /> Học tập liền mạch
+          </span>
           <h2>Mỗi ngày tiến thêm một bước.</h2>
           <p>
             {branding.introduction ||
@@ -54,22 +64,39 @@ export default async function Login({
 
         <div className="auth-preview" aria-hidden="true">
           <article className="auth-course-card auth-course-primary">
-            <span className="auth-course-icon"><Icon name="book" size={22} /></span>
-            <div><small>Đang học</small><strong>Kỹ năng số nền tảng</strong></div>
+            <span className="auth-course-icon">
+              <Icon name="book" size={22} />
+            </span>
+            <div>
+              <small>Đang học</small>
+              <strong>Kỹ năng số nền tảng</strong>
+            </div>
             <span className="auth-progress-value">72%</span>
-            <div className="auth-progress-track"><i /></div>
+            <div className="auth-progress-track">
+              <i />
+            </div>
           </article>
           <article className="auth-course-card auth-course-secondary">
-            <span className="auth-course-icon"><Icon name="exam" size={22} /></span>
-            <div><small>Sắp tới</small><strong>Bài kiểm tra cuối khóa</strong></div>
+            <span className="auth-course-icon">
+              <Icon name="exam" size={22} />
+            </span>
+            <div>
+              <small>Sắp tới</small>
+              <strong>Bài kiểm tra cuối khóa</strong>
+            </div>
             <span className="auth-date">09:30</span>
           </article>
-          <span className="auth-float auth-float-a"><Icon name="check" size={18} /></span>
-          <span className="auth-float auth-float-b"><Icon name="learn" size={18} /></span>
+          <span className="auth-float auth-float-a">
+            <Icon name="check" size={18} />
+          </span>
+          <span className="auth-float auth-float-b">
+            <Icon name="learn" size={18} />
+          </span>
         </div>
 
         <p className="auth-privacy">
-          <Icon name="lock" size={16} /> Dữ liệu được bảo vệ trong hệ thống của tổ chức.
+          <Icon name="lock" size={16} /> Dữ liệu được bảo vệ trong hệ thống của
+          tổ chức.
         </p>
       </section>
 

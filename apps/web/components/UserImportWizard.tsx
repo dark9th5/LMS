@@ -334,7 +334,10 @@ export function UserImportWizard() {
               <select
                 value={mapping.defaultRoleCodes[0] ?? "STUDENT"}
                 onChange={(event) =>
-                  setMapping({ ...mapping, defaultRoleCodes: [event.target.value] })
+                  setMapping({
+                    ...mapping,
+                    defaultRoleCodes: [event.target.value],
+                  })
                 }
               >
                 <option value="ADMIN">Quản trị viên</option>

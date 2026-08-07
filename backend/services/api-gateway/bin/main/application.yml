@@ -1,0 +1,113 @@
+server:
+  port: ${SERVER_PORT:8080}
+  shutdown: graceful
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      server:
+        webflux:
+          httpclient:
+            connect-timeout: ${GATEWAY_CONNECT_TIMEOUT_MS:2000}
+            response-timeout: ${GATEWAY_RESPONSE_TIMEOUT:12s}
+            compression: true
+            pool:
+              type: FIXED
+              max-connections: ${GATEWAY_MAX_CONNECTIONS:200}
+              acquire-timeout: ${GATEWAY_ACQUIRE_TIMEOUT_MS:1500}
+              max-idle-time: ${GATEWAY_MAX_IDLE_TIME:30s}
+              max-life-time: ${GATEWAY_MAX_LIFE_TIME:5m}
+              metrics: true
+              leasing-strategy: lifo
+          routes:
+            - id: identity
+              uri: ${IDENTITY_URL:http://localhost:8081}
+              predicates:
+                - Path=/api/v1/auth/**,/api/v1/users/**,/api/v1/roles/**,/api/v1/authorization/**,/api/v1/directory/**
+            - id: organization
+              uri: ${ORGANIZATION_URL:http://localhost:8082}
+              predicates:
+                - Path=/api/v1/organization/**
+            - id: course
+              uri: ${COURSE_URL:http://localhost:8083}
+              predicates:
+                - Path=/api/v1/categories/**,/api/v1/courses/**,/api/v1/discussions/**
+            - id: enrollment
+              uri: ${ENROLLMENT_URL:http://localhost:8084}
+              predicates:
+                - Path=/api/v1/enrollments/**,/api/v1/course-assignments/**,/api/v1/live-sessions/**,/api/v1/learning-paths/**
+            - id: learning
+              uri: ${LEARNING_URL:http://localhost:8085}
+              predicates:
+                - Path=/api/v1/learning/**,/api/v1/xapi/**
+            - id: assessment
+              uri: ${ASSESSMENT_URL:http://localhost:8086}
+              predicates:
+                - Path=/api/v1/questions/**,/api/v1/exams/**,/api/v1/exam-sessions/**,/api/v1/competitions/**,/api/v1/assessment-assignments/**
+            - id: grading
+              uri: ${GRADING_URL:http://localhost:8087}
+              predicates:
+                - Path=/api/v1/grades/**,/api/v1/grading/**
+            - id: reporting
+              uri: ${REPORTING_URL:http://localhost:8088}
+              predicates:
+                - Path=/api/v1/reports/**,/api/v1/dashboard/**
+            - id: files
+              uri: ${FILE_STORAGE_URL:http://localhost:8089}
+              predicates:
+                - Path=/api/v1/files/**,/public/v1/file-edit/**
+              metadata:
+                response-timeout: 300000
+                connect-timeout: 2000
+            - id: license
+              uri: ${LICENSE_URL:http://localhost:8090}
+              predicates:
+                - Path=/api/v1/license/**
+            - id: audit
+              uri: ${AUDIT_URL:http://localhost:8091}
+              predicates:
+                - Path=/api/v1/audit/**
+            - id: notifications
+              uri: ${NOTIFICATION_URL:http://localhost:8092}
+              predicates:
+                - Path=/api/v1/notifications/**,/api/v1/news/**
+            - id: certificates
+              uri: ${CERTIFICATE_URL:http://localhost:8093}
+              predicates:
+                - Path=/api/v1/certificates/**,/public/v1/certificates/**
+            - id: ai
+              uri: ${AI_URL:http://localhost:8094}
+              predicates:
+                - Path=/api/v1/ai/**
+              metadata:
+                response-timeout: 300000
+                connect-timeout: 2000
+            - id: configuration
+              uri: ${CONFIGURATION_URL:http://localhost:8095}
+              predicates:
+                - Path=/api/v1/configuration/**,/api/v1/branding/**,/api/v1/external-services/**,/public/v1/configuration,/public/v1/branding,/public/v1/branding/**
+            - id: integration
+              uri: ${INTEGRATION_URL:http://localhost:8096}
+              predicates:
+                - Path=/api/v1/integrations/**
+            - id: operations
+              uri: ${OPERATIONS_URL:http://localhost:8097}
+              predicates:
+                - Path=/api/v1/operations/**
+            - id: competency
+              uri: ${COMPETENCY_URL:http://localhost:8098}
+              predicates:
+                - Path=/api/v1/competencies/**
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics,gateway
+  endpoint:
+    health:
+      probes:
+        enabled: true
+lmspilot:
+  jwt:
+    secret: ${LMSPILOT_JWT_SECRET}

@@ -1,2 +1,107 @@
-package com.lmspilot.license.domain;import jakarta.persistence.*;import java.time.Instant;import java.util.UUID;
-@Entity @Table(name="licenses") public class LicenseEntity{@Id private UUID id=UUID.randomUUID();@Column(nullable=false,unique=true,length=100)private String licenseId="";@Column(nullable=false,length=220)private String organization="";@Column(nullable=false,length=80)private String edition="STANDARD";@Column(nullable=false)private int maxUsers=100;@Column(nullable=false,columnDefinition="text")private String featuresJson="[]";@Column(nullable=false)private Instant issuedAt=Instant.now();private Instant expiresAt;@Column(nullable=false)private int gracePeriodDays;@Enumerated(EnumType.STRING)@Column(nullable=false,length=30)private LicenseStatus status=LicenseStatus.ACTIVE;@Column(nullable=false,columnDefinition="text")private String sourcePayload="";@Column(nullable=false)private Instant activatedAt=Instant.now();protected LicenseEntity(){}public LicenseEntity(String licenseId){this.licenseId=licenseId;}public UUID getId(){return id;}public String getLicenseId(){return licenseId;}public String getOrganization(){return organization;}public void setOrganization(String v){organization=v;}public String getEdition(){return edition;}public void setEdition(String v){edition=v;}public int getMaxUsers(){return maxUsers;}public void setMaxUsers(int v){maxUsers=v;}public String getFeaturesJson(){return featuresJson;}public void setFeaturesJson(String v){featuresJson=v;}public Instant getIssuedAt(){return issuedAt;}public void setIssuedAt(Instant v){issuedAt=v;}public Instant getExpiresAt(){return expiresAt;}public void setExpiresAt(Instant v){expiresAt=v;}public int getGracePeriodDays(){return gracePeriodDays;}public void setGracePeriodDays(int v){gracePeriodDays=v;}public LicenseStatus getStatus(){return status;}public void setStatus(LicenseStatus v){status=v;}public String getSourcePayload(){return sourcePayload;}public void setSourcePayload(String v){sourcePayload=v;}public Instant getActivatedAt(){return activatedAt;}public void setActivatedAt(Instant v){activatedAt=v;}}
+package com.lmspilot.license.domain;
+
+import jakarta.persistence.*;
+
+import java.time.Instant;
+
+import java.util.UUID;
+@Entity
+@Table(name="licenses")
+public class LicenseEntity{
+    @Id
+    private UUID id=UUID.randomUUID();
+    @Column(nullable=false,unique=true,length=100)
+    private String licenseId="";
+    @Column(nullable=false,length=220)
+    private String organization="";
+    @Column(nullable=false,length=80)
+    private String edition="STANDARD";
+    @Column(nullable=false)
+    private int maxUsers=100;
+    @Column(nullable=false,columnDefinition="text")
+    private String featuresJson="[]";
+    @Column(nullable=false)
+    private Instant issuedAt=Instant.now();
+    private Instant expiresAt;
+    @Column(nullable=false)
+    private int gracePeriodDays;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable=false,length=30)
+    private LicenseStatus status=LicenseStatus.ACTIVE;
+    @Column(nullable=false,columnDefinition="text")
+    private String sourcePayload="";
+    @Column(nullable=false)
+    private Instant activatedAt=Instant.now();
+    protected LicenseEntity(){
+    }
+    public LicenseEntity(String licenseId){
+        this.licenseId=licenseId;
+    }
+    public UUID getId(){
+        return id;
+    }
+    public String getLicenseId(){
+        return licenseId;
+    }
+    public String getOrganization(){
+        return organization;
+    }
+    public void setOrganization(String v){
+        organization=v;
+    }
+    public String getEdition(){
+        return edition;
+    }
+    public void setEdition(String v){
+        edition=v;
+    }
+    public int getMaxUsers(){
+        return maxUsers;
+    }
+    public void setMaxUsers(int v){
+        maxUsers=v;
+    }
+    public String getFeaturesJson(){
+        return featuresJson;
+    }
+    public void setFeaturesJson(String v){
+        featuresJson=v;
+    }
+    public Instant getIssuedAt(){
+        return issuedAt;
+    }
+    public void setIssuedAt(Instant v){
+        issuedAt=v;
+    }
+    public Instant getExpiresAt(){
+        return expiresAt;
+    }
+    public void setExpiresAt(Instant v){
+        expiresAt=v;
+    }
+    public int getGracePeriodDays(){
+        return gracePeriodDays;
+    }
+    public void setGracePeriodDays(int v){
+        gracePeriodDays=v;
+    }
+    public LicenseStatus getStatus(){
+        return status;
+    }
+    public void setStatus(LicenseStatus v){
+        status=v;
+    }
+    public String getSourcePayload(){
+        return sourcePayload;
+    }
+    public void setSourcePayload(String v){
+        sourcePayload=v;
+    }
+    public Instant getActivatedAt(){
+        return activatedAt;
+    }
+    public void setActivatedAt(Instant v){
+        activatedAt=v;
+    }
+
+}

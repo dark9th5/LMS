@@ -22,7 +22,9 @@ const statusOptions = [
 ];
 
 export function CoursesPage({ user }: { user: PortalUser }) {
-  const canCreate = user.permissions.some((permission) => ["courses:create", "courses:write"].includes(permission));
+  const canCreate = user.permissions.some((permission) =>
+    ["courses:create", "courses:write"].includes(permission),
+  );
   const [courses, setCourses] = useState<Course[]>([]);
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("");

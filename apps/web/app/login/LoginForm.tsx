@@ -145,9 +145,15 @@ export function LoginForm({
 
         <button className="button primary auth-submit" disabled={loading}>
           {loading ? (
-            <><span className="button-spinner" />Đang đăng nhập…</>
+            <>
+              <span className="button-spinner" />
+              Đang đăng nhập…
+            </>
           ) : (
-            <>Đăng nhập<Icon name="arrow" size={18} /></>
+            <>
+              Đăng nhập
+              <Icon name="arrow" size={18} />
+            </>
           )}
         </button>
       </form>
@@ -178,7 +184,9 @@ export function LoginForm({
               </button>
             ))}
           </div>
-          <p>Mật khẩu: <code>{demoPassword || "Được cấu hình trong .env"}</code></p>
+          <p>
+            Mật khẩu: <code>{demoPassword || "Được cấu hình trong .env"}</code>
+          </p>
         </details>
       )}
     </div>

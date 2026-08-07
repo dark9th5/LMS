@@ -1,2 +1,98 @@
-package com.lmspilot.certificate.domain;import jakarta.persistence.*;import java.time.Instant;import java.util.UUID;
-@Entity @Table(name="certificates",uniqueConstraints=@UniqueConstraint(name="uq_certificate_enrollment_active",columnNames={"enrollment_id","generation"})) public class CertificateEntity{@Id private UUID id=UUID.randomUUID();@Column(nullable=false)private UUID enrollmentId;@Column(nullable=false)private UUID courseId;@Column(nullable=false)private UUID userId;@Column(nullable=false,unique=true,length=48)private String verificationCode="";@Column(nullable=false)private int generation=1;@Enumerated(EnumType.STRING)@Column(nullable=false,length=20)private CertificateStatus status=CertificateStatus.ACTIVE;@Column(nullable=false)private Instant issuedAt=Instant.now();private Instant revokedAt;@Column(columnDefinition="text")private String revokeReason;private UUID replacesCertificateId;private UUID templateId;@Column(nullable=false,columnDefinition="text")private String templateSnapshotJson="{}";protected CertificateEntity(){}public CertificateEntity(UUID enrollmentId,UUID courseId,UUID userId,String verificationCode,int generation,UUID replacesCertificateId,UUID templateId,String snapshot){this.enrollmentId=enrollmentId;this.courseId=courseId;this.userId=userId;this.verificationCode=verificationCode;this.generation=generation;this.replacesCertificateId=replacesCertificateId;this.templateId=templateId;this.templateSnapshotJson=snapshot;}public UUID getId(){return id;}public UUID getEnrollmentId(){return enrollmentId;}public UUID getCourseId(){return courseId;}public UUID getUserId(){return userId;}public String getVerificationCode(){return verificationCode;}public int getGeneration(){return generation;}public CertificateStatus getStatus(){return status;}public void setStatus(CertificateStatus v){status=v;}public Instant getIssuedAt(){return issuedAt;}public Instant getRevokedAt(){return revokedAt;}public void setRevokedAt(Instant v){revokedAt=v;}public String getRevokeReason(){return revokeReason;}public void setRevokeReason(String v){revokeReason=v;}public UUID getReplacesCertificateId(){return replacesCertificateId;}public UUID getTemplateId(){return templateId;}public String getTemplateSnapshotJson(){return templateSnapshotJson;}}
+package com.lmspilot.certificate.domain;
+
+import jakarta.persistence.*;
+
+import java.time.Instant;
+
+import java.util.UUID;
+@Entity
+@Table(name="certificates",uniqueConstraints=@UniqueConstraint(name="uq_certificate_enrollment_active",columnNames={
+    "enrollment_id","generation"
+}
+)) public class CertificateEntity{
+    @Id
+    private UUID id=UUID.randomUUID();
+    @Column(nullable=false)
+    private UUID enrollmentId;
+    @Column(nullable=false)
+    private UUID courseId;
+    @Column(nullable=false)
+    private UUID userId;
+    @Column(nullable=false,unique=true,length=48)
+    private String verificationCode="";
+    @Column(nullable=false)
+    private int generation=1;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable=false,length=20)
+    private CertificateStatus status=CertificateStatus.ACTIVE;
+    @Column(nullable=false)
+    private Instant issuedAt=Instant.now();
+    private Instant revokedAt;
+    @Column(columnDefinition="text")
+    private String revokeReason;
+    private UUID replacesCertificateId;
+    private UUID templateId;
+    @Column(nullable=false,columnDefinition="text")
+    private String templateSnapshotJson="{}";
+    protected CertificateEntity(){
+    }
+    public CertificateEntity(UUID enrollmentId,UUID courseId,UUID userId,String verificationCode,int generation,UUID replacesCertificateId,UUID templateId,String snapshot){
+        this.enrollmentId=enrollmentId;
+        this.courseId=courseId;
+        this.userId=userId;
+        this.verificationCode=verificationCode;
+        this.generation=generation;
+        this.replacesCertificateId=replacesCertificateId;
+        this.templateId=templateId;
+        this.templateSnapshotJson=snapshot;
+    }
+    public UUID getId(){
+        return id;
+    }
+    public UUID getEnrollmentId(){
+        return enrollmentId;
+    }
+    public UUID getCourseId(){
+        return courseId;
+    }
+    public UUID getUserId(){
+        return userId;
+    }
+    public String getVerificationCode(){
+        return verificationCode;
+    }
+    public int getGeneration(){
+        return generation;
+    }
+    public CertificateStatus getStatus(){
+        return status;
+    }
+    public void setStatus(CertificateStatus v){
+        status=v;
+    }
+    public Instant getIssuedAt(){
+        return issuedAt;
+    }
+    public Instant getRevokedAt(){
+        return revokedAt;
+    }
+    public void setRevokedAt(Instant v){
+        revokedAt=v;
+    }
+    public String getRevokeReason(){
+        return revokeReason;
+    }
+    public void setRevokeReason(String v){
+        revokeReason=v;
+    }
+    public UUID getReplacesCertificateId(){
+        return replacesCertificateId;
+    }
+    public UUID getTemplateId(){
+        return templateId;
+    }
+    public String getTemplateSnapshotJson(){
+        return templateSnapshotJson;
+    }
+
+}

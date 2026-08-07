@@ -71,7 +71,9 @@ export function ChangePasswordForm() {
             required
           />
         </span>
-        <small>Ít nhất 12 ký tự, gồm chữ hoa, chữ thường, số và ký tự đặc biệt.</small>
+        <small>
+          Ít nhất 12 ký tự, gồm chữ hoa, chữ thường, số và ký tự đặc biệt.
+        </small>
       </label>
       <label className="field-group">
         <span>Xác nhận mật khẩu</span>

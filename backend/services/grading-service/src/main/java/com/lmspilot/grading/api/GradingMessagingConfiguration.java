@@ -1,1 +1,17 @@
-package com.lmspilot.grading.api;import com.lmspilot.contracts.EventTypes;import org.springframework.amqp.core.*;import org.springframework.context.annotation.*;@Configuration public class GradingMessagingConfiguration{@Bean Queue gradingQueue(){return new Queue("grading.exam-submitted",true);}@Bean Binding gradingBinding(Queue q,TopicExchange e){return BindingBuilder.bind(q).to(e).with(EventTypes.EXAM_SUBMITTED);}}
+package com.lmspilot.grading.api;
+
+import com.lmspilot.contracts.EventTypes;
+
+import org.springframework.amqp.core.*;
+
+import org.springframework.context.annotation.*;
+@Configuration
+public class GradingMessagingConfiguration{
+    @Bean Queue gradingQueue(){
+        return new Queue("grading.exam-submitted",true);
+    }
+    @Bean Binding gradingBinding(Queue q,TopicExchange e){
+        return BindingBuilder.bind(q).to(e).with(EventTypes.EXAM_SUBMITTED);
+    }
+
+}

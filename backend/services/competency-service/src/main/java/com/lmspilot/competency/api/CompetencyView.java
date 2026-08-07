@@ -1,1 +1,7 @@
-package com.lmspilot.competency.api; import com.lmspilot.competency.domain.CompetencyStatus; import java.util.UUID; public record CompetencyView(UUID id,String code,String name,String description,String category,int maxLevel,CompetencyStatus status){}
+package com.lmspilot.competency.api;
+
+import com.lmspilot.competency.domain.CompetencyStatus;
+
+import java.util.UUID;
+public record CompetencyView(UUID id,String code,String name,String description,String category,int maxLevel,CompetencyStatus status){
+}

@@ -14,7 +14,11 @@ import type {
 import { formatDate, formatDuration } from "@/lib/models";
 import type { PortalUser } from "@/lib/types";
 import { resolvePortalRole } from "@/lib/role";
-import { instructorCoursePath, standaloneExamPath, studentCoursePath } from "@/lib/portal-paths";
+import {
+  instructorCoursePath,
+  standaloneExamPath,
+  studentCoursePath,
+} from "@/lib/portal-paths";
 import { EmptyState, ErrorState, LoadingState, Toast } from "./Feedback";
 import { Icon } from "./Icon";
 import { PageHeader } from "./PageHeader";
@@ -23,7 +27,10 @@ import { Modal } from "./Modal";
 import { StatusBadge } from "./StatusBadge";
 
 function secondsLeft(expiresAt: string): number {
-  return Math.max(0, Math.ceil((new Date(expiresAt).getTime() - Date.now()) / 1000));
+  return Math.max(
+    0,
+    Math.ceil((new Date(expiresAt).getTime() - Date.now()) / 1000),
+  );
 }
 function serverRemaining(session: ExamSession): number {
   return Number.isFinite(session.remainingSeconds)
@@ -130,7 +137,9 @@ export function ExamDetail({
       const data = await apiRequest<Exam>(`/api/v1/exams/${examId}`);
       if (standaloneOnly && data.courseId) {
         setExam(null);
-        setError("Bài kiểm tra này thuộc khóa học. Hãy mở bài từ nội dung khóa học tương ứng.");
+        setError(
+          "Bài kiểm tra này thuộc khóa học. Hãy mở bài từ nội dung khóa học tương ứng.",
+        );
         return;
       }
       if (!standaloneOnly && !data.courseId) {
@@ -180,8 +189,13 @@ export function ExamDetail({
               window.localStorage.removeItem(
                 sessionStorageKey(data.id, enrollmentId),
               );
-              if (resumed.status === "IN_PROGRESS" && (!resumed.questions || resumed.questions.length === 0)) {
-                setError("Phiên thi không có câu hỏi. Hệ thống đã dừng phiên để tránh tự hoàn thành một đề rỗng.");
+              if (
+                resumed.status === "IN_PROGRESS" &&
+                (!resumed.questions || resumed.questions.length === 0)
+              ) {
+                setError(
+                  "Phiên thi không có câu hỏi. Hệ thống đã dừng phiên để tránh tự hoàn thành một đề rỗng.",
+                );
               }
             }
           } catch {
@@ -283,7 +297,9 @@ export function ExamDetail({
     }
     setRemaining(serverRemaining(session));
     const timer = window.setInterval(() => {
-      setRemaining((value) => (value === null ? serverRemaining(session) : Math.max(0, value - 1)));
+      setRemaining((value) =>
+        value === null ? serverRemaining(session) : Math.max(0, value - 1),
+      );
     }, 1000);
     return () => window.clearInterval(timer);
   }, [session]);
@@ -305,12 +321,18 @@ export function ExamDetail({
       });
       if (!validAttempt(started, examId)) {
         if (started.status !== "IN_PROGRESS") {
-          throw new Error("Phiên thi vừa tạo đã kết thúc. Vui lòng tải lại bài thi trước khi bắt đầu lượt mới.");
+          throw new Error(
+            "Phiên thi vừa tạo đã kết thúc. Vui lòng tải lại bài thi trước khi bắt đầu lượt mới.",
+          );
         }
         if (!started.questions?.length) {
-          throw new Error("Đề thi chưa tải được câu hỏi. Hệ thống không ghi nhận hoàn thành và không trừ lượt làm.");
+          throw new Error(
+            "Đề thi chưa tải được câu hỏi. Hệ thống không ghi nhận hoàn thành và không trừ lượt làm.",
+          );
         }
-        throw new Error("Thời gian phiên thi không hợp lệ. Vui lòng đồng bộ thời gian máy chủ rồi thử lại.");
+        throw new Error(
+          "Thời gian phiên thi không hợp lệ. Vui lòng đồng bộ thời gian máy chủ rồi thử lại.",
+        );
       }
       setRemaining(serverRemaining(started));
       autoSubmitted.current = false;
@@ -468,7 +490,11 @@ export function ExamDetail({
         }),
       });
       setEditOpen(false);
-      setToast(exam.courseId ? "Đã lưu cấu hình bài kiểm tra." : "Đã lưu cấu hình bài thi.");
+      setToast(
+        exam.courseId
+          ? "Đã lưu cấu hình bài kiểm tra."
+          : "Đã lưu cấu hình bài thi.",
+      );
       await load();
     } catch (caught) {
       setFormError(
@@ -485,14 +511,18 @@ export function ExamDetail({
     if (!exam || !canManage) return;
     if (
       !window.confirm(
-        exam.courseId ? "Lưu trữ bài kiểm tra khỏi khóa học? Mọi lượt làm, đáp án và điểm vẫn được giữ nguyên." : "Lưu trữ bài thi khỏi danh sách? Mọi lượt làm, đáp án và điểm vẫn được giữ nguyên.",
+        exam.courseId
+          ? "Lưu trữ bài kiểm tra khỏi khóa học? Mọi lượt làm, đáp án và điểm vẫn được giữ nguyên."
+          : "Lưu trữ bài thi khỏi danh sách? Mọi lượt làm, đáp án và điểm vẫn được giữ nguyên.",
       )
     )
       return;
     setBusy(true);
     try {
       await apiRequest(`/api/v1/exams/${exam.id}`, { method: "DELETE" });
-      window.location.assign(exam.courseId ? `/courses/${exam.courseId}` : "/exams");
+      window.location.assign(
+        exam.courseId ? `/courses/${exam.courseId}` : "/exams",
+      );
     } catch (caught) {
       setToast(
         caught instanceof Error
@@ -507,12 +537,18 @@ export function ExamDetail({
     if (!session || session.status !== "IN_PROGRESS") return;
     let online = navigator.onLine;
     const heartbeat = () => {
-      void apiRequest<ExamSession>(`/api/v1/exam-sessions/${session.id}/heartbeat`, {
-        method: "POST",
-      }).then((updated) => {
-        setSession(updated);
-        if (updated.status === "IN_PROGRESS") setRemaining(serverRemaining(updated));
-      }).catch(() => undefined);
+      void apiRequest<ExamSession>(
+        `/api/v1/exam-sessions/${session.id}/heartbeat`,
+        {
+          method: "POST",
+        },
+      )
+        .then((updated) => {
+          setSession(updated);
+          if (updated.status === "IN_PROGRESS")
+            setRemaining(serverRemaining(updated));
+        })
+        .catch(() => undefined);
     };
     const record = (type: string, details?: string) => {
       void apiRequest(`/api/v1/exam-sessions/${session.id}/events`, {
@@ -571,15 +607,23 @@ export function ExamDetail({
       autoSubmitted.current ||
       !session.questions?.length ||
       Date.now() - sessionReadyAt.current < 1_500
-    ) return;
+    )
+      return;
 
     autoSubmitted.current = true;
-    void apiRequest<ExamSession>(`/api/v1/exam-sessions/${session.id}/heartbeat`, { method: "POST" })
+    void apiRequest<ExamSession>(
+      `/api/v1/exam-sessions/${session.id}/heartbeat`,
+      { method: "POST" },
+    )
       .then((verified) => {
         setSession(verified);
         const verifiedRemaining = serverRemaining(verified);
         setRemaining(verifiedRemaining);
-        if (verified.status === "IN_PROGRESS" && verified.questions?.length && verifiedRemaining === 0) {
+        if (
+          verified.status === "IN_PROGRESS" &&
+          verified.questions?.length &&
+          verifiedRemaining === 0
+        ) {
           return submitExam(true);
         }
         autoSubmitted.current = false;
@@ -587,7 +631,11 @@ export function ExamDetail({
       })
       .catch((caught) => {
         autoSubmitted.current = false;
-        setError(caught instanceof Error ? caught.message : "Không thể xác minh thời gian phiên thi");
+        setError(
+          caught instanceof Error
+            ? caught.message
+            : "Không thể xác minh thời gian phiên thi",
+        );
       });
   }, [remaining, session?.id, session?.status, session?.questions?.length]);
 
@@ -598,8 +646,15 @@ export function ExamDetail({
   if (!exam)
     return (
       <EmptyState
-        title={standaloneOnly ? "Không tìm thấy bài thi" : "Không tìm thấy bài kiểm tra"}
-        description={error || "Nội dung có thể đã bị đóng hoặc không thuộc phạm vi của vai trò đang đăng nhập."}
+        title={
+          standaloneOnly
+            ? "Không tìm thấy bài thi"
+            : "Không tìm thấy bài kiểm tra"
+        }
+        description={
+          error ||
+          "Nội dung có thể đã bị đóng hoặc không thuộc phạm vi của vai trò đang đăng nhập."
+        }
       />
     );
 
@@ -1156,8 +1211,8 @@ export function ExamDetail({
           </span>
           <h2>Không thể hiển thị đề thi</h2>
           <p>
-            Phiên này được giữ nguyên để tránh mất lượt làm. Hãy tải lại dữ liệu;
-            hệ thống sẽ không tự nộp một đề rỗng.
+            Phiên này được giữ nguyên để tránh mất lượt làm. Hãy tải lại dữ
+            liệu; hệ thống sẽ không tự nộp một đề rỗng.
           </p>
           <button className="button secondary" onClick={() => void load()}>
             <Icon name="refresh" />
@@ -1229,7 +1284,11 @@ export function ExamDetail({
           )}
           <button
             className="button primary large-action"
-            disabled={busy || exam.status !== "ACTIVE" || (exam.questions ?? []).length === 0}
+            disabled={
+              busy ||
+              exam.status !== "ACTIVE" ||
+              (exam.questions ?? []).length === 0
+            }
             onClick={() => void startExam()}
           >
             {busy ? "Đang tạo phiên thi..." : "Bắt đầu làm bài"}
@@ -1258,7 +1317,9 @@ export function ExamDetail({
               {session.suspiciousEventCount}
             </span>
           )}
-          <div className={`exam-timer ${remaining !== null && remaining < 300 ? "urgent" : ""}`}>
+          <div
+            className={`exam-timer ${remaining !== null && remaining < 300 ? "urgent" : ""}`}
+          >
             <Icon name="clock" />
             <span>
               <small>Thời gian làm bài còn lại</small>
@@ -1366,10 +1427,22 @@ export function ExamDetail({
       >
         <div className="submit-review">
           <dl>
-            <div><dt>Tổng số câu</dt><dd>{questions.length}</dd></div>
-            <div><dt>Đã trả lời</dt><dd>{answered}</dd></div>
-            <div><dt>Chưa trả lời</dt><dd>{Math.max(0, questions.length - answered)}</dd></div>
-            <div><dt>Thời gian còn lại</dt><dd>{timerLabel(remaining ?? 0)}</dd></div>
+            <div>
+              <dt>Tổng số câu</dt>
+              <dd>{questions.length}</dd>
+            </div>
+            <div>
+              <dt>Đã trả lời</dt>
+              <dd>{answered}</dd>
+            </div>
+            <div>
+              <dt>Chưa trả lời</dt>
+              <dd>{Math.max(0, questions.length - answered)}</dd>
+            </div>
+            <div>
+              <dt>Thời gian còn lại</dt>
+              <dd>{timerLabel(remaining ?? 0)}</dd>
+            </div>
           </dl>
           {questions.length - answered > 0 && (
             <div className="form-alert error" role="alert">

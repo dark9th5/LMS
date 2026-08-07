@@ -1,4 +1,100 @@
-package com.lmspilot.ai.api;import com.fasterxml.jackson.annotation.JsonIgnoreProperties;import com.fasterxml.jackson.databind.ObjectMapper;import com.lmspilot.support.api.ApiException;import jakarta.validation.Valid;import jakarta.validation.constraints.*;import java.util.*;import org.springframework.beans.factory.annotation.Value;import org.springframework.http.*;import org.springframework.stereotype.Service;import org.springframework.web.bind.annotation.*;import org.springframework.web.client.RestClient;
-record DraftQuestionsRequest(@NotBlank@Size(max=120000)String sourceText,@Min(1)@Max(50)Integer count,Set<String>types,String language,String difficulty){}record DraftQuestion(String type,String prompt,List<String>options,List<String>correctAnswers,String explanation,int difficulty){}record DraftQuestionsResponse(String model,List<DraftQuestion>questions,boolean requiresHumanReview){}record ChatMessage(String role,String content){}record ChatRequest(String model,List<ChatMessage>messages,double temperature,Map<String,String>response_format){}@JsonIgnoreProperties(ignoreUnknown=true)record ChatChoice(ChatMessage message){}@JsonIgnoreProperties(ignoreUnknown=true)record ChatResponse(List<ChatChoice>choices){}record ModelResult(List<DraftQuestion>questions){}
-@Service class LocalAiService{private final ObjectMapper mapper;private final boolean enabled;private final String model,key;private final RestClient client;LocalAiService(ObjectMapper m,@Value("${ai.enabled:false}")boolean enabled,@Value("${ai.base-url:http://host.docker.internal:11434/v1}")String url,@Value("${ai.model:qwen3:8b}")String model,@Value("${ai.api-key:local}")String key){mapper=m;this.enabled=enabled;this.model=model;this.key=key;client=RestClient.builder().baseUrl(url).build();}DraftQuestionsResponse draft(DraftQuestionsRequest raw){if(!enabled)throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE,"AI_DISABLED","AI chưa được bật");int count=raw.count()==null?10:raw.count();String system="Bạn là trợ lý tạo câu hỏi LMSPilot. Chỉ trả JSON {questions:[...]}. Không tự thêm kiến thức ngoài tài liệu. Kết quả cần giảng viên duyệt.";String user="Ngôn ngữ: "+(raw.language()==null?"vi":raw.language())+"; số lượng: "+count+"; loại: "+raw.types()+"; độ khó: "+raw.difficulty()+". Tài liệu:\n"+raw.sourceText();ChatResponse response;try{response=client.post().uri("/chat/completions").header("Authorization","Bearer "+key).body(new ChatRequest(model,List.of(new ChatMessage("system",system),new ChatMessage("user",user)),0.2,Map.of("type","json_object"))).retrieve().body(ChatResponse.class);}catch(Exception e){throw new ApiException(HttpStatus.BAD_GATEWAY,"AI_UNAVAILABLE","Không kết nối được mô hình AI");}String content=response==null||response.choices()==null||response.choices().isEmpty()?null:response.choices().get(0).message().content();if(content==null)throw new ApiException(HttpStatus.BAD_GATEWAY,"AI_EMPTY_RESPONSE","Mô hình không trả kết quả");try{ModelResult r=mapper.readValue(content,ModelResult.class);return new DraftQuestionsResponse(model,r.questions()==null?List.of():r.questions().stream().limit(count).toList(),true);}catch(Exception e){throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY,"AI_INVALID_RESPONSE","Kết quả AI không đúng JSON");}}Map<String,Object>status(){return Map.of("enabled",enabled,"configured",enabled,"model",model,"reviewRequired",true);}}
-@RestController @RequestMapping("/api/v1/ai") class AiController{private final LocalAiService service;AiController(LocalAiService s){service=s;}@GetMapping("/status")Map<String,Object>status(){return service.status();}@PostMapping("/question-drafts")DraftQuestionsResponse draft(@Valid@RequestBody DraftQuestionsRequest i){return service.draft(i);}}
+package com.lmspilot.ai.api;
+
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import com.lmspilot.support.api.ApiException;
+
+import jakarta.validation.Valid;
+
+import jakarta.validation.constraints.*;
+
+import java.util.*;
+
+import org.springframework.beans.factory.annotation.Value;
+
+import org.springframework.http.*;
+
+import org.springframework.stereotype.Service;
+
+import org.springframework.web.bind.annotation.*;
+
+import org.springframework.web.client.RestClient;
+record DraftQuestionsRequest(@NotBlank
+@Size(max=120000)String sourceText,@Min(1)
+@Max(50)Integer count,Set<String>types,String language,String difficulty){
+}
+record DraftQuestion(String type,String prompt,List<String>options,List<String>correctAnswers,String explanation,int difficulty){
+}
+record DraftQuestionsResponse(String model,List<DraftQuestion>questions,boolean requiresHumanReview){
+}
+record ChatMessage(String role,String content){
+}
+record ChatRequest(String model,List<ChatMessage>messages,double temperature,Map<String,String>response_format){
+}
+@JsonIgnoreProperties(ignoreUnknown=true)record ChatChoice(ChatMessage message){
+}
+@JsonIgnoreProperties(ignoreUnknown=true)record ChatResponse(List<ChatChoice>choices){
+}
+record ModelResult(List<DraftQuestion>questions){
+}
+@Service
+class LocalAiService{
+    private final ObjectMapper mapper;
+    private final boolean enabled;
+    private final String model,key;
+    private final RestClient client;
+    LocalAiService(ObjectMapper m,@Value("${ai.enabled:false}")boolean enabled,@Value("${ai.base-url:http://host.docker.internal:11434/v1}")String url,@Value("${ai.model:qwen3:8b}")String model,@Value("${ai.api-key:local}")String key){
+        mapper=m;
+        this.enabled=enabled;
+        this.model=model;
+        this.key=key;
+        client=RestClient.builder().baseUrl(url).build();
+    }
+    DraftQuestionsResponse draft(DraftQuestionsRequest raw){
+        if(!enabled)throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE,"AI_DISABLED","AI chưa được bật");
+        int count=raw.count()==null?10:raw.count();
+        String system="Bạn là trợ lý tạo câu hỏi LMSPilot. Chỉ trả JSON {questions:[...]}. Không tự thêm kiến thức ngoài tài liệu. Kết quả cần giảng viên duyệt.";
+        String user="Ngôn ngữ: "+(raw.language()==null?"vi":raw.language())+"; số lượng: "+count+"; loại: "+raw.types()+"; độ khó: "+raw.difficulty()+". Tài liệu:\n"+raw.sourceText();
+        ChatResponse response;
+        try{
+            response=client.post().uri("/chat/completions").header("Authorization","Bearer "+key).body(new ChatRequest(model,List.of(new ChatMessage("system",system),new ChatMessage("user",user)),0.2,Map.of("type","json_object"))).retrieve().body(ChatResponse.class);
+        }
+        catch(Exception e){
+            throw new ApiException(HttpStatus.BAD_GATEWAY,"AI_UNAVAILABLE","Không kết nối được mô hình AI");
+        }
+        String content=response==null||response.choices()==null||response.choices().isEmpty()?null:response.choices().get(0).message().content();
+        if(content==null)throw new ApiException(HttpStatus.BAD_GATEWAY,"AI_EMPTY_RESPONSE","Mô hình không trả kết quả");
+        try{
+            ModelResult r=mapper.readValue(content,ModelResult.class);
+            return new DraftQuestionsResponse(model,r.questions()==null?List.of():r.questions().stream().limit(count).toList(),true);
+        }
+        catch(Exception e){
+            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY,"AI_INVALID_RESPONSE","Kết quả AI không đúng JSON");
+        }
+
+    }
+    Map<String,Object>status(){
+        return Map.of("enabled",enabled,"configured",enabled,"model",model,"reviewRequired",true);
+    }
+
+}
+@RestController
+@RequestMapping("/api/v1/ai")
+class AiController{
+    private final LocalAiService service;
+    AiController(LocalAiService s){
+        service=s;
+    }
+    @GetMapping("/status")
+    Map<String,Object>status(){
+        return service.status();
+    }
+    @PostMapping("/question-drafts")
+    DraftQuestionsResponse draft(@Valid
+    @RequestBody DraftQuestionsRequest i){
+        return service.draft(i);
+    }
+
+}

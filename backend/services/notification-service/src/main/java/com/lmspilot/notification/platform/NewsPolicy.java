@@ -1,1 +1,24 @@
-package com.lmspilot.notification.platform;import com.lmspilot.notification.domain.NewsAudienceType;import java.time.*;import java.util.*;public final class NewsPolicy{private NewsPolicy(){}public record NewsAudience(NewsAudienceType type,UUID id){public NewsAudience{if(type!=NewsAudienceType.SYSTEM&&id==null)throw new IllegalArgumentException("audience id required");}}public record NewsPublicationWindow(Instant from,Instant until){public NewsPublicationWindow{if(from!=null&&until!=null&&!until.isAfter(from))throw new IllegalArgumentException("invalid publication window");}}}
+package com.lmspilot.notification.platform;
+
+import com.lmspilot.notification.domain.NewsAudienceType;
+
+import java.time.*;
+
+import java.util.*;
+public final class NewsPolicy{
+    private NewsPolicy(){
+    }
+    public record NewsAudience(NewsAudienceType type,UUID id){
+        public NewsAudience{
+            if(type!=NewsAudienceType.SYSTEM&&id==null)throw new IllegalArgumentException("audience id required");
+        }
+
+    }
+    public record NewsPublicationWindow(Instant from,Instant until){
+        public NewsPublicationWindow{
+            if(from!=null&&until!=null&&!until.isAfter(from))throw new IllegalArgumentException("invalid publication window");
+        }
+
+    }
+
+}

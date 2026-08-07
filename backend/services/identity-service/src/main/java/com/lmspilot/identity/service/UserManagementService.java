@@ -1,19 +1,161 @@
 package com.lmspilot.identity.service;
-import com.fasterxml.jackson.databind.ObjectMapper; import com.lmspilot.contracts.*; import com.lmspilot.identity.api.IdentityModels.*; import com.lmspilot.identity.domain.*; import com.lmspilot.support.api.ApiException; import com.lmspilot.support.security.CurrentUser; import java.time.Instant; import java.util.*; import org.springframework.data.domain.PageRequest; import org.springframework.http.HttpStatus; import org.springframework.security.crypto.password.PasswordEncoder; import org.springframework.stereotype.Service; import org.springframework.transaction.annotation.Transactional;
-@Service public class UserManagementService { private static final Set<String> PRODUCT_ROLES=Set.of("ADMIN","INSTRUCTOR","STUDENT"); private final UserAccountRepository users;private final RoleRepository roles;private final BulkOperationRepository operations;private final PasswordEncoder encoder;private final PasswordPolicyService passwords;private final AuthorizationService authorization;private final ObjectMapper mapper;
- public UserManagementService(UserAccountRepository users,RoleRepository roles,BulkOperationRepository operations,PasswordEncoder encoder,PasswordPolicyService passwords,AuthorizationService authorization,ObjectMapper mapper){this.users=users;this.roles=roles;this.operations=operations;this.encoder=encoder;this.passwords=passwords;this.authorization=authorization;this.mapper=mapper;}
- private ApiException notFound(){return new ApiException(HttpStatus.NOT_FOUND,"USER_NOT_FOUND","Không tìm thấy tài khoản");}
- private Set<RoleEntity> roleSet(Set<String> codes){if(codes==null||codes.size()!=1)throw new ApiException(HttpStatus.BAD_REQUEST,"EXACTLY_ONE_ROLE_REQUIRED","Mỗi tài khoản phải có đúng một vai trò ADMIN, INSTRUCTOR hoặc STUDENT");String code=codes.iterator().next().toUpperCase(Locale.ROOT);if(!PRODUCT_ROLES.contains(code))throw new ApiException(HttpStatus.BAD_REQUEST,"INVALID_PRODUCT_ROLE","Vai trò chỉ có thể là ADMIN, INSTRUCTOR hoặc STUDENT");return Set.of(roles.findByCodeIgnoreCase(code).orElseThrow(()->new ApiException(HttpStatus.CONFLICT,"ROLE_NOT_BOOTSTRAPPED","Vai trò hệ thống chưa được khởi tạo")));}
- public UserSummary summary(UserAccountEntity u){return summary(u,authorization.permissionsForToken(u));}
- private UserSummary summary(UserAccountEntity u,Set<String>capabilities){Set<String> rc=new LinkedHashSet<>();u.roles.forEach(r->rc.add(r.code));String primary=rc.size()==1?rc.iterator().next():"STUDENT";return new UserSummary(u.id,u.code,u.username,u.fullName,u.email,u.organizationUnitId,u.status,u.accountType,u.protectedAccount,rc,primary,capabilities,u.lastLoginAt,u.mustChangePassword);}
- @Transactional(readOnly=true) public PageResponse<UserSummary> search(String query,AccountStatus status,String role,int page,int size){var p=users.search(query==null||query.isBlank()?null:query.trim(),status,role==null||role.isBlank()?null:role,PageRequest.of(Math.max(0,page),Math.min(100,Math.max(1,size))));List<UserAccountEntity>content=p.getContent();Map<UUID,Set<String>>capabilities=authorization.permissionsForTokens(content);return new PageResponse<>(content.stream().map(u->summary(u,capabilities.getOrDefault(u.id,Set.of()))).toList(),p.getNumber(),p.getSize(),p.getTotalElements(),p.getTotalPages());}
- @Transactional(readOnly=true) public UserSummary get(UUID id){return summary(users.findById(id).orElseThrow(this::notFound));}
- @Transactional public UserSummary create(CreateUserRequest i){if(users.existsByUsernameIgnoreCase(i.username())||users.existsByCodeIgnoreCase(i.code()))throw new ApiException(HttpStatus.CONFLICT,"USER_EXISTS","Mã hoặc tên đăng nhập đã tồn tại");passwords.validate(i.password());UserAccountEntity u=new UserAccountEntity();u.code=i.code().trim();u.username=i.username().trim();u.passwordHash=encoder.encode(i.password());u.fullName=i.fullName().trim();u.email=i.email();u.organizationUnitId=i.organizationUnitId();u.roles=new LinkedHashSet<>(roleSet(i.roleCodes()));u.mustChangePassword=i.mustChangePassword();u.passwordChangedAt=Instant.now();users.save(u);return summary(u);}
- @Transactional public BulkCreateUsersResponse bulkCreate(BulkCreateUsersRequest i){if(operations.existsById(i.operationId())){try{return mapper.readValue(operations.findById(i.operationId()).orElseThrow().resultJson,BulkCreateUsersResponse.class);}catch(Exception e){throw new ApiException(HttpStatus.CONFLICT,"DUPLICATE_OPERATION","Mã thao tác đã được sử dụng");}}List<UserSummary> out=new ArrayList<>();for(CreateUserRequest u:i.users())out.add(create(u));BulkCreateUsersResponse response=new BulkCreateUsersResponse(i.operationId(),out);BulkOperationEntity op=new BulkOperationEntity();op.operationId=i.operationId();op.operationType="USER_BULK_CREATE";op.requestedBy=CurrentUser.id();try{op.resultJson=mapper.writeValueAsString(response);}catch(Exception ignored){}operations.save(op);return response;}
- @Transactional public UserSummary update(UUID id,UpdateUserRequest i){UserAccountEntity u=users.findById(id).orElseThrow(this::notFound);Set<RoleEntity> next=roleSet(i.roleCodes());String nextRole=next.iterator().next().code;if(u.protectedAccount&&(i.status()!=AccountStatus.ACTIVE||!nextRole.equals("ADMIN")))throw new ApiException(HttpStatus.CONFLICT,"PROTECTED_ADMIN","Tài khoản quản trị bootstrap không thể bị khóa hoặc đổi vai trò");u.fullName=i.fullName().trim();u.email=i.email();u.organizationUnitId=i.organizationUnitId();u.roles=new LinkedHashSet<>(next);u.status=i.status()==null?AccountStatus.ACTIVE:i.status();u.accountType=u.protectedAccount?AccountType.SYSTEM_ADMIN:AccountType.USER;u.updatedAt=Instant.now();return summary(u);}
- @Transactional public void resetPassword(UUID id,ResetPasswordRequest i){UserAccountEntity u=users.findById(id).orElseThrow(this::notFound);passwords.change(u,i.newPassword(),i.forceChangeOnNextLogin(),"ADMIN_RESET");}
- @Transactional(readOnly=true) public List<StudentDirectoryItem> studentDirectory(){return users.findAll().stream().filter(u->u.status==AccountStatus.ACTIVE&&u.roles.stream().anyMatch(r->r.code.equalsIgnoreCase("STUDENT"))).sorted(Comparator.comparing(u->u.fullName)).map(u->new StudentDirectoryItem(u.id,u.code,u.fullName,u.email)).toList();}
- @Transactional(readOnly=true) public List<RoleResponse> listRoles(){return roles.findAll().stream().filter(r->PRODUCT_ROLES.contains(r.code.toUpperCase(Locale.ROOT))).map(r->new RoleResponse(r.id,r.code,r.name,Set.copyOf(r.permissions),r.systemRole)).toList();}
- @Transactional public RoleResponse createRole(RoleRequest i){throw new ApiException(HttpStatus.CONFLICT,"FIXED_ROLE_MODEL","LMSPilot sử dụng ba vai trò cố định ADMIN, INSTRUCTOR và STUDENT");}
- @Transactional public RoleResponse updateRole(UUID id,RoleRequest i){RoleEntity r=roles.findById(id).orElseThrow(()->new ApiException(HttpStatus.NOT_FOUND,"ROLE_NOT_FOUND","Không tìm thấy vai trò"));if(r.systemRole)throw new ApiException(HttpStatus.CONFLICT,"SYSTEM_ROLE_IMMUTABLE","Vai trò sản phẩm được quản lý bằng mã nguồn");r.name=i.name();r.permissions=new LinkedHashSet<>(i.permissions());r.updatedAt=Instant.now();return new RoleResponse(r.id,r.code,r.name,Set.copyOf(r.permissions),r.systemRole);}
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import com.lmspilot.contracts.*;
+
+import com.lmspilot.identity.api.IdentityModels.*;
+
+import com.lmspilot.identity.domain.*;
+
+import com.lmspilot.support.api.ApiException;
+
+import com.lmspilot.support.security.CurrentUser;
+
+import java.time.Instant;
+
+import java.util.*;
+
+import org.springframework.data.domain.PageRequest;
+
+import org.springframework.http.HttpStatus;
+
+import org.springframework.security.crypto.password.PasswordEncoder;
+
+import org.springframework.stereotype.Service;
+
+import org.springframework.transaction.annotation.Transactional;
+@Service
+public class UserManagementService {
+    private static final Set<String> PRODUCT_ROLES=Set.of("ADMIN","INSTRUCTOR","STUDENT");
+    private final UserAccountRepository users;
+    private final RoleRepository roles;
+    private final BulkOperationRepository operations;
+    private final PasswordEncoder encoder;
+    private final PasswordPolicyService passwords;
+    private final AuthorizationService authorization;
+    private final ObjectMapper mapper;
+    public UserManagementService(UserAccountRepository users,RoleRepository roles,BulkOperationRepository operations,PasswordEncoder encoder,PasswordPolicyService passwords,AuthorizationService authorization,ObjectMapper mapper){
+        this.users=users;
+        this.roles=roles;
+        this.operations=operations;
+        this.encoder=encoder;
+        this.passwords=passwords;
+        this.authorization=authorization;
+        this.mapper=mapper;
+    }
+    private ApiException notFound(){
+        return new ApiException(HttpStatus.NOT_FOUND,"USER_NOT_FOUND","Không tìm thấy tài khoản");
+    }
+    private Set<RoleEntity> roleSet(Set<String> codes){
+        if(codes==null||codes.size()!=1)throw new ApiException(HttpStatus.BAD_REQUEST,"EXACTLY_ONE_ROLE_REQUIRED","Mỗi tài khoản phải có đúng một vai trò ADMIN, INSTRUCTOR hoặc STUDENT");
+        String code=codes.iterator().next().toUpperCase(Locale.ROOT);
+        if(!PRODUCT_ROLES.contains(code))throw new ApiException(HttpStatus.BAD_REQUEST,"INVALID_PRODUCT_ROLE","Vai trò chỉ có thể là ADMIN, INSTRUCTOR hoặc STUDENT");
+        return Set.of(roles.findByCodeIgnoreCase(code).orElseThrow(()->new ApiException(HttpStatus.CONFLICT,"ROLE_NOT_BOOTSTRAPPED","Vai trò hệ thống chưa được khởi tạo")));
+    }
+    public UserSummary summary(UserAccountEntity u){
+        return summary(u,authorization.permissionsForToken(u));
+    }
+    private UserSummary summary(UserAccountEntity u,Set<String>capabilities){
+        Set<String> rc=new LinkedHashSet<>();
+        u.roles.forEach(r->rc.add(r.code));
+        String primary=rc.size()==1?rc.iterator().next():"STUDENT";
+        return new UserSummary(u.id,u.code,u.username,u.fullName,u.email,u.organizationUnitId,u.status,u.accountType,u.protectedAccount,rc,primary,capabilities,u.lastLoginAt,u.mustChangePassword);
+    }
+    @Transactional(readOnly=true)
+    public PageResponse<UserSummary> search(String query,AccountStatus status,String role,int page,int size){
+        var p=users.search(query==null||query.isBlank()?null:query.trim(),status,role==null||role.isBlank()?null:role,PageRequest.of(Math.max(0,page),Math.min(100,Math.max(1,size))));
+        List<UserAccountEntity>content=p.getContent();
+        Map<UUID,Set<String>>capabilities=authorization.permissionsForTokens(content);
+        return new PageResponse<>(content.stream().map(u->summary(u,capabilities.getOrDefault(u.id,Set.of()))).toList(),p.getNumber(),p.getSize(),p.getTotalElements(),p.getTotalPages());
+    }
+    @Transactional(readOnly=true)
+    public UserSummary get(UUID id){
+        return summary(users.findById(id).orElseThrow(this::notFound));
+    }
+    @Transactional
+    public UserSummary create(CreateUserRequest i){
+        if(users.existsByUsernameIgnoreCase(i.username())||users.existsByCodeIgnoreCase(i.code()))throw new ApiException(HttpStatus.CONFLICT,"USER_EXISTS","Mã hoặc tên đăng nhập đã tồn tại");
+        passwords.validate(i.password());
+        UserAccountEntity u=new UserAccountEntity();
+        u.code=i.code().trim();
+        u.username=i.username().trim();
+        u.passwordHash=encoder.encode(i.password());
+        u.fullName=i.fullName().trim();
+        u.email=i.email();
+        u.organizationUnitId=i.organizationUnitId();
+        u.roles=new LinkedHashSet<>(roleSet(i.roleCodes()));
+        u.mustChangePassword=i.mustChangePassword();
+        u.passwordChangedAt=Instant.now();
+        users.save(u);
+        return summary(u);
+    }
+    @Transactional
+    public BulkCreateUsersResponse bulkCreate(BulkCreateUsersRequest i){
+        if(operations.existsById(i.operationId())){
+            try{
+                return mapper.readValue(operations.findById(i.operationId()).orElseThrow().resultJson,BulkCreateUsersResponse.class);
+            }
+            catch(Exception e){
+                throw new ApiException(HttpStatus.CONFLICT,"DUPLICATE_OPERATION","Mã thao tác đã được sử dụng");
+            }
+
+        }
+        List<UserSummary> out=new ArrayList<>();
+        for(CreateUserRequest u:i.users())out.add(create(u));
+        BulkCreateUsersResponse response=new BulkCreateUsersResponse(i.operationId(),out);
+        BulkOperationEntity op=new BulkOperationEntity();
+        op.operationId=i.operationId();
+        op.operationType="USER_BULK_CREATE";
+        op.requestedBy=CurrentUser.id();
+        try{
+            op.resultJson=mapper.writeValueAsString(response);
+        }
+        catch(Exception ignored){
+        }
+        operations.save(op);
+        return response;
+    }
+    @Transactional
+    public UserSummary update(UUID id,UpdateUserRequest i){
+        UserAccountEntity u=users.findById(id).orElseThrow(this::notFound);
+        Set<RoleEntity> next=roleSet(i.roleCodes());
+        String nextRole=next.iterator().next().code;
+        if(u.protectedAccount&&(i.status()!=AccountStatus.ACTIVE||!nextRole.equals("ADMIN")))throw new ApiException(HttpStatus.CONFLICT,"PROTECTED_ADMIN","Tài khoản quản trị bootstrap không thể bị khóa hoặc đổi vai trò");
+        u.fullName=i.fullName().trim();
+        u.email=i.email();
+        u.organizationUnitId=i.organizationUnitId();
+        u.roles=new LinkedHashSet<>(next);
+        u.status=i.status()==null?AccountStatus.ACTIVE:i.status();
+        u.accountType=u.protectedAccount?AccountType.SYSTEM_ADMIN:AccountType.USER;
+        u.updatedAt=Instant.now();
+        return summary(u);
+    }
+    @Transactional
+    public void resetPassword(UUID id,ResetPasswordRequest i){
+        UserAccountEntity u=users.findById(id).orElseThrow(this::notFound);
+        passwords.change(u,i.newPassword(),i.forceChangeOnNextLogin(),"ADMIN_RESET");
+    }
+    @Transactional(readOnly=true)
+    public List<StudentDirectoryItem> studentDirectory(){
+        return users.findAll().stream().filter(u->u.status==AccountStatus.ACTIVE&&u.roles.stream().anyMatch(r->r.code.equalsIgnoreCase("STUDENT"))).sorted(Comparator.comparing(u->u.fullName)).map(u->new StudentDirectoryItem(u.id,u.code,u.fullName,u.email)).toList();
+    }
+    @Transactional(readOnly=true)
+    public List<RoleResponse> listRoles(){
+        return roles.findAll().stream().filter(r->PRODUCT_ROLES.contains(r.code.toUpperCase(Locale.ROOT))).map(r->new RoleResponse(r.id,r.code,r.name,Set.copyOf(r.permissions),r.systemRole)).toList();
+    }
+    @Transactional
+    public RoleResponse createRole(RoleRequest i){
+        throw new ApiException(HttpStatus.CONFLICT,"FIXED_ROLE_MODEL","LMSPilot sử dụng ba vai trò cố định ADMIN, INSTRUCTOR và STUDENT");
+    }
+    @Transactional
+    public RoleResponse updateRole(UUID id,RoleRequest i){
+        RoleEntity r=roles.findById(id).orElseThrow(()->new ApiException(HttpStatus.NOT_FOUND,"ROLE_NOT_FOUND","Không tìm thấy vai trò"));
+        if(r.systemRole)throw new ApiException(HttpStatus.CONFLICT,"SYSTEM_ROLE_IMMUTABLE","Vai trò sản phẩm được quản lý bằng mã nguồn");
+        r.name=i.name();
+        r.permissions=new LinkedHashSet<>(i.permissions());
+        r.updatedAt=Instant.now();
+        return new RoleResponse(r.id,r.code,r.name,Set.copyOf(r.permissions),r.systemRole);
+    }
+
 }

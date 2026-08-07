@@ -15,7 +15,10 @@ export async function requireAuthenticatedUser(): Promise<PortalUser> {
   return user;
 }
 
-export function requireRole(user: PortalUser, ...allowed: PortalRole[]): PortalRole {
+export function requireRole(
+  user: PortalUser,
+  ...allowed: PortalRole[]
+): PortalRole {
   const userRoles = (user.roles ?? []).map((role) => role.toUpperCase());
   const matched = allowed.find((role) => userRoles.includes(role));
   if (!matched) {
