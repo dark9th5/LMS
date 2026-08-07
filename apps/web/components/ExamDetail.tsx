@@ -1369,7 +1369,7 @@ export function ExamDetail({
             <div><dt>Tổng số câu</dt><dd>{questions.length}</dd></div>
             <div><dt>Đã trả lời</dt><dd>{answered}</dd></div>
             <div><dt>Chưa trả lời</dt><dd>{Math.max(0, questions.length - answered)}</dd></div>
-            <div><dt>Thời gian còn lại</dt><dd>{timerLabel(remaining)}</dd></div>
+            <div><dt>Thời gian còn lại</dt><dd>{timerLabel(remaining ?? 0)}</dd></div>
           </dl>
           {questions.length - answered > 0 && (
             <div className="form-alert error" role="alert">
