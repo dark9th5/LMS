@@ -10,6 +10,10 @@ import com.fasterxml.jackson.databind.JsonNode;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import com.lmspilot.ai.platform.QuestionGenerationContracts.GenerateQuestionsCommand;
+import com.lmspilot.ai.platform.QuestionGenerationContracts.QuestionSetValidationResult;
+import com.lmspilot.ai.platform.QuestionGenerationContracts.SourceChunk;
+
 import java.io.InputStream;
 
 import java.util.List;

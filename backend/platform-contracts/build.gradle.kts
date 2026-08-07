@@ -12,4 +12,5 @@ dependencyManagement {
 dependencies {
     api("com.fasterxml.jackson.core:jackson-databind")
     testImplementation("org.junit.jupiter:junit-jupiter")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
