@@ -8,6 +8,9 @@ x-service-common: &service-common
   restart: unless-stopped
   init: true
   stop_grace_period: 30s
+  mem_limit: ${LMSPILOT_SERVICE_MEMORY_LIMIT:-384m}
+  mem_reservation: ${LMSPILOT_SERVICE_MEMORY_RESERVATION:-128m}
+  cpus: ${LMSPILOT_SERVICE_CPU_LIMIT:-1.0}
   logging:
     driver: json-file
     options:
@@ -16,7 +19,7 @@ x-service-common: &service-common
   networks: [lmspilot]
   environment: &service-env
     SPRING_PROFILES_ACTIVE: docker
-    SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE: ${DB_POOL_MAX_SIZE:-4}
+    SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE: ${DB_POOL_MAX_SIZE:-3}
     SPRING_DATASOURCE_HIKARI_MINIMUM_IDLE: ${DB_POOL_MIN_IDLE:-1}
     SPRING_DATASOURCE_HIKARI_CONNECTION_TIMEOUT: ${DB_CONNECTION_TIMEOUT_MS:-3000}
     SPRING_DATASOURCE_HIKARI_VALIDATION_TIMEOUT: ${DB_VALIDATION_TIMEOUT_MS:-1000}
@@ -31,10 +34,14 @@ x-service-common: &service-common
     SERVER_COMPRESSION_MIN_RESPONSE_SIZE: ${SERVER_COMPRESSION_MIN_RESPONSE_SIZE:-1024}
     SPRING_THREADS_VIRTUAL_ENABLED: ${SPRING_THREADS_VIRTUAL_ENABLED:-true}
     SPRING_JMX_ENABLED: "false"
-    JAVA_TOOL_OPTIONS: ${JAVA_TOOL_OPTIONS:--XX:MaxRAMPercentage=68 -XX:InitialRAMPercentage=10 -XX:+UseG1GC -XX:MaxGCPauseMillis=180 -Djava.security.egd=file:/dev/./urandom}
+    JAVA_TOOL_OPTIONS: ${JAVA_TOOL_OPTIONS:--Xms64m -Xmx256m -XX:+UseG1GC -XX:MaxGCPauseMillis=180 -XX:+UseStringDeduplication -Djava.security.egd=file:/dev/./urandom}
     LMSPILOT_JWT_SECRET: ${LMSPILOT_JWT_SECRET}
     LMSPILOT_INTERNAL_TOKEN: ${LMSPILOT_INTERNAL_TOKEN}
     IDENTITY_SERVICE_URL: http://identity-service:8081
+    AUTHORIZATION_CLIENT_CONNECT_TIMEOUT_MS: ${AUTHORIZATION_CLIENT_CONNECT_TIMEOUT_MS:-1200}
+    AUTHORIZATION_CLIENT_READ_TIMEOUT_MS: ${AUTHORIZATION_CLIENT_READ_TIMEOUT_MS:-2500}
+    AUTHORIZATION_CLIENT_CACHE_TTL: ${AUTHORIZATION_CLIENT_CACHE_TTL:-PT4S}
+    AUTHORIZATION_CLIENT_CACHE_MAX_ENTRIES: ${AUTHORIZATION_CLIENT_CACHE_MAX_ENTRIES:-5000}
     LICENSE_SERVICE_URL: http://license-service:8090
     SPRING_RABBITMQ_HOST: rabbitmq
     SPRING_RABBITMQ_PORT: 5672
@@ -46,16 +53,17 @@ x-service-common: &service-common
     postgres:
       condition: service_healthy
     rabbitmq:
-      condition: service_healthy
+      condition: service_started
   healthcheck:
-    test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:$$SERVER_PORT/actuator/health/readiness || curl -fsS http://127.0.0.1:$$SERVER_PORT/actuator/health/readiness || exit 0"]
-    interval: 15s
-    timeout: 10s
-    retries: 30
-    start_period: 180s
+    test: ["CMD-SHELL", "curl -fsS http://localhost:$${SERVER_PORT:-8080}/actuator/health/readiness || exit 1"]
+    interval: 10s
+    timeout: 5s
+    retries: 18
+    start_period: 120s
 
 services:
   postgres:
+    mem_limit: ${POSTGRES_MEMORY_LIMIT:-1024m}
     image: postgres:17-alpine
     restart: unless-stopped
     command: ["postgres", "-c", "max_connections=160", "-c", "shared_buffers=128MB", "-c", "effective_cache_size=512MB", "-c", "work_mem=4MB", "-c", "maintenance_work_mem=64MB", "-c", "checkpoint_completion_target=0.9", "-c", "random_page_cost=1.1"]
@@ -75,6 +83,7 @@ services:
       retries: 20
 
   rabbitmq:
+    mem_limit: ${RABBITMQ_MEMORY_LIMIT:-512m}
     image: rabbitmq:4-management-alpine
     restart: unless-stopped
     networks: [lmspilot]
@@ -106,6 +115,7 @@ services:
       retries: 20
 
   ollama:
+    profiles: [local-ai]
     image: ollama/ollama:latest
     restart: unless-stopped
     networks: [lmspilot]
@@ -134,6 +144,8 @@ services:
     environment:
       <<: *service-env
       SERVER_PORT: 8080
+      JAVA_TOOL_OPTIONS: ${GATEWAY_JAVA_TOOL_OPTIONS:--Xms64m -Xmx320m -XX:+UseG1GC -XX:MaxGCPauseMillis=140}
+      GATEWAY_RESPONSE_TIMEOUT: ${GATEWAY_RESPONSE_TIMEOUT:-12s}
       IDENTITY_URL: http://identity-service:8081
       ORGANIZATION_URL: http://organization-service:8082
       COURSE_URL: http://course-service:8083
@@ -152,10 +164,11 @@ services:
       INTEGRATION_URL: http://integration-service:8096
       OPERATIONS_URL: http://operations-service:8097
       COMPETENCY_URL: http://competency-service:8098
-    # Các service vẫn khởi động song song. Gateway chỉ nhận traffic khi mọi service
-    # nghiệp vụ mặc định đã sẵn sàng, tránh 502 và màn hình chờ kéo dài ngay sau startup.
+    # Authentication/configuration must be usable before the Gateway becomes healthy.
+    # Feature services start independently so one optional/broken module cannot block the whole web.
     depends_on:
-      identity-service: { condition: service_started }
+      identity-service: { condition: service_healthy }
+      configuration-service: { condition: service_healthy }
       organization-service: { condition: service_started }
       course-service: { condition: service_started }
       enrollment-service: { condition: service_started }
@@ -169,7 +182,7 @@ services:
       notification-service: { condition: service_started }
       certificate-service: { condition: service_started }
       ai-service: { condition: service_started }
-      configuration-service: { condition: service_started }
+      integration-service: { condition: service_started }
       operations-service: { condition: service_started }
       competency-service: { condition: service_started }
 
@@ -181,6 +194,9 @@ services:
     environment:
       <<: *service-env
       SERVER_PORT: 8081
+      JAVA_TOOL_OPTIONS: ${IDENTITY_JAVA_TOOL_OPTIONS:--Xms96m -Xmx384m -XX:+UseG1GC -XX:MaxGCPauseMillis=160 -XX:+UseStringDeduplication}
+      SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE: ${IDENTITY_DB_POOL_MAX_SIZE:-8}
+      SPRING_DATASOURCE_HIKARI_MINIMUM_IDLE: ${IDENTITY_DB_POOL_MIN_IDLE:-2}
       DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-lmspilot}?currentSchema=identity
       DB_USERNAME: identity_user
       DB_PASSWORD: ${POSTGRES_SERVICE_PASSWORD}
@@ -414,7 +430,7 @@ services:
       COURSE_SERVICE_URL: http://course-service:8083
       ASSESSMENT_SERVICE_URL: http://assessment-service:8086
       AI_SECRET_KEY: ${AI_SECRET_KEY}
-      AI_ENABLED: ${AI_ENABLED:-true}
+      AI_ENABLED: ${AI_ENABLED:-false}
       AI_BASE_URL: ${AI_BASE_URL:-http://ollama:11434/v1}
       AI_MODEL: ${AI_MODEL:-qwen3:8b}
       AI_API_KEY: ${AI_API_KEY:-local-only}
@@ -437,7 +453,6 @@ services:
 
   integration-service:
     <<: *service-common
-    profiles: [extended]
     image: lmspilot/backend-bundle:0.24.0
     build: *backend-build
     command: ["integration-service"]
@@ -477,6 +492,7 @@ services:
       LMSPILOT_SEED_DEMO: ${LMSPILOT_SEED_DEMO:-false}
 
   web:
+    mem_limit: ${WEB_MEMORY_LIMIT:-768m}
     build:
       context: ./apps/web
       dockerfile: Dockerfile
@@ -489,8 +505,9 @@ services:
       LMSPILOT_GATEWAY_URL: http://api-gateway:8080
       LMSPILOT_COOKIE_SECURE: ${LMSPILOT_COOKIE_SECURE:-false}
       LMSPILOT_SESSION_COOKIE_SECRET: ${LMSPILOT_JWT_SECRET}
-      LMSPILOT_UPSTREAM_TIMEOUT_MS: ${LMSPILOT_UPSTREAM_TIMEOUT_MS:-7000}
-      LMSPILOT_UPSTREAM_MUTATION_TIMEOUT_MS: ${LMSPILOT_UPSTREAM_MUTATION_TIMEOUT_MS:-12000}
+      LMSPILOT_UPSTREAM_TIMEOUT_MS: ${LMSPILOT_UPSTREAM_TIMEOUT_MS:-15000}
+      LMSPILOT_UPSTREAM_MUTATION_TIMEOUT_MS: ${LMSPILOT_UPSTREAM_MUTATION_TIMEOUT_MS:-25000}
+      LMSPILOT_AUTH_UPSTREAM_TIMEOUT_MS: ${LMSPILOT_AUTH_UPSTREAM_TIMEOUT_MS:-20000}
       LMSPILOT_AI_UPSTREAM_TIMEOUT_MS: ${LMSPILOT_AI_UPSTREAM_TIMEOUT_MS:-300000}
       LMSPILOT_SEED_DEMO: ${LMSPILOT_SEED_DEMO:-false}
       LMSPILOT_DEFAULT_ADMIN_PASSWORD: ${LMSPILOT_DEFAULT_ADMIN_PASSWORD}

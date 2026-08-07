@@ -20,7 +20,7 @@ type CacheEntry = { expiresAt: number; value: unknown };
 const responseCache = new Map<string, CacheEntry>();
 const requestsInFlight = new Map<string, Promise<unknown>>();
 const DEFAULT_GET_TTL_MS = 10_000;
-const RETRYABLE_STATUS = new Set([502, 503, 504]);
+const RETRYABLE_STATUS = new Set([502, 503]);
 const NO_CACHE_PATHS = [
   "/api/v1/auth/",
   "/api/v1/exam-sessions/",
@@ -29,11 +29,15 @@ const NO_CACHE_PATHS = [
   "/heartbeat",
   "/events",
 ];
-const LONG_RUNNING_PATHS = [
-  "/api/v1/ai/local-runtime/pull",
-  "/api/v1/ai/question-generation-jobs",
-  "/api/v1/files/upload",
-];
+function isLongRunningRequest(path: string, method: string): boolean {
+  const pathname = path.split("?", 1)[0];
+  if (method === "POST" && pathname === "/api/v1/ai/local-runtime/pull") return true;
+  if (method === "POST" && pathname === "/api/v1/ai/question-generation-jobs") return true;
+  if (method === "POST" && pathname === "/api/v1/files") return true;
+  if (method === "POST" && /^\/api\/v1\/files\/edit-sessions\/[^/]+\/pdf$/.test(pathname)) return true;
+  if (method === "GET" && /^\/api\/v1\/files\/[^/]+\/content$/.test(pathname)) return true;
+  return false;
+}
 
 function cacheTtl(path: string): number {
   if (NO_CACHE_PATHS.some((item) => path.includes(item))) return 0;
@@ -43,9 +47,9 @@ function cacheTtl(path: string): number {
 }
 
 function requestTimeout(path: string, method: string): number {
-  if (LONG_RUNNING_PATHS.some((item) => path.includes(item))) return 300_000;
-  if (path.includes("/auth/")) return 8_000;
-  return method === "GET" ? 7_000 : 12_000;
+  if (isLongRunningRequest(path, method)) return 300_000;
+  if (path.includes("/auth/")) return 25_000;
+  return method === "GET" ? 18_000 : 30_000;
 }
 
 function cacheKey(path: string, headers: Headers): string {
@@ -108,12 +112,19 @@ async function performFetch(
       signal: controller.signal,
       cache: "no-store",
     });
+    if (attempt === 0 && method === "GET" && response.status === 409) {
+      const problem = (await response.clone().json().catch(() => undefined)) as ApiProblem | undefined;
+      if (problem?.code === "SESSION_REFRESH_IN_PROGRESS") {
+        await delay(300 + Math.floor(Math.random() * 150));
+        return performFetch(path, init, headers, 1);
+      }
+    }
     if (
       attempt === 0 &&
       method === "GET" &&
       RETRYABLE_STATUS.has(response.status)
     ) {
-      await delay(220);
+      await delay(250 + Math.floor(Math.random() * 150));
       return performFetch(path, init, headers, 1);
     }
     return response;
@@ -133,7 +144,7 @@ async function performFetch(
       !sourceSignal?.aborted &&
       error instanceof TypeError
     ) {
-      await delay(220);
+      await delay(250 + Math.floor(Math.random() * 150));
       return performFetch(path, init, headers, 1);
     }
     throw error;
@@ -149,7 +160,7 @@ async function parseResponse<T>(response: Response): Promise<T> {
     if (
       response.status === 401 &&
       typeof window !== "undefined" &&
-      ["UNAUTHORIZED", "EXPIRED_REFRESH_TOKEN", "INVALID_REFRESH_TOKEN", "REFRESH_TOKEN_REUSED"].includes(problem?.code ?? "")
+      ["SESSION_EXPIRED", "EXPIRED_REFRESH_TOKEN", "INVALID_REFRESH_TOKEN", "REFRESH_TOKEN_REUSED"].includes(problem?.code ?? "")
     ) {
       window.location.replace("/login");
     }

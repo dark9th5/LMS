@@ -17,15 +17,10 @@ if [ ! -f .env ]; then
   exit 1
 fi
 
+# Build đúng hai image dùng chung. 19 service Java đều dùng backend-bundle,
+# tránh để Compose lặp lại bước build cho từng service.
 export COMPOSE_PARALLEL_LIMIT="${COMPOSE_PARALLEL_LIMIT:-8}"
+docker compose build --pull api-gateway web
 
-if [ "${1:-}" = "--build" ]; then
-  echo "Đang biên dịch lại Docker Image từ mã nguồn..."
-  docker compose build api-gateway web
-else
-  echo "Đang kiểm tra và khởi động hệ thống từ Docker Image pre-built..."
-  docker compose pull --ignore-build-failures || true
-fi
-
-docker compose up -d --remove-orphans --wait --wait-timeout "${LMSPILOT_STARTUP_TIMEOUT:-360}"
-echo "🎉 LMSPilot đã sẵn sàng tại http://localhost:3000"
+docker compose up -d --no-build --remove-orphans --wait --wait-timeout "${LMSPILOT_STARTUP_TIMEOUT:-360}"
+echo "LMSPilot đã sẵn sàng tại http://localhost:3000"

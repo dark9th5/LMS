@@ -52,6 +52,7 @@ lmspilot:
 identity:
   access-token-ttl: ${ACCESS_TOKEN_TTL:PT15M}
   refresh-token-ttl: ${REFRESH_TOKEN_TTL:P7D}
+  refresh-reuse-grace: ${REFRESH_TOKEN_REUSE_GRACE:PT5S}
   lockout:
     max-failed-attempts: ${LOGIN_MAX_FAILED_ATTEMPTS:5}
     duration: ${LOGIN_LOCKOUT_DURATION:PT15M}

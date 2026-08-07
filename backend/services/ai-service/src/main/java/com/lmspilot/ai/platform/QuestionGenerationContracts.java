@@ -1,9 +1,6 @@
 package com.lmspilot.ai.platform;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import java.util.*;
-import java.util.regex.Pattern;
-import java.util.stream.*;
 
 public final class QuestionGenerationContracts {
     private QuestionGenerationContracts() {}

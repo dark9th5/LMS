@@ -10,7 +10,7 @@ spring:
         webflux:
           httpclient:
             connect-timeout: ${GATEWAY_CONNECT_TIMEOUT_MS:2000}
-            response-timeout: ${GATEWAY_RESPONSE_TIMEOUT:8s}
+            response-timeout: ${GATEWAY_RESPONSE_TIMEOUT:12s}
             compression: true
             pool:
               type: FIXED
@@ -57,6 +57,9 @@ spring:
               uri: ${FILE_STORAGE_URL:http://localhost:8089}
               predicates:
                 - Path=/api/v1/files/**,/public/v1/file-edit/**
+              metadata:
+                response-timeout: 300000
+                connect-timeout: 2000
             - id: license
               uri: ${LICENSE_URL:http://localhost:8090}
               predicates:
@@ -77,6 +80,9 @@ spring:
               uri: ${AI_URL:http://localhost:8094}
               predicates:
                 - Path=/api/v1/ai/**
+              metadata:
+                response-timeout: 300000
+                connect-timeout: 2000
             - id: configuration
               uri: ${CONFIGURATION_URL:http://localhost:8095}
               predicates:

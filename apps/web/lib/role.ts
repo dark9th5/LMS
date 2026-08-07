@@ -24,8 +24,9 @@ export function resolvePortalRole(
   if (!user) return "STUDENT";
   if (isPortalRole(user.primaryRole)) return user.primaryRole;
   const normalized = (user.roles ?? []).map((role) => role.toUpperCase());
-  const found = normalized.find(isPortalRole);
-  return found ?? "STUDENT";
+  if (normalized.includes("ADMIN")) return "ADMIN";
+  if (normalized.includes("INSTRUCTOR")) return "INSTRUCTOR";
+  return "STUDENT";
 }
 
 export function roleLabel(role: PortalRole): string {

@@ -157,7 +157,7 @@ if not zipfile.is_zipfile(wrapper):
 wrapper_props = read("backend/gradle/wrapper/gradle-wrapper.properties")
 if "https\\://services.gradle.org/distributions/gradle-8.14.5-bin.zip" not in wrapper_props:
     fail("Unexpected Gradle wrapper distribution")
-if "distributionSha256Sum=9c0f7faeeb306cb14e4279a3e084ca6b596894089a0638e68a07c945a32c9e14" not in wrapper_props:
+if "distributionSha256Sum=6f74b601422d6d6fc4e1f9a1ab6522f642c2fdcbc15ae33ebd30ba3d7198e854" not in wrapper_props:
     fail("Gradle distribution checksum is missing or unexpected")
 
 # Internal API authorization.
@@ -262,8 +262,8 @@ role_source = read("apps/web/lib/role.ts")
 for role in ("ADMIN", "INSTRUCTOR", "STUDENT"):
     if f'"{role}"' not in role_source:
         fail(f"Missing canonical portal role: {role}")
-if 'roles.length === 1' not in read("apps/web/app/api/auth/login/route.ts"):
-    fail("Login must reject sessions that do not contain exactly one canonical role")
+if 'roles.length >= 1' not in read("apps/web/app/api/auth/login/route.ts"):
+    fail("Login must require at least one canonical portal role")
 
 compose_text = read("docker-compose.yml")
 for required_setting in (

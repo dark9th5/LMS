@@ -21,17 +21,14 @@ public class IdentitySecurityConfiguration {
     @Bean JwtEncoder jwtEncoder(@Value("${lmspilot.jwt.secret}") String secret){return new NimbusJwtEncoder(new ImmutableSecret<SecurityContext>(hmacKey(secret)));}
     @Bean SecurityFilterChain identitySecurityFilterChain(HttpSecurity http,org.springframework.core.convert.converter.Converter<org.springframework.security.oauth2.jwt.Jwt,org.springframework.security.authentication.AbstractAuthenticationToken> converter)throws Exception{
         return http.csrf(c->c.disable()).sessionManagement(s->s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .exceptionHandling(e -> e.authenticationEntryPoint((req, res, ex) -> {
-                res.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                res.setContentType("application/json;charset=UTF-8");
-                res.getWriter().write("{\"ok\":false,\"code\":\"UNAUTHORIZED\",\"message\":\"Phiên đăng nhập không hợp lệ hoặc đã hết hạn\"}");
-            }))
+            .exceptionHandling(e -> e.authenticationEntryPoint((req, res, ex) -> writeUnauthorized(res)))
             .authorizeHttpRequests(a->a.requestMatchers("/actuator/health/**","/actuator/info","/api/v1/auth/login","/api/v1/auth/refresh","/api/v1/auth/logout","/internal/v1/**","/error").permitAll().anyRequest().authenticated())
-            .oauth2ResourceServer(o->o.jwt(j->j.jwtAuthenticationConverter(converter)).authenticationEntryPoint((req, res, ex) -> {
-                res.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                res.setContentType("application/json;charset=UTF-8");
-                res.getWriter().write("{\"ok\":false,\"code\":\"UNAUTHORIZED\",\"message\":\"Phiên đăng nhập không hợp lệ hoặc đã hết hạn\"}");
-            }))
+            .oauth2ResourceServer(o->o.jwt(j->j.jwtAuthenticationConverter(converter)).authenticationEntryPoint((req, res, ex) -> writeUnauthorized(res)))
             .build();
+    }
+    private static void writeUnauthorized(HttpServletResponse res) throws java.io.IOException {
+        res.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        res.setContentType("application/json;charset=UTF-8");
+        res.getWriter().write("{\"ok\":false,\"code\":\"UNAUTHORIZED\",\"message\":\"Phiên đăng nhập không hợp lệ hoặc đã hết hạn\"}");
     }
 }

@@ -16,13 +16,12 @@ export async function requireAuthenticatedUser(): Promise<PortalUser> {
 }
 
 export function requireRole(user: PortalUser, ...allowed: PortalRole[]): PortalRole {
-  const userRoles = (user.roles ?? []).map((r) => r.toUpperCase());
-  if (user.primaryRole) userRoles.push(user.primaryRole.toUpperCase());
-  const hasAccess = allowed.some((r) => userRoles.includes(r as string));
-  if (!hasAccess) {
+  const userRoles = (user.roles ?? []).map((role) => role.toUpperCase());
+  const matched = allowed.find((role) => userRoles.includes(role));
+  if (!matched) {
     redirect(landingForUser(user));
     throw new Error("UNREACHABLE_AFTER_ROLE_REDIRECT");
   }
-  const matching = allowed.find((r) => userRoles.includes(r as string));
-  return matching ?? resolvePortalRole(user);
+  const primary = resolvePortalRole(user);
+  return allowed.includes(primary) ? primary : matched;
 }

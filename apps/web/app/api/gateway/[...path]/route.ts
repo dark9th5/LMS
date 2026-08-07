@@ -15,10 +15,17 @@ type TokenPayload = {
 
 type RefreshResult =
   | { kind: "ok"; session: TokenPayload }
-  | { kind: "rejected" }
+  | { kind: "rejected"; code?: string }
+  | { kind: "concurrent" }
   | { kind: "unavailable" };
 
 const refreshInFlight = new Map<string, Promise<RefreshResult>>();
+const terminalRefreshCodes = new Set([
+  "EXPIRED_REFRESH_TOKEN",
+  "INVALID_REFRESH_TOKEN",
+  "REFRESH_TOKEN_REUSED",
+  "ACCOUNT_NOT_ACTIVE",
+]);
 
 const requestHopByHopHeaders = [
   "connection",
@@ -167,12 +174,22 @@ function refreshSession(refreshToken: string): Promise<RefreshResult> {
       return { kind: "unavailable" };
     }
 
-    if (!response.ok) return { kind: "rejected" };
+    if (!response.ok) {
+      const problem = (await response.json().catch(() => null)) as { code?: unknown } | null;
+      const code = typeof problem?.code === "string" ? problem.code : undefined;
+      if (response.status === 409 && code === "REFRESH_TOKEN_ROTATED") return { kind: "concurrent" };
+      // Only clear the browser session when Identity explicitly says the refresh
+      // credential is terminal. A gateway/service 5xx or generic 401 is transient.
+      if ((response.status === 401 || response.status === 403) && code && terminalRefreshCodes.has(code)) {
+        return { kind: "rejected", code };
+      }
+      return { kind: "unavailable" };
+    }
 
     const data = (await response.json().catch(() => null)) as unknown;
     return validTokenPayload(data)
       ? { kind: "ok", session: data }
-      : { kind: "rejected" };
+      : { kind: "unavailable" };
   })();
 
   refreshInFlight.set(refreshToken, pending);
@@ -180,6 +197,24 @@ function refreshSession(refreshToken: string): Promise<RefreshResult> {
     setTimeout(() => refreshInFlight.delete(refreshToken), 5_000);
   });
   return pending;
+}
+
+function accessTokenExpiresSoon(token: string, skewSeconds = 45): boolean {
+  try {
+    const payload = token.split(".")[1];
+    if (!payload) return true;
+    const decoded = JSON.parse(Buffer.from(payload, "base64url").toString("utf8")) as { exp?: unknown };
+    return typeof decoded.exp !== "number" || decoded.exp * 1000 <= Date.now() + skewSeconds * 1000;
+  } catch {
+    return true;
+  }
+}
+
+function refreshInProgress(): NextResponse {
+  return NextResponse.json(
+    { ok: false, code: "SESSION_REFRESH_IN_PROGRESS", message: "Phiên đăng nhập đang được làm mới. Vui lòng thử lại yêu cầu." },
+    { status: 409, headers: { "Cache-Control": "no-store", "Retry-After": "1" } },
+  );
 }
 
 function validPath(path: unknown): path is string[] {
@@ -200,7 +235,7 @@ function validPath(path: unknown): path is string[] {
 
 function unauthorized(message = "Phiên đăng nhập đã hết hạn"): NextResponse {
   const response = NextResponse.json(
-    { ok: false, code: "UNAUTHORIZED", message },
+    { ok: false, code: "SESSION_EXPIRED", message },
     { status: 401, headers: { "Cache-Control": "no-store" } },
   );
   clearSessionCookies(response);
@@ -223,7 +258,7 @@ async function callGateway(
   req: NextRequest,
   url: URL,
   token: string,
-  body?: ArrayBuffer,
+  body?: BodyInit | null,
 ): Promise<Response> {
   const headers = new Headers(req.headers);
   headers.set("Authorization", `Bearer ${token}`);
@@ -264,10 +299,24 @@ async function proxy(req: NextRequest, { params }: RouteContext) {
   if (!access && refresh) {
     const refreshResult = await refreshSession(refresh);
     if (refreshResult.kind === "unavailable") return unavailable();
+    if (refreshResult.kind === "concurrent") return refreshInProgress();
     if (refreshResult.kind === "rejected") return unauthorized();
 
     refreshedSession = refreshResult.session;
     access = refreshedSession.accessToken;
+  }
+
+  if (access && refresh && !refreshedSession && accessTokenExpiresSoon(access)) {
+    const refreshResult = await refreshSession(refresh);
+    if (refreshResult.kind === "ok") {
+      refreshedSession = refreshResult.session;
+      access = refreshedSession.accessToken;
+    } else if (refreshResult.kind === "concurrent") {
+      return refreshInProgress();
+    } else if (refreshResult.kind === "rejected") {
+      return unauthorized();
+    }
+    // If refresh service is temporarily unavailable, keep using a still-present access token.
   }
 
   if (!access) return unauthorized();
@@ -290,9 +339,11 @@ async function proxy(req: NextRequest, { params }: RouteContext) {
     url.searchParams.append(key, value);
   });
 
-  const body = ["GET", "HEAD"].includes(req.method)
-    ? undefined
-    : await req.arrayBuffer();
+  const hasBody = !["GET", "HEAD"].includes(req.method);
+  const contentType = req.headers.get("content-type") ?? "";
+  const contentLength = Number(req.headers.get("content-length") ?? "0");
+  const streamBody = hasBody && (contentType.includes("multipart/form-data") || contentLength > 1_048_576);
+  const body: BodyInit | null | undefined = !hasBody ? undefined : streamBody ? req.body : await req.arrayBuffer();
 
   let upstream: Response;
   try {
@@ -301,9 +352,10 @@ async function proxy(req: NextRequest, { params }: RouteContext) {
     return unavailable();
   }
 
-  if (upstream.status === 401 && refresh && !refreshedSession) {
+  if (upstream.status === 401 && refresh && !refreshedSession && !streamBody) {
     const refreshResult = await refreshSession(refresh);
     if (refreshResult.kind === "unavailable") return unavailable();
+    if (refreshResult.kind === "concurrent") return refreshInProgress();
 
     if (refreshResult.kind === "ok") {
       refreshedSession = refreshResult.session;

@@ -5,7 +5,7 @@
 ## Công nghệ
 
 - Frontend: Next.js 16, React 19, TypeScript 5.9 — port `3000`.
-- Backend: **Java 21 + Spring Boot 3.5.16** (Spring Virtual Threads).
+- Backend: **Java 21 + Spring Boot 3.5.16**.
 - Build backend: Gradle 8.14.5, Gradle Kotlin DSL (`*.gradle.kts`). Các file `.kts` chỉ là cấu hình build; mã ứng dụng backend nằm hoàn toàn trong `src/main/java`.
 - Database: PostgreSQL; mỗi service sở hữu schema và Flyway migration riêng.
 - Messaging: RabbitMQ; Redis là thành phần tùy chọn cho cache/rate limit.
@@ -43,7 +43,7 @@ Không có giao diện **Lớp học**. Học viên được giao trực tiếp 
 - Mỗi attempt lưu snapshot bất biến của câu hỏi, đáp án chấm, điểm đạt và chính sách chấm; giảng viên sửa đề sau khi học viên bắt đầu không làm thay đổi phiên đang thi.
 - Sửa hợp đồng database/API của Learning và Notification sau chuyển đổi Java; hoàn thành bài kiểm tra/bài thực hành chỉ qua sự kiện điểm hợp lệ, không qua nút đánh dấu thủ công.
 - Giảm độ trễ bằng cache GET ngắn hạn, gộp request đang chạy, timeout rõ ràng, truy vấn batch thay N+1, connection pool gateway và Hikari phù hợp 19 service.
-- Docker build một backend bundle dùng chung, tích hợp GitHub Actions GHCR tự động build image pre-built và script `start-fast` giúp khởi động hệ thống nhanh trong 30–60 giây.
+- Docker build một backend bundle dùng chung, khởi động có health dependency và script `start-fast` chờ đến khi hệ thống thật sự dùng được.
 - Admin có trung tâm **Kết nối model AI**: tải model Ollama mẫu bằng nút bấm, kết nối local OpenAI-compatible hoặc cấu hình endpoint/API key riêng.
 
 ## Sơ đồ runtime
@@ -87,7 +87,13 @@ API Gateway :8080
 | 8097 | `operations-service` | Health tổng hợp, job vận hành, lịch chạy và agent lease. | `operations` | `/api/v1/operations`, `/internal/v1/operations/jobs` |
 | 8098 | `competency-service` | Khung năng lực, hồ sơ, khoảng thiếu và ánh xạ khóa học. | `competency` | `/api/v1/competencies` |
 
-Thông tin chi tiết về từng dịch vụ được mô tả tại tệp `README.md` tương ứng trong từng thư mục `backend/services/<service_name>/README.md`.
+Chi tiết đầy đủ:
+
+- [`docs/SERVICE_CATALOG.md`](docs/SERVICE_CATALOG.md): phạm vi, dependency, controller, port và cách chạy từng service.
+- [`docs/API_DATABASE_MAP.md`](docs/API_DATABASE_MAP.md): API base, controller, schema, bảng và migration tương ứng.
+- [`docs/TEAM_SERVICE_ASSIGNMENT.md`](docs/TEAM_SERVICE_ASSIGNMENT.md): bảng để thành viên đăng ký owner/reviewer và phạm vi nâng cấp/test.
+- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md): nguyên tắc microservice và giao tiếp liên service.
+- [`docs/JAVA_SPRING_MIGRATION_0.21.0.md`](docs/JAVA_SPRING_MIGRATION_0.21.0.md): phạm vi chuyển đổi Kotlin sang Java.
 
 ## Cấu trúc repository
 
@@ -121,50 +127,21 @@ backend/services/<service>/
 
 ## Chạy nhanh
 
-### Clone dự án & Docker Compose — khởi động nhanh
+### Docker Compose — khởi động nhanh
 
-#### Bước 1: Clone dự án về máy
 ```bash
-git clone https://github.com/dark9th5/LMSPilot.git
-cd LMSPilot
+cp .env.example .env
+./scripts/start-fast.sh
 ```
 
-#### Bước 2: Tạo tệp `.env` từ `.env.example`
-- Linux / macOS:
-  ```bash
-  cp .env.example .env
-  ```
-- Windows PowerShell:
-  ```powershell
-  Copy-Item .env.example .env
-  ```
+Windows PowerShell:
 
-#### Bước 3: Khởi chạy bằng script thông minh
-Tự động kéo Docker image pre-built sẵn giúp khởi chạy nhanh (30s – 60s):
+```powershell
+Copy-Item .env.example .env
+./scripts/start-fast.ps1
+```
 
-- Linux / macOS:
-  ```bash
-  chmod +x ./scripts/start-fast.sh
-  ./scripts/start-fast.sh
-  ```
-- Windows PowerShell:
-  ```powershell
-  .\scripts\start-fast.ps1
-  ```
-
-👉 Sau khi khởi chạy thành công, truy cập hệ thống tại: **`http://localhost:3000`**
-
-#### Tài khoản mặc định thử nghiệm
-
-| Vai trò | Email đăng nhập | Mật khẩu mặc định |
-|---|---|---|
-| `ADMIN` (Quản trị) | `admin@lmspilot.local` | `Admin123!` |
-| `INSTRUCTOR` (Giảng viên) | `instructor@lmspilot.local` | `Instructor123!` |
-| `STUDENT` (Học viên) | `student@lmspilot.local` | `Student123!` |
-
-#### Tùy chọn biên dịch lại mã nguồn từ local
-- Windows: `.\scripts\start-fast.ps1 -Build`
-- Linux / macOS: `./scripts/start-fast.sh --build`
+Hai script chỉ build các image dùng chung, khởi động song song và dùng `docker compose --wait` để không báo sẵn sàng khi service hoặc database còn đang khởi động.
 
 Lần đầu, Ollama được khởi động nhưng chưa tải trọng số model. Đăng nhập Admin → **Cài đặt → Kết nối model AI** và nhấn **Tải và tự thiết lập**. Model được giữ trong Docker volume nên những lần sau không tải lại.
 
@@ -221,6 +198,13 @@ Học viên bấm Làm bài
 
 Không có đường tắt “đánh dấu hoàn thành” cho bài thi hoặc bài thực hành. Nếu đề rỗng, attempt hết hạn hoặc dịch vụ chưa trả đủ dữ liệu, UI hiển thị trạng thái lỗi có thể thử lại thay vì tự hoàn thành.
 
+## Tài liệu kiểm toán 0.23.0
+
+- [`docs/PERFORMANCE_AND_FLOW_AUDIT_0.23.0.md`](docs/PERFORMANCE_AND_FLOW_AUDIT_0.23.0.md)
+- [`docs/UI_QA_CHECKLIST_0.23.0.md`](docs/UI_QA_CHECKLIST_0.23.0.md)
+- [`docs/LOGIN_AUDIT_0.23.0.md`](docs/LOGIN_AUDIT_0.23.0.md)
+
+
 ## Kiểm tra đăng nhập và hiệu năng sau khi chạy
 
 ```bash
@@ -251,7 +235,7 @@ API quản trị liên quan:
 1. Mỗi service có một owner chính và ít nhất một reviewer.
 2. Owner chỉ thay đổi schema của service mình; không đọc/ghi trực tiếp bảng của service khác.
 3. Giao tiếp đồng bộ qua API Gateway hoặc internal API có `X-Service-Token`; giao tiếp bất đồng bộ qua event contract.
-4. Thay đổi API phải cập nhật controller/DTO, contract và consumer test; tham chiếu tại README.md của từng service.
+4. Thay đổi API phải cập nhật controller/DTO, `docs/API_DATABASE_MAP.md`, contract và consumer test.
 5. Thay đổi database phải thêm Flyway migration mới; không sửa migration đã phát hành.
 6. Pull request phải có unit test, test API chính, migration test và mô tả ảnh hưởng liên service.
 
