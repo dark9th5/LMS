@@ -331,10 +331,10 @@ async function proxy(req: NextRequest, { params }: RouteContext) {
     headers,
   });
 
-  if (upstream.status === 401) {
-    clearSessionCookies(response);
-  } else if (refreshedSession) {
+  if (refreshedSession) {
     applySessionCookies(response, refreshedSession);
+  } else if (upstream.status === 401 && !refresh) {
+    clearSessionCookies(response);
   }
 
   return response;

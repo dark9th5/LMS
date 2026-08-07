@@ -146,7 +146,11 @@ async function performFetch(
 async function parseResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
     const problem = (await response.json().catch(() => undefined)) as ApiProblem | undefined;
-    if (response.status === 401 && typeof window !== "undefined") {
+    if (
+      response.status === 401 &&
+      typeof window !== "undefined" &&
+      ["UNAUTHORIZED", "EXPIRED_REFRESH_TOKEN", "INVALID_REFRESH_TOKEN", "REFRESH_TOKEN_REUSED"].includes(problem?.code ?? "")
+    ) {
       window.location.replace("/login");
     }
     throw new ApiRequestError(
