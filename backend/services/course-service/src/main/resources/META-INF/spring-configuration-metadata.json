@@ -1,0 +1,43 @@
+{
+  "groups": [
+    {
+      "name": "lmspilot",
+      "type": "com.lmspilot.course.config.LmspilotProperties",
+      "description": "LMSPilot shared service settings."
+    },
+    {
+      "name": "lmspilot.jwt",
+      "type": "com.lmspilot.course.config.LmspilotJwtProperties",
+      "description": "JWT validation settings shared by LMSPilot services."
+    },
+    {
+      "name": "file-storage-service",
+      "type": "com.lmspilot.course.config.FileStorageServiceProperties",
+      "description": "File Storage Service integration settings."
+    }
+  ],
+  "properties": [
+    {
+      "name": "lmspilot.jwt.secret",
+      "type": "java.lang.String",
+      "description": "Shared JWT HMAC secret used to validate LMSPilot access tokens."
+    },
+    {
+      "name": "lmspilot.internal-token",
+      "type": "java.lang.String",
+      "description": "Shared internal token used by internal service endpoints."
+    },
+    {
+      "name": "lmspilot.seed-demo",
+      "type": "java.lang.Boolean",
+      "defaultValue": false,
+      "description": "Enables development demo data seeding for the course service."
+    },
+    {
+      "name": "file-storage-service.url",
+      "type": "java.lang.String",
+      "defaultValue": "http://localhost:8089",
+      "description": "Base URL of the file storage service."
+    }
+  ]
+}
