@@ -22,10 +22,10 @@ export function resolvePortalRole(
   user: Pick<PortalUser, "roles" | "primaryRole"> | null | undefined,
 ): PortalRole {
   if (!user) return "STUDENT";
+  if (isPortalRole(user.primaryRole)) return user.primaryRole;
   const normalized = (user.roles ?? []).map((role) => role.toUpperCase());
-  if (normalized.length !== 1 || !isPortalRole(normalized[0])) return "STUDENT";
-  if (user.primaryRole && user.primaryRole.toUpperCase() !== normalized[0]) return "STUDENT";
-  return normalized[0];
+  const found = normalized.find(isPortalRole);
+  return found ?? "STUDENT";
 }
 
 export function roleLabel(role: PortalRole): string {
