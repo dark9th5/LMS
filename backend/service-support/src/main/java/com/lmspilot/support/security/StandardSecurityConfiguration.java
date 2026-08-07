@@ -39,4 +39,11 @@ public class StandardSecurityConfiguration {
                 }))
             .build();
     }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public InternalTokenAuthorizer internalTokenAuthorizer(
+        @org.springframework.beans.factory.annotation.Value("${lmspilot.internal-token}") String expected) {
+        return new InternalTokenAuthorizer(expected);
+    }
 }
